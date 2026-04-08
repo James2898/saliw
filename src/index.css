@@ -2,24 +2,24 @@
 
 @theme {
   /* Define brand colors for Tailwind utility classes */
-  --color-brand-cream: #fdf8f3;
-  --color-brand-tan: #bc8e5c;
-  --color-brand-brown: #835b43;
-  --color-brand-espresso: #2d1f1b;
-  --color-brand-darker: #1a1210;
-  --color-brand-tan-alpha: ##bc8e5c26;
+  --brand-cream: #fdf8f3;
+  --brand-tan: #bc8e5c;
+  --brand-brown: #835b43;
+  --brand-espresso: #2d1f1b;
+  --brand-darker: #1a1210;
+  --brand-tan-alpha: ##bc8e5c26;
 }
 
 :root {
-  --brand-background: var(--color-brand-cream);
-  --brand-card-bg: var(--color-brand-tan-alpha);
-  --brand-text: var(--color-brand-brown);
+  --brand-background: var(--brand-cream);
+  --brand-card-bg: var(--brand-tan-alpha);
+  --brand-text: var(--brand-brown);
 }
 
 .dark {
-  --brand-background: var(--color-brand-darker);
-  --brand-card-bg: var(--color-brand-espresso);
-  --brand-text: var(--color-brand-tan);
+  --brand-background: var(--brand-darker);
+  --brand-card-bg: var(--brand-espresso);
+  --brand-text: var(--brand-tan);
 }
 
 body {
@@ -41,7 +41,7 @@ body {
 
 .main-card {
   background-color: var(--brand-card-bg);
-  border-color: var(--color-brand-brown);
+  border-color: var(--brand-brown);
 }
 
 .dark .main-card {
@@ -49,13 +49,13 @@ body {
 }
 
 .chord-item {
-  color: var(--color-brand-espresso);
+  color: var(--brand-espresso);
   padding: 0 4px;
 }
 
 .dark .chord-item {
-  color: var(--color-brand-cream);
-  background-color: var(--color-brand-espresso);
+  color: var(--brand-cream);
+  background-color: var(--brand-espresso);
 }
 
 .section-title {
@@ -66,9 +66,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-size: 1.25rem;
-  border-left: 4px solid var(--color-brand-brown);
+  border-left: 4px solid var(--brand-brown);
   padding-left: 1rem;
-  color: var(--color-brand-brown);
+  color: var(--brand-brown);
 }
 
 .dark .section-title {

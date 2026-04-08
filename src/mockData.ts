@@ -278,4 +278,11 @@ export const INITIAL_SETLISTS: Setlist[] = [
     leader: "John Doe",
     songs: [SONGS[21], SONGS[10], SONGS[12], SONGS[14]],
   },
+  {
+    id: 11,
+    name: "Night of Praise",
+    date: "2026-05-31",
+    leader: "John Doe",
+    songs: [SONGS[21], SONGS[10], SONGS[12], SONGS[14]],
+  },
 ];
