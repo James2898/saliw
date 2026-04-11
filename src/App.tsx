@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Library from "./pages/Library";
 import Setlists from "./pages/Setlists";
 import "./index.css";
+import SongView from "./pages/SongView";
 
 export default function App() {
   const [isDark, setIsDark] = React.useState<boolean>(true);
@@ -37,7 +38,7 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/library" element={<Library />} />
               <Route path="/setlists" element={<Setlists />} />
-              {/* <Route path="/song/:id" element={<SongView />} /> */}
+              <Route path="/song/:id" element={<SongView />} />
               {/* <Route path="/setlist/:id" element={<SetlistView />} /> */}
             </Routes>
           </div>

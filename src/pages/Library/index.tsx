@@ -50,7 +50,7 @@ const Library = () => {
             .slice((libPage - 1) * PAGE_SIZE, libPage * PAGE_SIZE)
             .map((s) => (
               <Link
-                to="/song"
+                to={"/song/" + s.id}
                 key={s.id}
                 className="group bg-brand-cream/50 dark:bg-[var(--brand-brown)]/40 border border-[var(--brand-brown)] p-5 rounded-3xl hover:border-[var(--brand-tan-alpha)] hover:shadow-xl transition-all cursor-pointer flex items-center justify-between"
               >

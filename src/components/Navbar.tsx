@@ -29,15 +29,15 @@ const Navbar = ({ isDark, setIsDark, setIsSidebarOpen }: Props) => {
           >
             <Menu size={24} />
           </button>
-          <div
-            onClick={() => {}}
+          <Link
+            to="/"
             className="flex items-center space-x-3 cursor-pointer group"
           >
             <div className="w-9 h-9 bg-[var(--brand-brown)] rounded-lg flex items-center justify-center shadow-lg shadow-brand-brown/20 group-hover:scale-105 transition-transform text-[var(--brand-cream)] ">
               <Music size={20} />
             </div>
             <span className="text-xl font-black tracking-tighter">Saliw</span>
-          </div>
+          </Link>
           <div className="hidden md:flex space-x-1">
             <Link className={navItemClass} to="/">
               <LayoutDashboard size={16} />
