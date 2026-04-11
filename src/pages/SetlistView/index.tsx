@@ -89,21 +89,21 @@ const SONGS: Song[] = [
     title: "Salamat Salamat",
     artist: "Unknown",
     key: "G",
-    content: `[Intro]\nG - Bm - Am - D\n\n[Verse]\nG                Bm\nKung aking mamasdan\n          Am\nAng kalawakan\n            D\nHindi ko maunawaan\nG             Bm\nAng Iyong dahilan\n              Am\nKung bakit ako’y\n                D\nPinili Mo’t inalagaan\n\n[Refrain]\nBm                  Em\nHindi ko kayang isipin\n            Bm             Em\nHinding-hindi ko kayang sukatin\nAm               Bm\nAng pag-ibig mo Hesus na\nC                 D\nIyong ibinigay sa akin\n\n[Chorus]\nC           D         Bm               Em\nSalamat, salamat Oh Hesus sa pag-ibig Mo\nAm                  D                 G        Dm - G/B\nWalang ibang nagmahal sa akin na katulad Mo\nC           D         Bm               Em\nSalamat, salamat Oh Hesus sa pag-ibig Mo\nAm              D            G\nAko’y magsasaya sa piling Mo`,
+    content: `[Intro]\nG - Bm - Am - D\n\n[Verse]\nG                Bm\nKung aking mamasdan\n          Am\nAng kalawakan\n            D\nHindi ko maunawaan\nG             Bm\nAng Iyong dahilan\n              Am\nKung bakit ako’y\n                D\nPinili Mo’t inalagaan\n\n[Refrain]\nBm                  Em\nHindi ko kayang isipin\n            Bm             Em\nHinding-hindi ko kayang sukatin\nAm               Bm\nAng pag-ibig mo Hesus na\nC                 D\nIyong ibinigay sa akin\n\n[Chorus]\nC           D         Bm               Em\nSalamat, salamat Oh Hesus sa pag-ibig Mo\nAm                  D                 G        Dm - G/B\nWalang ibang nagmahal sa akin na katulad Mo\nC           D         Bm               Em\nSalamat, salamat Oh Hesus sa pag-ibig Mo\nAm              D            G\nAko’y magsasaya sa piling Mo\n\n[Bridge]\nC                Bm\nBuhay ko na ang purihin Ka\nAm                   D\nBuhay ko na ang sa ‘Yo’y sumamba\nC               Bm              Am       D\nWala ng ibang nanaisin pa kundi pasalamatan Ka`,
   },
   {
     id: 24,
     title: "Para Sa’Yo",
     artist: "Unknown",
     key: "G",
-    content: `[Intro]\nG  D  Em  D\n\n[Verse]\nG           D             Em  D\nAng tinig ko ay para sa’Yo\n      C    D     Em       D\nNilikha upang purihin ka\nG            D             Em  D\nAng buhay ko ay para sa’Yo\n         C  D      Em     C    D\nGamitin Mo - sa kaluwalhatian Mo`,
+    content: `[Intro]\nG  D  Em  D\n\n[Verse]\nG           D             Em  D\nAng tinig ko ay para sa’Yo\n      C    D     Em       D\nNilikha upang purihin ka\nG            D             Em  D\nAng buhay ko ay para sa’Yo\n         C  D      Em     C    D\nGamitin Mo - sa kaluwalhatian Mo\n\n[Chorus]\n        C                    D\nPagkat Ikaw ang nagbigay kahulugan\n          Bm                Em\nSa buhay kong puno ng alin langgan\n         C                   D\nSa’Yo ko lang natagpuan pagmamahal\n     Bm                 Em\nKapayapaan, tunay at wagas\n     C            D      G\nPanginoon kaybuti Mo sa akin`,
   },
   {
     id: 25,
     title: "Ikaw Lamang",
     artist: "Unknown",
     key: "G",
-    content: `[Verse 1]\nG                     C\nO Diyos sa kabutihan Mo \n            Bm\nAko'y naririto\n               Am       D\nUpang magpuri Sa Iyo \n\n[Verse 2]\n        G               C\nO Diyos, sa kabanalan Mo \n            Bm\nNalulugod ako \n               Am       D\nBuhay ay iaalay ko \n\n[Koro]\nCM7                           D/C\nIkaw lamang ang nagtiwala sa akin \n     Bm                 E7\nO Diyos di kita bibiguin`,
+    content: `[Verse 1]\nG                     C\nO Diyos sa kabutihan Mo \n            Bm\nAko'y naririto\n               Am       D\nUpang magpuri Sa Iyo \n\n[Verse 2]\n        G               C\nO Diyos, sa kabanalan Mo \n            Bm\nNalulugod ako \n               Am       D\nBuhay ay iaalay ko \n\n[Koro]\nCM7                           D/C\nIkaw lamang ang nagtiwala sa akin \n     Bm                 E7\nO Diyos di kita bibiguin \n        Am\nMagtatapat Sa'yo \n       Bm      Em\nMaglilingkod Ako \n       C       D   G   G7\nO Diyos, kay buti mo`,
   },
 ];
 

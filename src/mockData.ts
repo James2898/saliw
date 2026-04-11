@@ -184,14 +184,14 @@ export const SONGS: Song[] = [
     title: "Para Sa’Yo",
     artist: "Unknown",
     key: "G",
-    content: `[Intro]\nG  D  Em  D\n\n[Verse]\nG           D             Em  D\nAng tinig ko ay para sa’Yo\n      C    D     Em       D\nNilikha upang purihin ka\nG            D             Em  D\nAng buhay ko ay para sa’Yo\n         C  D      Em     C    D\nGamitin Mo - sa kaluwalhatian Mo\n\n[Chorus]\n        C                    D\nPagkat Ikaw ang nagbigay kahulugan\n          Bm                Em\nSa buhay kong puno ng alin langgan\n         C                   D\nSa’Yo ko lang natagpuan pagmamahal\n     Bm                 Em\nKapayapaan, tunay at wagas\n     C            D      G\nPanginoon kaybuti Mo sa akin`,
+    content: `[Intro]\nG  D  Em  D\n\n[Verse]\nG           D             Em  D\nAng tinig ko ay para sa’Yo\n      C    D     Em       D\nNilikha upang purihin ka\nG            D             Em  D\nAng buhay ko ay para sa’Yo\n         C  D      Em     C    D\nGamitin Mo - sa kaluwalhatian Mo`,
   },
   {
     id: 25,
     title: "Ikaw Lamang",
     artist: "Unknown",
     key: "G",
-    content: `[Verse 1]\nG                     C\nO Diyos sa kabutihan Mo \n            Bm\nAko'y naririto\n               Am       D\nUpang magpuri Sa Iyo \n\n[Verse 2]\n        G               C\nO Diyos, sa kabanalan Mo \n            Bm\nNalulugod ako \n               Am       D\nBuhay ay iaalay ko \n\n[Koro]\nCM7                           D/C\nIkaw lamang ang nagtiwala sa akin \n     Bm                 E7\nO Diyos di kita bibiguin \n        Am\nMagtatapat Sa'yo \n       Bm      Em\nMaglilingkod Ako \n       C       D   G   G7\nO Diyos, kay buti mo`,
+    content: `[Verse 1]\nG                     C\nO Diyos sa kabutihan Mo \n            Bm\nAko'y naririto\n               Am       D\nUpang magpuri Sa Iyo \n\n[Verse 2]\n        G               C\nO Diyos, sa kabanalan Mo \n            Bm\nNalulugod ako \n               Am       D\nBuhay ay iaalay ko \n\n[Koro]\nCM7                           D/C\nIkaw lamang ang nagtiwala sa akin \n     Bm                 E7\nO Diyos di kita bibiguin`,
   },
 ];
 
