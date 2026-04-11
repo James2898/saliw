@@ -103,7 +103,7 @@ const SONGS: Song[] = [
     title: "Ikaw Lamang",
     artist: "Unknown",
     key: "G",
-    content: `[Verse 1]\nG                     C\nO Diyos sa kabutihan Mo \n            Bm\nAko'y naririto\n               Am       D\nUpang magpuri Sa Iyo \n\n[Verse 2]\n        G               C\nO Diyos, sa kabanalan Mo \n            Bm\nNalulugod ako \n               Am       D\nBuhay ay iaalay ko \n\n[Koro]\nCM7                           D/C\nIkaw lamang ang nagtiwala sa akin \n     Bm                 E7\nO Diyos di kita bibiguin \n        Am\nMagtatapat Sa'yo \n       Bm      Em\nMaglilingkod Ako \n       C       D   G   G7\nO Diyos, kay buti mo`,
+    content: `[Verse 1]\nG                     C\nO Diyos sa kabutihan Mo \n            Bm\nAko'y naririto\n               Am       D\nUpang magpuri Sa Iyo \n\n[Verse 2]\n        G               C\nO Diyos, sa kabanalan Mo \n            Bm\nNalulugod ako \n               Am       D\nBuhay ay iaalay ko \n\n[Koro]\nC7                           D/C\nIkaw lamang ang nagtiwala sa akin \n     Bm                 E7\nO Diyos di kita bibiguin \n        Am\nMagtatapat Sa'yo \n       Bm      Em\nMaglilingkod Ako \n       C       D   G   G7\nO Diyos, kay buti mo`,
   },
 ];
 
