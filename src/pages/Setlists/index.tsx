@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { INITIAL_SETLISTS } from "../../mockData";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 const PAGE_SIZE = 10;
 
 const Setlists = () => {
@@ -47,9 +48,9 @@ const Setlists = () => {
           {filteredSetlists
             .slice((setlistPage - 1) * PAGE_SIZE, setlistPage * PAGE_SIZE)
             .map((set) => (
-              <div
+              <Link
+                to={"/setlist/" + set.id}
                 key={set.id}
-                onClick={() => {}}
                 className="group bg-brand-cream/50 dark:bg-[var(--brand-tan)]/10 border border-[var(--brand-tan-alpha)] p-5 rounded-3xl hover:border-[var(--brand-brown)] hover:shadow-xl transition-all cursor-pointer flex items-center justify-between"
               >
                 <div className="flex items-center min-w-0 mr-4 flex-grow">
@@ -69,7 +70,7 @@ const Setlists = () => {
                   className="text-[var(--brand-brown)] dark:text-[var(--brand-tan)]"
                   size={24}
                 />
-              </div>
+              </Link>
             ))}
           {filteredSetlists.length > PAGE_SIZE && (
             <div className="flex justify-center items-center gap-2 mt-12 py-8 border-t border-[var(--brand-tan-alpha)]">
