@@ -114,9 +114,9 @@ const INITIAL_SETLISTS: Setlist[] = [
     date: "2026-04-12",
     leader: "John Doe",
     songs: [
-      { ...SONGS[2], performanceKey: "A" },
+      { ...SONGS[2], performanceKey: "G" },
       { ...SONGS[3], performanceKey: "G" },
-      { ...SONGS[4], performanceKey: "Bb" },
+      { ...SONGS[4], performanceKey: "G" },
     ],
   },
 ];
