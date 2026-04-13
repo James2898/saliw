@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Claude Code local settings
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

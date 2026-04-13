@@ -1,23 +1,48 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
 
-export default defineConfig([
-  globalIgnores(['dist']),
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // RSC boundary enforcement:
+  // Disallow direct Supabase client/SSR imports inside server-only files.
+  // src/app/** and src/components/server/** are server-component territory.
+  // Client-safe Supabase usage lives in src/services/ (future task).
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
+    files: [
+      "src/app/**/*.ts",
+      "src/app/**/*.tsx",
+      "src/components/server/**/*.ts",
+      "src/components/server/**/*.tsx",
     ],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@supabase/ssr",
+              message:
+                "Do not import @supabase/ssr directly in server components. Use the service helper in src/services/supabase-server.ts.",
+            },
+            {
+              name: "@supabase/supabase-js",
+              message:
+                "Do not import @supabase/supabase-js directly in server components. Use the service helper in src/services/supabase-server.ts.",
+            },
+          ],
+        },
+      ],
     },
   },
-])
+];
+
+export default eslintConfig;
