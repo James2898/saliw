@@ -31,12 +31,12 @@ const eslintConfig = [
             {
               name: "@supabase/ssr",
               message:
-                "Do not import @supabase/ssr directly in server components. Use the service helper in src/services/supabase-server.ts.",
+                "Do not import @supabase/ssr directly in server components. Use the service helpers in src/services/supabase/server.ts or src/services/supabase/client.ts.",
             },
             {
               name: "@supabase/supabase-js",
               message:
-                "Do not import @supabase/supabase-js directly in server components. Use the service helper in src/services/supabase-server.ts.",
+                "Do not import @supabase/supabase-js directly in server components. Use the service helpers in src/services/supabase/server.ts or src/services/supabase/client.ts.",
             },
           ],
         },
