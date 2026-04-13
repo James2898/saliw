@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  /* Artisan Palette — Saliw Music Portal */
+  --color-brand-cream: #fdf8f3;
+  --color-brand-tan: #bc8e5c;
+  --color-brand-brown: #835b43;
+  --color-brand-espresso: #2d1f1b;
+  --color-brand-darker: #1a1210;
+
+  /* Legacy CSS variable aliases (used by Tailwind arbitrary values) */
+  --brand-cream: #fdf8f3;
+  --brand-tan: #bc8e5c;
+  --brand-brown: #835b43;
+  --brand-espresso: #2d1f1b;
+  --brand-darker: #1a1210;
+
+  /* Corrected alpha variant (was ##bc8e5c26 — double # typo in original) */
+  --brand-tan-alpha: #bc8e5c26;
+
+  /* Typography */
+  --font-sans: var(--font-plus-jakarta-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "Courier New", monospace;
+}
+
+/* Semantic tokens for light/dark mode */
+:root {
+  --brand-background: var(--brand-cream);
+  --brand-card-bg: var(--brand-tan-alpha);
+  --brand-text: var(--brand-brown);
+}
+
+.dark {
+  --brand-background: var(--brand-darker);
+  --brand-card-bg: var(--brand-espresso);
+  --brand-text: var(--brand-tan);
+}
+
+/* Base — prevent hydration flash by applying cream background at HTML level */
+html {
+  background-color: #fdf8f3; /* --brand-cream literal to fire before CSS variables resolve */
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--brand-background);
+  color: var(--brand-text);
+  transition: background-color 0.5s ease;
+}
+
+/* Global smooth transitions for Artisan theme changes */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* ── Chord sheet components ─────────────────────────────────────────────── */
+
+/* Chord token — wrap chords in <span class="chord-item"> */
+.chord-item {
+  color: var(--brand-espresso);
+  padding: 0 4px;
+  font-family: var(--font-mono);
+}
+
+.dark .chord-item {
+  color: var(--brand-cream);
+  background-color: var(--brand-espresso);
+}
+
+/* Section header — [VERSE], [CHORUS], etc. */
+.section-title {
+  display: block;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 1.25rem;
+  border-left: 4px solid var(--brand-brown);
+  padding-left: 1rem;
+  color: var(--brand-brown);
+}
+
+.dark .section-title {
+  color: var(--brand-tan);
+  border-left-color: var(--brand-tan);
+}
+
+/* Chord display container — maintains alignment of chord-over-lyric layout */
+.chord-display {
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+
+/* Card shell */
+.main-card {
+  background-color: var(--brand-card-bg);
+  border-color: var(--brand-brown);
+}
+
+.dark .main-card {
+  border-color: var(--brand-tan);
+}
