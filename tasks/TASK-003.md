@@ -81,9 +81,11 @@ N/A — no API contract required for this task.
 
 ## Resolution
 
-> _To be filled by `@fullstack-developer` on completion._
-
-- **Completed:** [date]
-- **Branch:** [branch name]
-- **Files changed:** [list]
-- **Notes:** [anything the reviewer should know]
+- **Completed:** 2026-04-13
+- **Branch:** feature/TASK-003-artisan-ui
+- **Base branch:** develop
+- **Files changed:**
+  - `postcss.config.mjs` — created; registers `@tailwindcss/postcss` as the PostCSS plugin so Next.js invokes the Tailwind v4 compiler during the build
+  - `package.json` — added `@tailwindcss/postcss@^4.2.2` to `devDependencies`
+  - `package-lock.json` — updated with 15 new transitive packages for `@tailwindcss/postcss`
+- **Notes:** Root cause was a missing PostCSS plugin configuration. Without `postcss.config.mjs`, Next.js never invoked the Tailwind v4 compiler, so all `@theme {}` variables and utility classes in `globals.css` were silently ignored. All component and page files (`button.tsx`, `card.tsx`, `dashboard/layout.tsx`, `dashboard/page.tsx`, `page.tsx`, `layout.tsx`, `globals.css`) were correct as-is and were not modified. Dev server compiled successfully (`✓ Ready in 1258ms`) with no errors after the fix.
