@@ -8,6 +8,15 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- **Artisan Visual Identity & Base UI Components** (`TASK-003`)
+  - `Button` Client Component with `primary` / `secondary` / `ghost` variants and `sm` / `md` / `lg` sizes; WCAG AA compliant (tan-on-cream combination excluded)
+  - `Card` Server Component with `rounded-3xl`, `.main-card` CSS class, and `none | sm | md | lg` padding prop
+  - Dashboard layout shell: full-width cream outer `<div>` wrapping `Card` at `max-w-5xl`, centred horizontally
+  - Dashboard placeholder page with espresso heading and brown subheading
+  - Homepage updated to use Tailwind utilities (no inline styles) and showcase all `Button` and `Card` variants
+  - Dark mode handled via `.dark` class and semantic tokens in `globals.css` — no per-component dark mode logic required
+  - Affected files: `src/components/client/button.tsx`, `src/components/server/card.tsx`, `src/app/dashboard/layout.tsx`, `src/app/dashboard/page.tsx`, `src/app/page.tsx`
+
 - **Next.js 15+ App Router foundation scaffold** (`TASK-001`)
   - Replaced Vite + React Router with Next.js 15.5 App Router and TypeScript strict mode
   - Tailwind CSS v4 CSS-first configuration with Artisan Palette `@theme` block in `src/styles/globals.css`
