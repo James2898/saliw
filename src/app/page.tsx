@@ -1,66 +1,47 @@
+import Card from '@/components/server/card'
+import Button from '@/components/client/button'
+
 export default function HomePage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "1rem",
-        fontFamily: "var(--font-plus-jakarta-sans, sans-serif)",
-      }}
-    >
-      <h1
-        style={{
-          fontSize: "2.5rem",
-          fontWeight: 900,
-          letterSpacing: "-0.04em",
-          color: "var(--brand-espresso)",
-        }}
-      >
-        Saliw
-      </h1>
-      <p
-        style={{
-          fontSize: "0.875rem",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          color: "var(--brand-tan)",
-        }}
-      >
-        Foundation scaffold — Next.js 15 App Router
-      </p>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          marginTop: "1.5rem",
-        }}
-      >
-        {(
-          [
-            ["--brand-cream", "#FDF8F3"],
-            ["--brand-tan", "#BC8E5C"],
-            ["--brand-brown", "#835B43"],
-            ["--brand-espresso", "#2D1F1B"],
-            ["--brand-darker", "#1A1210"],
-          ] as [string, string][]
-        ).map(([name, hex]) => (
-          <div
-            key={name}
-            title={`${name}: ${hex}`}
-            style={{
-              width: "2.5rem",
-              height: "2.5rem",
-              borderRadius: "0.5rem",
-              backgroundColor: `var(${name})`,
-              border: "1px solid rgba(0,0,0,0.1)",
-            }}
-          />
+    <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center gap-8 p-8">
+      <div className="text-center">
+        <h1 className="text-5xl font-black tracking-[-0.04em] text-brand-espresso">
+          Saliw
+        </h1>
+        <p className="mt-2 text-sm font-semibold uppercase tracking-[0.1em] text-brand-brown">
+          Worship Music Portal
+        </p>
+      </div>
+
+      <div className="flex gap-3">
+        {[
+          'bg-brand-cream border border-brand-brown/20',
+          'bg-brand-tan',
+          'bg-brand-brown',
+          'bg-brand-espresso',
+          'bg-brand-darker',
+        ].map((cls, i) => (
+          <div key={i} className={`w-10 h-10 rounded-lg ${cls}`} />
         ))}
       </div>
+
+      <Card padding="lg" className="w-full max-w-md">
+        <h2 className="text-lg font-bold text-brand-espresso mb-4">Artisan Components</h2>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <Button variant="primary">Primary</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="ghost">Ghost</Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="primary" size="sm">Small</Button>
+          <Button variant="primary" size="md">Medium</Button>
+          <Button variant="primary" size="lg">Large</Button>
+        </div>
+      </Card>
+
+      <p className="text-xs font-mono text-brand-brown/60 tracking-wide">
+        TASK-003 — Artisan UI Foundation
+      </p>
     </main>
-  );
+  )
 }
