@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "@/styles/globals.css";
+import Navbar from "@/components/client/navbar";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -36,7 +37,10 @@ export default function RootLayout({
        * The CSS variable resolves after stylesheet load; the literal
        * #fdf8f3 fires immediately from the HTML stream.
        */}
-      <body style={{ backgroundColor: "#fdf8f3" }}>{children}</body>
+      <body style={{ backgroundColor: "#fdf8f3" }}>
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }
