@@ -4,6 +4,23 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-14
+
+### Added
+
+- **Sticky top navigation bar with Artisan aesthetic** (`TASK-004`)
+  - New Client Component `src/components/client/navbar.tsx` — sticky top nav for all pages
+  - Brand logo: music note icon (`lucide-react` `Music`) in brown square linking to `/`, with bold "Saliw" label
+  - Navigation links with Lucide icons: Dashboard (`LayoutDashboard`) → `/dashboard`, Library (`Library`) → `/library`, Setlists (`List`) → `/setlists`
+  - Active link highlighted with `bg-brand-brown/10 text-brand-brown` (light) / `bg-brand-tan/10 text-brand-tan` (dark) using `usePathname()`
+  - Light/dark theme toggle (Moon/Sun icons) persisting preference to `localStorage` key `"theme"` via `document.documentElement.classList`
+  - Auth icon button: `LogIn` when unauthenticated (navigates to `/login`), `LogOut` when authenticated (calls `supabase.auth.signOut()` + `router.refresh()`); state driven by `supabase.auth.onAuthStateChange`
+  - Background uses semantic token `bg-[var(--brand-background)]` (cream ↔ dark) — dark-mode aware
+  - Inserted into `src/app/layout.tsx` so navbar appears on every route
+  - Affected files: `src/components/client/navbar.tsx`, `src/app/layout.tsx`
+
+---
+
 ## [Unreleased] — 2026-04-13
 
 ### Added
