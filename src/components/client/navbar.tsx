@@ -1,0 +1,364 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Music,
+  LayoutDashboard,
+  Library,
+  List,
+  Moon,
+  Sun,
+  LogIn,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+import { createClient } from "@/services/supabase/client";
+import type { User } from "@supabase/supabase-js";
+
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/library", label: "Library", Icon: Library },
+  { href: "/setlists", label: "Setlists", Icon: List },
+] as const;
+
+export default function Navbar() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const [isDark, setIsDark] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const hamburgerButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Initialise theme from localStorage on mount (client-only).
+  // DOM class update is kept in a separate effect that runs whenever isDark changes.
+  useEffect(() => {
+    const stored =
+      typeof window !== "undefined" ? localStorage.getItem("theme") : null;
+    const dark = stored === "dark";
+    if (dark !== isDark) {
+      setIsDark(dark);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep document.documentElement in sync with isDark state
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDark]);
+
+  // Subscribe to Supabase auth state changes
+  useEffect(() => {
+    const supabase = createClient();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Escape key listener and body scroll lock when sidebar is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        closeSidebar();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+
+    // Move focus to close button when sidebar opens
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  function openSidebar() {
+    setIsOpen(true);
+  }
+
+  function closeSidebar() {
+    setIsOpen(false);
+    // Return focus to hamburger button when sidebar closes
+    hamburgerButtonRef.current?.focus();
+  }
+
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    if (next) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }
+
+  async function handleAuthAction() {
+    if (user) {
+      try {
+        const supabase = createClient();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error("Sign out failed:", error.message);
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        console.error("Unexpected sign out error:", err);
+      }
+    } else {
+      router.push("/login");
+    }
+  }
+
+  // Shared icon button class string to avoid repetition
+  const iconBtnClass = [
+    "flex items-center justify-center w-9 h-9 rounded-lg",
+    "text-brand-espresso dark:text-brand-cream",
+    "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+    "transition-colors duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+  ].join(" ");
+
+  return (
+    <>
+      <nav className="sticky top-0 z-50 bg-[var(--brand-background)] border-b border-brand-brown/20 text-brand-espresso dark:text-brand-espresso">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 h-16 flex items-center gap-4">
+          {/* Brand */}
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2 rounded-lg"
+            aria-label="Saliw home"
+          >
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-brown text-brand-cream">
+              <Music size={16} strokeWidth={2.5} aria-hidden="true" />
+            </span>
+            <span className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream">
+              Saliw
+            </span>
+          </Link>
+
+          {/* Desktop navigation links — hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1 ml-4">
+            {navLinks.map(({ href, label, Icon }) => {
+              const isActive =
+                pathname === href || pathname.startsWith(href + "/");
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={[
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold font-sans",
+                    "transition-colors duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+                    isActive
+                      ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
+                      : "text-brand-espresso dark:text-brand-cream hover:bg-brand-brown/10 hover:text-brand-brown dark:hover:bg-brand-tan/10 dark:hover:text-brand-tan",
+                  ].join(" ")}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon size={15} strokeWidth={2} aria-hidden="true" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Desktop controls — hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1">
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className={iconBtnClass}
+            >
+              {isDark ? (
+                <Sun size={18} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <Moon size={18} strokeWidth={2} aria-hidden="true" />
+              )}
+            </button>
+
+            {/* Auth action */}
+            <button
+              type="button"
+              onClick={handleAuthAction}
+              aria-label={user ? "Sign out" : "Sign in"}
+              className={iconBtnClass}
+            >
+              {user ? (
+                <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+              )}
+            </button>
+          </div>
+
+          {/* Mobile hamburger button — visible only on mobile */}
+          <button
+            ref={hamburgerButtonRef}
+            type="button"
+            onClick={openSidebar}
+            aria-label="Open navigation menu"
+            aria-expanded={isOpen}
+            aria-controls="mobile-sidebar"
+            className={[
+              "md:hidden",
+              iconBtnClass,
+            ].join(" ")}
+          >
+            <Menu size={20} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+      </nav>
+
+      {/* ── Mobile sidebar drawer ─────────────────────────────────────────── */}
+
+      {/* Backdrop overlay */}
+      <div
+        onClick={closeSidebar}
+        aria-hidden="true"
+        className={[
+          "fixed inset-0 z-[60] bg-brand-espresso/40",
+          "transition-opacity duration-300",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+        ].join(" ")}
+      />
+
+      {/* Sidebar panel */}
+      <aside
+        id="mobile-sidebar"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        className={[
+          "fixed top-0 left-0 z-[70] h-full w-72",
+          "bg-[var(--brand-background)] border-r border-brand-brown/20",
+          "flex flex-col",
+          "transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
+      >
+        {/* Sidebar header */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-brand-brown/20 shrink-0">
+          {/* Brand (repeated for context inside sidebar) */}
+          <Link
+            href="/"
+            onClick={closeSidebar}
+            className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2 rounded-lg"
+            aria-label="Saliw home"
+          >
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-brown text-brand-cream">
+              <Music size={16} strokeWidth={2.5} aria-hidden="true" />
+            </span>
+            <span className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream">
+              Saliw
+            </span>
+          </Link>
+
+          {/* Close button */}
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={closeSidebar}
+            aria-label="Close navigation menu"
+            className={iconBtnClass}
+          >
+            <X size={20} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Sidebar nav links */}
+        <nav aria-label="Mobile navigation" className="flex-1 overflow-y-auto px-3 py-4">
+          <ul className="flex flex-col gap-1 list-none m-0 p-0">
+            {navLinks.map(({ href, label, Icon }) => {
+              const isActive =
+                pathname === href || pathname.startsWith(href + "/");
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    onClick={closeSidebar}
+                    className={[
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold font-sans",
+                      "transition-colors duration-200",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+                      isActive
+                        ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
+                        : "text-brand-espresso dark:text-brand-cream hover:bg-brand-brown/10 hover:text-brand-brown dark:hover:bg-brand-tan/10 dark:hover:text-brand-tan",
+                    ].join(" ")}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <Icon size={18} strokeWidth={2} aria-hidden="true" />
+                    {label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Sidebar footer — theme toggle + auth */}
+        <div className="shrink-0 px-3 py-4 border-t border-brand-brown/20 flex items-center gap-2">
+          {/* Theme toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className={[iconBtnClass, "flex-1 justify-start gap-3 px-3 text-sm font-semibold font-sans w-auto h-auto py-2.5"].join(" ")}
+          >
+            {isDark ? (
+              <Sun size={18} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <Moon size={18} strokeWidth={2} aria-hidden="true" />
+            )}
+            <span>{isDark ? "Light mode" : "Dark mode"}</span>
+          </button>
+
+          {/* Auth action */}
+          <button
+            type="button"
+            onClick={() => {
+              closeSidebar();
+              handleAuthAction();
+            }}
+            aria-label={user ? "Sign out" : "Sign in"}
+            className={iconBtnClass}
+          >
+            {user ? (
+              <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
