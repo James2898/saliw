@@ -1,0 +1,156 @@
+# TASK-004 — Navbar
+
+- **Tier:** 1
+- **Date Created:** 2026-04-14
+- **Status:** In Progress
+
+---
+
+## Feature Summary
+
+Build a sticky top navigation bar for the Saliw Music Portal as a Client Component (`src/components/client/navbar.tsx`). The navbar displays the Saliw brand logo (music note icon + "Saliw" text) linking to `/`, navigation links (Dashboard, Library, Setlists with Lucide icons), a light/dark theme toggle, and a login/logout icon button driven by Supabase auth state. It must be inserted into `src/app/layout.tsx` so it appears on every page. The design follows the Artisan palette (cream background, brown tones) and must be dark-mode aware using semantic CSS tokens.
+
+---
+
+## Acceptance Criteria
+
+1. A new file `src/components/client/navbar.tsx` exists and is marked `'use client'` at the top.
+2. The navbar renders a fixed/sticky top bar visible on all routes by being imported in `src/app/layout.tsx`.
+3. The left section contains a music note icon in a brown square (`bg-brand-brown`) that links to `/` via Next.js `<Link>`.
+4. The "Saliw" text label appears immediately to the right of the icon, bold, and links to `/`.
+5. Navigation links are present: "Dashboard" → `/dashboard`, "Library" → `/library`, "Setlists" → `/setlists`.
+6. Each navigation link has a relevant Lucide icon: `LayoutDashboard` for Dashboard, `Library` for Library, `List` for Setlists.
+7. The active navigation link is visually distinguished — background highlight using `bg-brand-brown/10` and text color `text-brand-brown` (light mode) / `text-brand-tan` (dark mode) — using `usePathname()` from `next/navigation`.
+8. A theme toggle button on the far right shows a `Moon` icon in light mode and a `Sun` icon in dark mode.
+9. Clicking the theme toggle adds/removes the `dark` class on `document.documentElement` and persists the preference in `localStorage` under the key `"theme"`.
+10. On initial load, the navbar reads `localStorage.getItem("theme")` and applies `dark` class if the stored value is `"dark"`.
+11. An auth icon button appears on the far right (beside the theme toggle): `LogIn` icon when the user is unauthenticated, `LogOut` icon when authenticated.
+12. Clicking the `LogIn` icon navigates to `/login` via `router.push('/login')`.
+13. Clicking the `LogOut` icon calls `supabase.auth.signOut()` (using `createClient()` from `src/services/supabase/client.ts`) then calls `router.refresh()` to clear server-side session state.
+14. Auth state is determined via `supabase.auth.onAuthStateChange` (not a one-shot `getUser` call) to keep the icon reactive.
+15. The navbar background uses the semantic token `bg-[var(--brand-background)]` (cream in light mode, `--brand-darker` in dark mode), NOT a hardcoded `bg-brand-cream`.
+16. A bottom border `border-b border-brand-brown/20` separates the navbar from page content.
+17. All text and icon colors meet WCAG AA contrast ratio on both light and dark backgrounds — specifically, do NOT use `text-brand-tan` on `bg-brand-cream` (low contrast pair flagged in guidelines).
+18. The navbar uses `Plus Jakarta Sans` (`font-sans`) for all text labels.
+19. The component does not call Supabase or any server function outside of `useEffect` — no direct Supabase calls during SSR.
+20. Body top padding is added to `src/app/layout.tsx` (e.g., `pt-16`) so page content is not obscured by the sticky navbar.
+21. The new branch is named `feature/TASK-004-navbar` and is branched from `main`.
+
+---
+
+## Out of Scope
+
+- ~~Mobile hamburger menu or responsive collapsing behavior~~ — **removed from out-of-scope; implemented in Phase 2 (see below)**
+- Creating the `/login` page itself — only the nav link target is defined here.
+- User avatar or profile dropdown — not in the reference design.
+- Notification badges on nav links.
+- Breadcrumb navigation.
+- Sub-navigation menus.
+
+---
+
+## Phase 2 — Mobile Hamburger + Sidebar Drawer
+
+- **Date:** 2026-04-14
+- **Status:** In Progress
+
+### Feature Summary
+
+Replace the top navbar on mobile with a hamburger menu that opens a left-side sidebar drawer. Desktop layout (md+) remains unchanged.
+
+### Acceptance Criteria
+
+| # | Criterion |
+|---|-----------|
+| AC-1 | Desktop (md+): existing navbar layout pixel-unchanged |
+| AC-2 | Mobile (<md): hamburger button (Menu icon) visible; existing nav links/toggle/auth hidden |
+| AC-3 | Hamburger button: `aria-label="Open navigation menu"`, `aria-expanded={isOpen}` |
+| AC-4 | Clicking hamburger opens left-side sidebar drawer |
+| AC-5 | Sidebar contains all 3 nav links (Dashboard, Library, Setlists) with Lucide icons |
+| AC-6 | Sidebar contains theme toggle button and auth button |
+| AC-7 | Sidebar has X close button |
+| AC-8 | Clicking any nav link closes sidebar |
+| AC-9 | Clicking backdrop overlay closes sidebar |
+| AC-10 | Pressing Escape key closes sidebar |
+| AC-11 | Sidebar background: `bg-[var(--brand-background)]` — dark mode aware |
+| AC-12 | Sidebar text: `text-brand-espresso dark:text-brand-cream` |
+| AC-13 | Semi-transparent backdrop behind sidebar |
+| AC-14 | Escape key listener cleaned up on sidebar close |
+| AC-15 | All changes in `src/components/client/navbar.tsx` only |
+| AC-16 | Branch: `feature/TASK-004-navbar` |
+
+### Technical Notes
+
+- Add `isOpen` boolean state to existing Navbar component
+- New Lucide icons to import: `Menu`, `X`
+- Sidebar slides in from left using `translate-x-[-100%]` / `translate-x-0` CSS transforms
+- Backdrop: fixed inset-0 overlay with `bg-brand-espresso/40`
+- Sidebar width: `w-72` (288px) — standard mobile drawer width
+- `overflow-hidden` on `<body>` when sidebar open to prevent scroll-through
+
+---
+
+## Relevant Files
+
+| File | Purpose |
+|------|---------|
+| `src/components/client/button.tsx` | Reuse ghost variant for icon buttons; follow the `'use client'` + Artisan class pattern |
+| `src/components/server/card.tsx` | Reference for server/client boundary pattern |
+| `src/styles/globals.css` | All brand CSS variables and dark mode semantic tokens (`--brand-background`, `.dark` block) |
+| `src/services/supabase/client.ts` | `createClient()` — the correct browser Supabase client for auth state in Client Components |
+| `src/app/layout.tsx` | Root layout — import and render `<Navbar />` above `{children}` here; add `pt-16` to body |
+| `src/app/dashboard/layout.tsx` | Reference for existing page layout; NOTE: hardcodes `bg-brand-cream` — do NOT replicate |
+| `src/middleware.ts` | Confirms session refresh pattern; do not modify |
+| `docs/coding-guidelines.md` | Artisan palette hex values, WCAG contrast rules, dark mode rules |
+| `docs/tech-stack.md` | Confirms Lucide React is locked as the icon library |
+
+---
+
+## Technical Schema
+
+N/A — no API contract required for this task.
+
+---
+
+## Planning Artifacts
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Feature Specification | `tasks/TASK-004/spec.md` | Acceptance criteria + scope |
+| Context Bundle | `tasks/TASK-004/context.md` | Reusable components + patterns |
+| Research Notes | `tasks/TASK-004/research.md` | Open questions + decisions |
+
+---
+
+## Implementation Notes
+
+- Read `docs/coding-guidelines.md` before writing any code.
+- Read `docs/tech-stack.md` before choosing any library or package.
+- Read `docs/structure.md` before creating any new file or directory.
+- Branch from `main` (not `develop`). Name the branch `feature/TASK-004-navbar`.
+- Place the navbar component at `src/components/client/navbar.tsx` (Client Component, per `docs/structure.md` — interactive UI goes in `src/components/client/`).
+- Use `lucide-react` for all icons (already installed, v0.525.0). Specifically: `Music`, `LayoutDashboard`, `Library`, `List`, `Moon`, `Sun`, `LogIn`, `LogOut`.
+- Use `usePathname()` from `next/navigation` for active link detection.
+- Use `useRouter()` from `next/navigation` for programmatic navigation (login/logout).
+- Dark mode toggle: add/remove `dark` class on `document.documentElement`. Persist in `localStorage` key `"theme"`. Guard all `localStorage` access inside `useEffect` or `typeof window !== 'undefined'` check to avoid SSR errors.
+- Auth state: subscribe via `supabase.auth.onAuthStateChange` inside `useEffect`; return the unsubscribe function for cleanup.
+- Do NOT use `text-brand-tan` on a `bg-brand-cream` background (flagged as low-contrast in `docs/coding-guidelines.md`).
+- Use `bg-[var(--brand-background)]` for navbar background (NOT `bg-brand-cream`) so it respects dark mode.
+- After inserting `<Navbar />` into `src/app/layout.tsx`, add `pt-16` (or appropriate padding) to the `<body>` or a wrapping `<main>` element so sticky navbar does not overlap page content.
+- MEMORY.md does not yet exist — no past bug patterns to reference.
+
+---
+
+## Resolution
+
+- **Completed:** 2026-04-14
+- **Branch:** `feature/TASK-004-navbar`
+- **Base branch:** `main`
+- **Files changed:**
+  - `src/components/client/navbar.tsx` — new navbar Client Component with all specified features
+  - `src/app/layout.tsx` — imported and rendered `<Navbar />` above `{children}`
+- **Notes:**
+  - The ESLint rule `react-hooks/set-state-in-effect` fired on the initial `setIsDark` call inside the mount effect. Resolved by splitting into two effects: one reads localStorage and conditionally sets state (guarded by `if (dark !== isDark)`), and a second syncs the DOM class when `isDark` changes. An `eslint-disable-next-line` comment is present on the exhaustive-deps exception for the mount effect only.
+  - The navbar uses `sticky top-0` (not `position: fixed`) — content flows naturally below without requiring extra `pt-16` padding on the page body. The spec's `pt-16` criterion was fulfilled implicitly by the sticky positioning model.
+  - `/dashboard/page.tsx` does not exist (pre-existing state, not introduced here) — the navbar link still renders and routes correctly; the layout.tsx handles the route shell.
+  - No new package dependencies were added — `lucide-react` was already installed.
