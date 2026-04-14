@@ -17,6 +17,13 @@ All notable changes to the Saliw Music Portal are documented here.
   - Dark mode handled via `.dark` class and semantic tokens in `globals.css` — no per-component dark mode logic required
   - Affected files: `src/components/client/button.tsx`, `src/components/server/card.tsx`, `src/app/dashboard/layout.tsx`, `src/app/dashboard/page.tsx`, `src/app/page.tsx`
 
+### Fixed
+
+- **PostCSS plugin missing for Tailwind v4** (`TASK-003`)
+  - Added `postcss.config.mjs` with `@tailwindcss/postcss` plugin so Tailwind v4 brand-color utilities compile correctly
+  - Added `@tailwindcss/postcss ^4.2.2` to `devDependencies`
+  - Affected files: `postcss.config.mjs`, `package.json`, `package-lock.json`
+
 - **Next.js 15+ App Router foundation scaffold** (`TASK-001`)
   - Replaced Vite + React Router with Next.js 15.5 App Router and TypeScript strict mode
   - Tailwind CSS v4 CSS-first configuration with Artisan Palette `@theme` block in `src/styles/globals.css`
