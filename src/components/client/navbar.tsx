@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Music,
   LayoutDashboard,
@@ -12,92 +12,92 @@ import {
   Sun,
   LogIn,
   LogOut,
-} from 'lucide-react'
-import { createClient } from '@/services/supabase/client'
-import type { User } from '@supabase/supabase-js'
+} from "lucide-react";
+import { createClient } from "@/services/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const navLinks = [
-  { href: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-  { href: '/library', label: 'Library', Icon: Library },
-  { href: '/setlists', label: 'Setlists', Icon: List },
-] as const
+  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/library", label: "Library", Icon: Library },
+  { href: "/setlists", label: "Setlists", Icon: List },
+] as const;
 
 export default function Navbar() {
-  const pathname = usePathname()
-  const router = useRouter()
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const [isDark, setIsDark] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const [isDark, setIsDark] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   // Initialise theme from localStorage on mount (client-only).
   // DOM class update is kept in a separate effect that runs whenever isDark changes.
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-    const dark = stored === 'dark'
+    const stored =
+      typeof window !== "undefined" ? localStorage.getItem("theme") : null;
+    const dark = stored === "dark";
     if (dark !== isDark) {
-      setIsDark(dark)
+      setIsDark(dark);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   // Keep document.documentElement in sync with isDark state
   useEffect(() => {
     if (isDark) {
-      document.documentElement.classList.add('dark')
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.remove("dark");
     }
-  }, [isDark])
+  }, [isDark]);
 
   // Subscribe to Supabase auth state changes
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createClient();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
+      setUser(session?.user ?? null);
+    });
 
     return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+      subscription.unsubscribe();
+    };
+  }, []);
 
   function toggleTheme() {
-    const next = !isDark
-    setIsDark(next)
+    const next = !isDark;
+    setIsDark(next);
     if (next) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     }
   }
 
   async function handleAuthAction() {
     if (user) {
       try {
-        const supabase = createClient()
-        const { error } = await supabase.auth.signOut()
+        const supabase = createClient();
+        const { error } = await supabase.auth.signOut();
         if (error) {
-          console.error('Sign out failed:', error.message)
-          return
+          console.error("Sign out failed:", error.message);
+          return;
         }
-        router.refresh()
+        router.refresh();
       } catch (err) {
-        console.error('Unexpected sign out error:', err)
+        console.error("Unexpected sign out error:", err);
       }
     } else {
-      router.push('/login')
+      router.push("/login");
     }
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-[var(--brand-background)] border-b border-brand-brown/20 text-brand-espresso dark:text-brand-cream">
+    <nav className="sticky top-0 z-50 bg-[var(--brand-background)] border-b border-brand-brown/20 text-brand-espresso dark:text-brand-espresso">
       <div className="max-w-5xl mx-auto px-4 sm:px-8 h-16 flex items-center gap-4">
-
         {/* Brand */}
         <Link
           href="/"
@@ -115,25 +115,26 @@ export default function Navbar() {
         {/* Navigation links */}
         <div className="flex items-center gap-1 ml-4">
           {navLinks.map(({ href, label, Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(href + '/')
+            const isActive =
+              pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}
                 href={href}
                 className={[
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold font-sans',
-                  'transition-colors duration-200',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2',
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold font-sans",
+                  "transition-colors duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
                   isActive
-                    ? 'bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan'
-                    : 'text-brand-espresso dark:text-brand-cream hover:bg-brand-brown/10 hover:text-brand-brown dark:hover:bg-brand-tan/10 dark:hover:text-brand-tan',
-                ].join(' ')}
-                aria-current={isActive ? 'page' : undefined}
+                    ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
+                    : "text-brand-espresso dark:text-brand-cream hover:bg-brand-brown/10 hover:text-brand-brown dark:hover:bg-brand-tan/10 dark:hover:text-brand-tan",
+                ].join(" ")}
+                aria-current={isActive ? "page" : undefined}
               >
                 <Icon size={15} strokeWidth={2} aria-hidden="true" />
                 {label}
               </Link>
-            )
+            );
           })}
         </div>
 
@@ -144,14 +145,14 @@ export default function Navbar() {
         <button
           type="button"
           onClick={toggleTheme}
-          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           className={[
-            'flex items-center justify-center w-9 h-9 rounded-lg',
-            'text-brand-espresso dark:text-brand-cream',
-            'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-            'transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2',
-          ].join(' ')}
+            "flex items-center justify-center w-9 h-9 rounded-lg",
+            "text-brand-espresso dark:text-brand-cream",
+            "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+            "transition-colors duration-200",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+          ].join(" ")}
         >
           {isDark ? (
             <Sun size={18} strokeWidth={2} aria-hidden="true" />
@@ -164,14 +165,14 @@ export default function Navbar() {
         <button
           type="button"
           onClick={handleAuthAction}
-          aria-label={user ? 'Sign out' : 'Sign in'}
+          aria-label={user ? "Sign out" : "Sign in"}
           className={[
-            'flex items-center justify-center w-9 h-9 rounded-lg',
-            'text-brand-espresso dark:text-brand-cream',
-            'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-            'transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2',
-          ].join(' ')}
+            "flex items-center justify-center w-9 h-9 rounded-lg",
+            "text-brand-espresso dark:text-brand-cream",
+            "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+            "transition-colors duration-200",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+          ].join(" ")}
         >
           {user ? (
             <LogOut size={18} strokeWidth={2} aria-hidden="true" />
@@ -179,8 +180,7 @@ export default function Navbar() {
             <LogIn size={18} strokeWidth={2} aria-hidden="true" />
           )}
         </button>
-
       </div>
     </nav>
-  )
+  );
 }

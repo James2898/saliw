@@ -6,6 +6,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-14
 
+### Fixed
+
+- **Dark mode activating from OS preference instead of explicit user toggle** (`TASK-004`)
+  - Added `@variant dark (&:where(.dark, .dark *));` to `src/styles/globals.css` to override Tailwind v4's default dark-mode strategy from `prefers-color-scheme` media query to class-based toggling; `dark:` utility variants now only activate when `.dark` is present on an ancestor, not when the OS is in dark mode
+  - Affected files: `src/styles/globals.css`
+
+- **Navbar text invisible on cream background** (`TASK-004`)
+  - Added `text-brand-espresso dark:text-brand-cream` to `<nav>` container so nav children inherit an explicit color value independently of Tailwind utility cascade timing
+  - Removed `color` from the global `*{transition-property}` rule in `src/styles/globals.css`; the unlayered `*` rule had higher cascade precedence than `@layer utilities`, causing text color to transition from its inherited/initial value on every page load — rendering nav text invisible against the cream background during the 300ms transition window
+  - Affected files: `src/components/client/navbar.tsx`, `src/styles/globals.css`
+
 ### Added
 
 - **Sticky top navigation bar with Artisan aesthetic** (`TASK-004`)
