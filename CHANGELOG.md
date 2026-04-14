@@ -6,6 +6,24 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-14
 
+### Added
+
+- **Mobile hamburger menu + sidebar drawer** (`TASK-004`)
+  - Added `isOpen` state with `openSidebar` / `closeSidebar` helpers to the existing `Navbar` component
+  - Desktop layout (md+) is pixel-unchanged; all existing desktop nav links, theme toggle, and auth button remain inside `hidden md:flex` wrappers
+  - Mobile (<md): hamburger button (`Menu` icon from lucide-react) shown via `md:hidden`; has `aria-label="Open navigation menu"` and `aria-expanded={isOpen}`
+  - Left-side drawer (`<aside role="dialog" aria-modal="true">`) slides in with CSS `translate-x` transition (300ms ease-in-out); slides out when closed
+  - Drawer contains: Saliw brand header with X close button, all 3 nav links (Dashboard/Library/Setlists) with active state, theme toggle with label text, auth (sign-in/sign-out) button
+  - Clicking any nav link inside drawer closes it via `onClick={closeSidebar}`
+  - Semi-transparent backdrop (`bg-brand-espresso/40`) with `onClick={closeSidebar}` — clicking outside drawer closes it
+  - Escape key closes drawer; event listener attached on open and cleaned up on close
+  - `document.body.style.overflow = "hidden"` applied while drawer is open to prevent scroll-through; restored on close
+  - Focus management: focus moves to X close button on open; returns to hamburger button on close
+  - Drawer background: `bg-[var(--brand-background)]` — cream in light mode, `--brand-darker` in dark mode; text uses `text-brand-espresso dark:text-brand-cream` throughout
+  - New Lucide icons added to imports: `Menu`, `X`
+  - No new package dependencies; no changes to `globals.css` or any file other than `src/components/client/navbar.tsx`
+  - Affected files: `src/components/client/navbar.tsx`
+
 ### Fixed
 
 - **Dark mode activating from OS preference instead of explicit user toggle** (`TASK-004`)
