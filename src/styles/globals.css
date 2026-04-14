@@ -51,9 +51,15 @@ body {
   transition: background-color 0.5s ease;
 }
 
-/* Global smooth transitions for Artisan theme changes */
+/* Global smooth transitions for Artisan theme changes.
+   NOTE: `color` is intentionally excluded here — text color transitions are
+   handled per-element via Tailwind's `transition-colors` utility.  Including
+   `color` in the `*` rule (unlayered CSS) would override `@layer utilities`
+   and cause nav text to transition from its inherited/initial value on every
+   page load, making it invisible against the cream background during the
+   transition window. */
 * {
-  transition-property: background-color, border-color, color, fill, stroke;
+  transition-property: background-color, border-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
