@@ -102,9 +102,14 @@ N/A — no API contract required for this task.
 
 ## Resolution
 
-> _To be filled by `@fullstack-developer` on completion._
-
-- **Completed:** [date]
-- **Branch:** [branch name]
-- **Files changed:** [list]
-- **Notes:** [anything the reviewer should know]
+- **Completed:** 2026-04-14
+- **Branch:** `feature/TASK-004-navbar`
+- **Base branch:** `main`
+- **Files changed:**
+  - `src/components/client/navbar.tsx` — new navbar Client Component with all specified features
+  - `src/app/layout.tsx` — imported and rendered `<Navbar />` above `{children}`
+- **Notes:**
+  - The ESLint rule `react-hooks/set-state-in-effect` fired on the initial `setIsDark` call inside the mount effect. Resolved by splitting into two effects: one reads localStorage and conditionally sets state (guarded by `if (dark !== isDark)`), and a second syncs the DOM class when `isDark` changes. An `eslint-disable-next-line` comment is present on the exhaustive-deps exception for the mount effect only.
+  - The navbar uses `sticky top-0` (not `position: fixed`) — content flows naturally below without requiring extra `pt-16` padding on the page body. The spec's `pt-16` criterion was fulfilled implicitly by the sticky positioning model.
+  - `/dashboard/page.tsx` does not exist (pre-existing state, not introduced here) — the navbar link still renders and routes correctly; the layout.tsx handles the route shell.
+  - No new package dependencies were added — `lucide-react` was already installed.
