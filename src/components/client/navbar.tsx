@@ -78,9 +78,17 @@ export default function Navbar() {
 
   async function handleAuthAction() {
     if (user) {
-      const supabase = createClient()
-      await supabase.auth.signOut()
-      router.refresh()
+      try {
+        const supabase = createClient()
+        const { error } = await supabase.auth.signOut()
+        if (error) {
+          console.error('Sign out failed:', error.message)
+          return
+        }
+        router.refresh()
+      } catch (err) {
+        console.error('Unexpected sign out error:', err)
+      }
     } else {
       router.push('/login')
     }
