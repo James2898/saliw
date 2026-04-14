@@ -40,12 +40,53 @@ Build a sticky top navigation bar for the Saliw Music Portal as a Client Compone
 
 ## Out of Scope
 
-- Mobile hamburger menu or responsive collapsing behavior — navbar shows full horizontal layout only.
+- ~~Mobile hamburger menu or responsive collapsing behavior~~ — **removed from out-of-scope; implemented in Phase 2 (see below)**
 - Creating the `/login` page itself — only the nav link target is defined here.
 - User avatar or profile dropdown — not in the reference design.
 - Notification badges on nav links.
 - Breadcrumb navigation.
 - Sub-navigation menus.
+
+---
+
+## Phase 2 — Mobile Hamburger + Sidebar Drawer
+
+- **Date:** 2026-04-14
+- **Status:** In Progress
+
+### Feature Summary
+
+Replace the top navbar on mobile with a hamburger menu that opens a left-side sidebar drawer. Desktop layout (md+) remains unchanged.
+
+### Acceptance Criteria
+
+| # | Criterion |
+|---|-----------|
+| AC-1 | Desktop (md+): existing navbar layout pixel-unchanged |
+| AC-2 | Mobile (<md): hamburger button (Menu icon) visible; existing nav links/toggle/auth hidden |
+| AC-3 | Hamburger button: `aria-label="Open navigation menu"`, `aria-expanded={isOpen}` |
+| AC-4 | Clicking hamburger opens left-side sidebar drawer |
+| AC-5 | Sidebar contains all 3 nav links (Dashboard, Library, Setlists) with Lucide icons |
+| AC-6 | Sidebar contains theme toggle button and auth button |
+| AC-7 | Sidebar has X close button |
+| AC-8 | Clicking any nav link closes sidebar |
+| AC-9 | Clicking backdrop overlay closes sidebar |
+| AC-10 | Pressing Escape key closes sidebar |
+| AC-11 | Sidebar background: `bg-[var(--brand-background)]` — dark mode aware |
+| AC-12 | Sidebar text: `text-brand-espresso dark:text-brand-cream` |
+| AC-13 | Semi-transparent backdrop behind sidebar |
+| AC-14 | Escape key listener cleaned up on sidebar close |
+| AC-15 | All changes in `src/components/client/navbar.tsx` only |
+| AC-16 | Branch: `feature/TASK-004-navbar` |
+
+### Technical Notes
+
+- Add `isOpen` boolean state to existing Navbar component
+- New Lucide icons to import: `Menu`, `X`
+- Sidebar slides in from left using `translate-x-[-100%]` / `translate-x-0` CSS transforms
+- Backdrop: fixed inset-0 overlay with `bg-brand-espresso/40`
+- Sidebar width: `w-72` (288px) — standard mobile drawer width
+- `overflow-hidden` on `<body>` when sidebar open to prevent scroll-through
 
 ---
 
