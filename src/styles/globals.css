@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * Override Tailwind v4's default dark-mode strategy from `prefers-color-scheme`
+ * to class-based toggling. This ensures `dark:` utility variants only activate
+ * when the `.dark` class is present on an ancestor element (set by the navbar
+ * theme toggle), not based on the user's OS dark mode preference.
+ */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Artisan Palette — Saliw Music Portal */
   --color-brand-cream: #fdf8f3;
