@@ -81,7 +81,10 @@ export default function Navbar() {
           .select("full_name")
           .eq("id", currentUser.id)
           .single()
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Failed to fetch profile name:", error.message);
+            }
             setFullName(data?.full_name ?? null);
           });
       } else {
