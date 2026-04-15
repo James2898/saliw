@@ -146,7 +146,6 @@ export default function Navbar() {
 
   function handleLogoutCancel() {
     setShowLogoutModal(false);
-    // Return focus to whichever button triggered the modal
     logoutTriggerRef.current?.focus();
     logoutTriggerRef.current = null;
   }
@@ -179,6 +178,16 @@ export default function Navbar() {
   const iconBtnClass = [
     "flex items-center justify-center w-9 h-9 rounded-lg",
     "text-brand-espresso dark:text-brand-cream",
+    "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+    "transition-colors duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+  ].join(" ");
+
+  // Auth button class — wider to accommodate text label
+  const authBtnClass = [
+    "flex items-center gap-2 px-3 h-9 rounded-lg",
+    "text-brand-espresso dark:text-brand-cream",
+    "text-sm font-sans font-semibold",
     "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
     "transition-colors duration-200",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
@@ -255,56 +264,28 @@ export default function Navbar() {
             )}
 
             {user ? (
-              /* Logout button with tooltip */
-              <div className="relative group">
-                <button
-                  ref={desktopLogoutRef}
-                  type="button"
-                  onClick={() => openLogoutModal(desktopLogoutRef)}
-                  aria-label="Sign out"
-                  className={iconBtnClass}
-                >
-                  <LogOut size={18} strokeWidth={2} aria-hidden="true" />
-                </button>
-                {/* Tooltip */}
-                <div
-                  role="tooltip"
-                  className={[
-                    "pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
-                    "whitespace-nowrap rounded-lg px-2.5 py-1",
-                    "bg-brand-espresso text-brand-cream text-xs font-sans font-semibold",
-                    "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-                    "transition-opacity duration-150",
-                  ].join(" ")}
-                >
-                  Sign out
-                </div>
-              </div>
+              /* Logout button with inline label */
+              <button
+                ref={desktopLogoutRef}
+                type="button"
+                onClick={() => openLogoutModal(desktopLogoutRef)}
+                aria-label="Sign out"
+                className={authBtnClass}
+              >
+                <span>Logout</span>
+                <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
             ) : (
-              /* Login button with tooltip */
-              <div className="relative group">
-                <button
-                  type="button"
-                  onClick={handleLoginClick}
-                  aria-label="Sign in"
-                  className={iconBtnClass}
-                >
-                  <LogIn size={18} strokeWidth={2} aria-hidden="true" />
-                </button>
-                {/* Tooltip */}
-                <div
-                  role="tooltip"
-                  className={[
-                    "pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
-                    "whitespace-nowrap rounded-lg px-2.5 py-1",
-                    "bg-brand-espresso text-brand-cream text-xs font-sans font-semibold",
-                    "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-                    "transition-opacity duration-150",
-                  ].join(" ")}
-                >
-                  Sign in to Saliw
-                </div>
-              </div>
+              /* Login button with inline label */
+              <button
+                type="button"
+                onClick={handleLoginClick}
+                aria-label="Sign in"
+                className={authBtnClass}
+              >
+                <span>Login</span>
+                <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
             )}
           </div>
 
