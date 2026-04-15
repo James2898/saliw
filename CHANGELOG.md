@@ -8,6 +8,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- **Backend infrastructure: songs/setlists schema, RLS, and Server Actions** (`TASK-007`)
+  - `supabase/migrations/20260415000001_create_songs_table.sql` — `songs` table with uuid PK, `original_key`, `created_by` FK; RLS: authenticated SELECT, music_director INSERT/UPDATE/DELETE via `is_music_director()` helper function
+  - `supabase/migrations/20260415000002_create_setlists_table.sql` — `setlists` table with `leader_id`, `is_public`; RLS: authenticated SELECT, leader_id-scoped UPDATE/DELETE
+  - `supabase/migrations/20260415000003_create_setlist_songs_table.sql` — `setlist_songs` junction table with `performance_key`, `order_index`; RLS: authenticated SELECT via parent join, leader_id INSERT/UPDATE/DELETE via subquery
+  - `src/app/actions/songActions.ts` — `createSong`, `updateSong`, `deleteSong`; chordRegex content validation; consistent `{ data, error }` return shape; no service role key
+  - `src/app/actions/setlistActions.ts` — `createSetlist`, `addSongToSetlist`, `reorderSetlist`, `deleteSetlist`; performance_key defaults to song's original_key on add
+  - `src/types/supabase.ts` — new file; exports `DbSong`, `DbSetlist`, `DbSetlistSong` matching exact DB column names
+  - `src/types/Song.ts` — updated: `id: string` (uuid), `original_key` replaces `key`
+  - `src/types/Setlist.ts` — updated: `id: string`, `leader_id` replaces `leader`, `is_public` added, embedded `songs[]` removed
+
 - **Login page UI + Supabase auth** (`TASK-006`)
   - `src/app/(auth)/login/page.tsx` — Server Component; calls `supabase.auth.getUser()` on load and redirects authenticated users to `/` before rendering; no flash of login form for signed-in users
   - `src/components/client/LoginForm.tsx` — Client Component; mode toggle (Password / Magic Link); email+password form calls `signInWithPasswordAction` via `useTransition`; magic link form calls `sendMagicLinkAction` via `useTransition`; inline feedback `<p>` for all error and success states; feedback cleared on field change; no toast library; no direct Supabase calls
