@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PROTECTED_PATHS = ['/dashboard', '/library', '/setlists']
+
 export async function middleware(request: NextRequest) {
   // Start with a passthrough response carrying the original request headers.
   let supabaseResponse = NextResponse.next({ request })
@@ -29,10 +31,21 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Do NOT add auth-gating logic here (redirects, role guards).
-  // This call exists solely to refresh the session token.
-  // Removing it will break session persistence across requests.
-  await supabase.auth.getUser()
+  // Refreshes the session token and gates protected routes.
+  // IMPORTANT: Do not remove this call — it is required for session persistence.
+  // Use getUser() (not getSession()) to validate the JWT against the Supabase server.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const pathname = request.nextUrl.pathname
+  const isProtected = PROTECTED_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  )
+
+  if (!user && isProtected) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 
   return supabaseResponse
 }

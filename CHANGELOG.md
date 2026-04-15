@@ -8,6 +8,14 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- **Strict auth wall and middleware guard** (`TASK-008`)
+  - `src/middleware.ts` — added `PROTECTED_PATHS` constant (`/dashboard`, `/library`, `/setlists`); destructures `user` from `supabase.auth.getUser()`; redirects to `/login` for any unauthenticated request matching a protected path or sub-path; existing cookie handling and session refresh preserved; updated comment to reflect new auth-gating behavior; no redirect loop possible — `/login` is not in `PROTECTED_PATHS` and static assets are excluded by `config.matcher`
+  - `src/app/dashboard/page.tsx` — converted to `async` Server Component; added `createClient` from `@/services/supabase/server` and `redirect` from `next/navigation`; `getUser()` called server-side; redirects to `/login` if no authenticated user (defense-in-depth)
+  - `src/app/library/page.tsx` — added `redirect('/login')` guard on null user; removed "Browse as guest" fallback; `user.email` rendered directly (TypeScript narrows to non-null past the guard)
+  - `src/app/setlists/page.tsx` — same changes as `library/page.tsx`
+  - No RLS migrations added — existing policies already enforce `auth.role() = 'authenticated'` for SELECT on `songs`, `setlists`, and `setlist_songs`
+  - `getUser()` used exclusively (not `getSession()`) for server-side session validation to ensure JWT is verified against Supabase servers
+
 - **Backend infrastructure: songs/setlists schema, RLS, and Server Actions** (`TASK-007`)
   - `supabase/migrations/20260415000001_create_songs_table.sql` — `songs` table with uuid PK, `original_key`, `created_by` FK; RLS: authenticated SELECT, music_director INSERT/UPDATE/DELETE via `is_music_director()` helper function
   - `supabase/migrations/20260415000002_create_setlists_table.sql` — `setlists` table with `leader_id`, `is_public`; RLS: authenticated SELECT, leader_id-scoped UPDATE/DELETE
