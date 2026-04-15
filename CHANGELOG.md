@@ -8,6 +8,11 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- **Navbar UI enhancements: tooltip, auth greeting, and logout confirmation modal** (`TASK-009`)
+  - `src/components/client/navbar.tsx` — Login button shows "Sign in to Saliw" tooltip on hover (CSS `group-hover`, zero JS); logout button shows "Sign out" tooltip for parity; authenticated greeting "Hi, {full_name}!" displayed in desktop navbar and mobile sidebar footer (falls back to "Hi there!" if `full_name` is null); full name fetched from `profiles` table via RLS-safe client-side query after auth state change; logout buttons (desktop + mobile) gate sign-out behind `LogoutModal` confirmation; modal trigger preserves focus and returns it on cancel
+  - `src/components/client/logout-modal.tsx` — New: Artisan-styled confirmation dialog with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, focus trap (Tab cycles Cancel ↔ Sign out), Escape key dismissal, backdrop click dismissal, `bg-brand-espresso/40` backdrop, `rounded-2xl` panel
+  - `src/components/client/button.tsx` — Updated to use `forwardRef` for ref-based focus management in the modal
+
 - **Strict auth wall and middleware guard** (`TASK-008`)
   - `src/middleware.ts` — added `PROTECTED_PATHS` constant (`/dashboard`, `/library`, `/setlists`); destructures `user` from `supabase.auth.getUser()`; redirects to `/login` for any unauthenticated request matching a protected path or sub-path; existing cookie handling and session refresh preserved; updated comment to reflect new auth-gating behavior; no redirect loop possible — `/login` is not in `PROTECTED_PATHS` and static assets are excluded by `config.matcher`
   - `src/app/dashboard/page.tsx` — converted to `async` Server Component; added `createClient` from `@/services/supabase/server` and `redirect` from `next/navigation`; `getUser()` called server-side; redirects to `/login` if no authenticated user (defense-in-depth)
