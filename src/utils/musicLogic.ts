@@ -39,7 +39,7 @@ export const NOTES: readonly string[] = [
  * Example non-matches (lyric words): I, A, To, Me, the, in
  */
 export const chordRegex: RegExp =
-  /\b[A-G][b#]?(m7b5|maj13|maj11|maj9|maj7|maj|min13|min11|min9|min7|min|m13|m11|m9|m7|m|add13|add11|add9|sus4|sus2|sus|dim7|dim|aug7|aug|13|11|9|7|6|5|4|2)?(\/[A-G][b#]?)?(?![a-zA-Z0-9#/])/g;
+  /\b[A-G][b#]?(m7b5|maj13|maj11|maj9|maj7|maj|min13|min11|min9|min7|min|m13|m11|m9|m7|m|add13|add11|add9|sus4|sus2|sus|dim7|dim|aug7|aug|13|11|9|7|6|5|4|2)?(\/[A-G][b#]?)?(?![a-zA-Z0-9#/])/;
 
 /**
  * Enharmonic equivalents not present in the NOTES array, mapped to their
@@ -122,9 +122,8 @@ export function getSemitoneOffset(
   originalKey: string,
   performanceKey: string,
 ): number {
-  const fromIdx = (NOTES as string[]).indexOf(originalKey);
-  const toIdx = (NOTES as string[]).indexOf(performanceKey);
-  if (fromIdx === -1 || toIdx === -1) return 0;
+  const fromIdx = rootToIndex(originalKey);
+  const toIdx = rootToIndex(performanceKey);
   return (toIdx - fromIdx + 12) % 12;
 }
 
@@ -192,7 +191,7 @@ export function isChordLine(line: string): boolean {
   // Count how many tokens are fully consumed by a single chord match.
   let chordCount = 0;
   // Reset lastIndex before reusing the global regex.
-  const localRegex = new RegExp(chordRegex.source);
+  const localRegex = new RegExp(chordRegex.source, "g");
 
   for (const token of tokens) {
     const match = token.match(localRegex);
