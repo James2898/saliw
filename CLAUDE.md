@@ -12,7 +12,7 @@ Entry point for Claude Code. Read this fully before taking any action.
 - **Styling:** Tailwind CSS v4 (CSS-first configuration)
 - **Backend:** Supabase (PostgreSQL, Auth, Realtime)
 - **Hosting:** Vercel
-- **Base branch:** main
+- **Base branch:** develop
 
 ---
 

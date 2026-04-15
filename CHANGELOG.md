@@ -6,7 +6,40 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-15
 
+### Changed
+
+- **Navbar login/logout inline labels + logout confirmation modal** (`TASK-010`)
+  - Removed all tooltip markup (`role="tooltip"`, `group`, `group-hover`) from auth buttons
+  - Desktop navbar login button now shows "Login" text inline to the left of the LogIn icon; logout button shows "Logout" text inline to the left of the LogOut icon
+  - Auth greeting "Hi, {full_name}!" (fallback "Hi there!") preserved in desktop navbar and mobile sidebar footer
+  - Logout flow now requires confirmation via a modal dialog (Cancel / Sign out) before signing out; focus returns to the triggering button on cancel
+  - Mobile sidebar auth button remains icon-only and correctly opens the logout confirmation modal
+  - Affected files: `src/components/client/navbar.tsx`, `src/components/client/logout-modal.tsx`, `src/components/client/button.tsx`
+
 ### Added
+
+- **Navbar UI enhancements: tooltip, auth greeting, and logout confirmation modal** (`TASK-009`)
+  - `src/components/client/navbar.tsx` — Login button shows "Sign in to Saliw" tooltip on hover (CSS `group-hover`, zero JS); logout button shows "Sign out" tooltip for parity; authenticated greeting "Hi, {full_name}!" displayed in desktop navbar and mobile sidebar footer (falls back to "Hi there!" if `full_name` is null); full name fetched from `profiles` table via RLS-safe client-side query after auth state change; logout buttons (desktop + mobile) gate sign-out behind `LogoutModal` confirmation; modal trigger preserves focus and returns it on cancel
+  - `src/components/client/logout-modal.tsx` — New: Artisan-styled confirmation dialog with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, focus trap (Tab cycles Cancel ↔ Sign out), Escape key dismissal, backdrop click dismissal, `bg-brand-espresso/40` backdrop, `rounded-2xl` panel
+  - `src/components/client/button.tsx` — Updated to use `forwardRef` for ref-based focus management in the modal
+
+- **Strict auth wall and middleware guard** (`TASK-008`)
+  - `src/middleware.ts` — added `PROTECTED_PATHS` constant (`/dashboard`, `/library`, `/setlists`); destructures `user` from `supabase.auth.getUser()`; redirects to `/login` for any unauthenticated request matching a protected path or sub-path; existing cookie handling and session refresh preserved; updated comment to reflect new auth-gating behavior; no redirect loop possible — `/login` is not in `PROTECTED_PATHS` and static assets are excluded by `config.matcher`
+  - `src/app/dashboard/page.tsx` — converted to `async` Server Component; added `createClient` from `@/services/supabase/server` and `redirect` from `next/navigation`; `getUser()` called server-side; redirects to `/login` if no authenticated user (defense-in-depth)
+  - `src/app/library/page.tsx` — added `redirect('/login')` guard on null user; removed "Browse as guest" fallback; `user.email` rendered directly (TypeScript narrows to non-null past the guard)
+  - `src/app/setlists/page.tsx` — same changes as `library/page.tsx`
+  - No RLS migrations added — existing policies already enforce `auth.role() = 'authenticated'` for SELECT on `songs`, `setlists`, and `setlist_songs`
+  - `getUser()` used exclusively (not `getSession()`) for server-side session validation to ensure JWT is verified against Supabase servers
+
+- **Backend infrastructure: songs/setlists schema, RLS, and Server Actions** (`TASK-007`)
+  - `supabase/migrations/20260415000001_create_songs_table.sql` — `songs` table with uuid PK, `original_key`, `created_by` FK; RLS: authenticated SELECT, music_director INSERT/UPDATE/DELETE via `is_music_director()` helper function
+  - `supabase/migrations/20260415000002_create_setlists_table.sql` — `setlists` table with `leader_id`, `is_public`; RLS: authenticated SELECT, leader_id-scoped UPDATE/DELETE
+  - `supabase/migrations/20260415000003_create_setlist_songs_table.sql` — `setlist_songs` junction table with `performance_key`, `order_index`; RLS: authenticated SELECT via parent join, leader_id INSERT/UPDATE/DELETE via subquery
+  - `src/app/actions/songActions.ts` — `createSong`, `updateSong`, `deleteSong`; chordRegex content validation; consistent `{ data, error }` return shape; no service role key
+  - `src/app/actions/setlistActions.ts` — `createSetlist`, `addSongToSetlist`, `reorderSetlist`, `deleteSetlist`; performance_key defaults to song's original_key on add
+  - `src/types/supabase.ts` — new file; exports `DbSong`, `DbSetlist`, `DbSetlistSong` matching exact DB column names
+  - `src/types/Song.ts` — updated: `id: string` (uuid), `original_key` replaces `key`
+  - `src/types/Setlist.ts` — updated: `id: string`, `leader_id` replaces `leader`, `is_public` added, embedded `songs[]` removed
 
 - **Login page UI + Supabase auth** (`TASK-006`)
   - `src/app/(auth)/login/page.tsx` — Server Component; calls `supabase.auth.getUser()` on load and redirects authenticated users to `/` before rendering; no flash of login form for signed-in users
