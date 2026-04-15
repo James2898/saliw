@@ -210,8 +210,16 @@ export default function Navbar() {
               type="button"
               onClick={handleAuthAction}
               aria-label={user ? "Sign out" : "Sign in"}
-              className={iconBtnClass}
+              className={[
+                "flex items-center gap-2 px-3 h-9 rounded-lg",
+                "text-brand-espresso dark:text-brand-cream",
+                "text-sm font-sans font-semibold",
+                "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                "transition-colors duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2",
+              ].join(" ")}
             >
+              <span>{user ? "Logout" : "Login"}</span>
               {user ? (
                 <LogOut size={18} strokeWidth={2} aria-hidden="true" />
               ) : (
