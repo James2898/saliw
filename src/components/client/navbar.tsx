@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/services/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import LogoutModal from "@/components/client/logout-modal";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -30,13 +31,19 @@ export default function Navbar() {
 
   const [isDark, setIsDark] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const hamburgerButtonRef = useRef<HTMLButtonElement>(null);
+  const desktopLogoutRef = useRef<HTMLButtonElement>(null);
+  const sidebarLogoutRef = useRef<HTMLButtonElement>(null);
+
+  // Track which trigger opened the modal so we can return focus on close
+  const logoutTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Initialise theme from localStorage on mount (client-only).
-  // DOM class update is kept in a separate effect that runs whenever isDark changes.
   useEffect(() => {
     const stored =
       typeof window !== "undefined" ? localStorage.getItem("theme") : null;
@@ -56,14 +63,30 @@ export default function Navbar() {
     }
   }, [isDark]);
 
-  // Subscribe to Supabase auth state changes
+  // Subscribe to Supabase auth state changes; fetch full name from profiles table
   useEffect(() => {
     const supabase = createClient();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        // Fetch full_name from the profiles table (authoritative source).
+        // RLS policy profiles_select_own ensures the user can only read their own row.
+        supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", currentUser.id)
+          .single()
+          .then(({ data }) => {
+            setFullName(data?.full_name ?? null);
+          });
+      } else {
+        setFullName(null);
+      }
     });
 
     return () => {
@@ -84,7 +107,6 @@ export default function Navbar() {
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
 
-    // Move focus to close button when sidebar opens
     closeButtonRef.current?.focus();
 
     return () => {
@@ -99,7 +121,6 @@ export default function Navbar() {
 
   function closeSidebar() {
     setIsOpen(false);
-    // Return focus to hamburger button when sidebar closes
     hamburgerButtonRef.current?.focus();
   }
 
@@ -115,23 +136,41 @@ export default function Navbar() {
     }
   }
 
-  async function handleAuthAction() {
-    if (user) {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.error("Sign out failed:", error.message);
-          return;
-        }
-        router.refresh();
-      } catch (err) {
-        console.error("Unexpected sign out error:", err);
+  function openLogoutModal(triggerRef: React.RefObject<HTMLButtonElement | null>) {
+    logoutTriggerRef.current = triggerRef.current;
+    setShowLogoutModal(true);
+  }
+
+  function handleLogoutCancel() {
+    setShowLogoutModal(false);
+    // Return focus to whichever button triggered the modal
+    logoutTriggerRef.current?.focus();
+    logoutTriggerRef.current = null;
+  }
+
+  async function handleLogoutConfirm() {
+    setShowLogoutModal(false);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out failed:", error.message);
+        return;
       }
-    } else {
-      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.error("Unexpected sign out error:", err);
     }
   }
+
+  function handleLoginClick() {
+    router.push("/login");
+  }
+
+  // Greeting text — "Hi, {name}!" or fallback "Hi there!"
+  const greetingText = user
+    ? `Hi, ${fullName?.trim() || "there"}!`
+    : null;
 
   // Shared icon button class string to avoid repetition
   const iconBtnClass = [
@@ -190,7 +229,7 @@ export default function Navbar() {
           <div className="flex-1" />
 
           {/* Desktop controls — hidden on mobile */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-2">
             {/* Theme toggle */}
             <button
               type="button"
@@ -205,19 +244,65 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Auth action */}
-            <button
-              type="button"
-              onClick={handleAuthAction}
-              aria-label={user ? "Sign out" : "Sign in"}
-              className={iconBtnClass}
-            >
-              {user ? (
-                <LogOut size={18} strokeWidth={2} aria-hidden="true" />
-              ) : (
-                <LogIn size={18} strokeWidth={2} aria-hidden="true" />
-              )}
-            </button>
+            {/* Authenticated greeting */}
+            {greetingText && (
+              <span className="font-sans font-semibold text-sm text-brand-espresso dark:text-brand-cream whitespace-nowrap">
+                {greetingText}
+              </span>
+            )}
+
+            {user ? (
+              /* Logout button with tooltip */
+              <div className="relative group">
+                <button
+                  ref={desktopLogoutRef}
+                  type="button"
+                  onClick={() => openLogoutModal(desktopLogoutRef)}
+                  aria-label="Sign out"
+                  className={iconBtnClass}
+                >
+                  <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+                </button>
+                {/* Tooltip */}
+                <div
+                  role="tooltip"
+                  className={[
+                    "pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
+                    "whitespace-nowrap rounded-lg px-2.5 py-1",
+                    "bg-brand-espresso text-brand-cream text-xs font-sans font-semibold",
+                    "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+                    "transition-opacity duration-150",
+                  ].join(" ")}
+                >
+                  Sign out
+                </div>
+              </div>
+            ) : (
+              /* Login button with tooltip */
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={handleLoginClick}
+                  aria-label="Sign in"
+                  className={iconBtnClass}
+                >
+                  <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+                </button>
+                {/* Tooltip */}
+                <div
+                  role="tooltip"
+                  className={[
+                    "pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
+                    "whitespace-nowrap rounded-lg px-2.5 py-1",
+                    "bg-brand-espresso text-brand-cream text-xs font-sans font-semibold",
+                    "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+                    "transition-opacity duration-150",
+                  ].join(" ")}
+                >
+                  Sign in to Saliw
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobile hamburger button — visible only on mobile */}
@@ -237,6 +322,13 @@ export default function Navbar() {
           </button>
         </div>
       </nav>
+
+      {/* ── Logout confirmation modal ─────────────────────────────────────── */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+      />
 
       {/* ── Mobile sidebar drawer ─────────────────────────────────────────── */}
 
@@ -267,7 +359,6 @@ export default function Navbar() {
       >
         {/* Sidebar header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-brand-brown/20 shrink-0">
-          {/* Brand (repeated for context inside sidebar) */}
           <Link
             href="/"
             onClick={closeSidebar}
@@ -282,7 +373,6 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Close button */}
           <button
             ref={closeButtonRef}
             type="button"
@@ -324,39 +414,60 @@ export default function Navbar() {
           </ul>
         </nav>
 
-        {/* Sidebar footer — theme toggle + auth */}
-        <div className="shrink-0 px-3 py-4 border-t border-brand-brown/20 flex items-center gap-2">
-          {/* Theme toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            className={[iconBtnClass, "flex-1 justify-start gap-3 px-3 text-sm font-semibold font-sans w-auto h-auto py-2.5"].join(" ")}
-          >
-            {isDark ? (
-              <Sun size={18} strokeWidth={2} aria-hidden="true" />
-            ) : (
-              <Moon size={18} strokeWidth={2} aria-hidden="true" />
-            )}
-            <span>{isDark ? "Light mode" : "Dark mode"}</span>
-          </button>
+        {/* Sidebar footer — greeting + theme toggle + auth */}
+        <div className="shrink-0 px-3 py-4 border-t border-brand-brown/20 flex flex-col gap-2">
+          {/* Greeting (authenticated only) */}
+          {greetingText && (
+            <span className="font-sans font-semibold text-sm text-brand-espresso dark:text-brand-cream px-3">
+              {greetingText}
+            </span>
+          )}
 
-          {/* Auth action */}
-          <button
-            type="button"
-            onClick={() => {
-              closeSidebar();
-              handleAuthAction();
-            }}
-            aria-label={user ? "Sign out" : "Sign in"}
-            className={iconBtnClass}
-          >
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className={[iconBtnClass, "flex-1 justify-start gap-3 px-3 text-sm font-semibold font-sans w-auto h-auto py-2.5"].join(" ")}
+            >
+              {isDark ? (
+                <Sun size={18} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <Moon size={18} strokeWidth={2} aria-hidden="true" />
+              )}
+              <span>{isDark ? "Light mode" : "Dark mode"}</span>
+            </button>
+
+            {/* Auth action */}
             {user ? (
-              <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+              <button
+                ref={sidebarLogoutRef}
+                type="button"
+                onClick={() => {
+                  closeSidebar();
+                  // Brief delay so sidebar closes before modal opens (avoids z-index overlap)
+                  setTimeout(() => openLogoutModal(sidebarLogoutRef), 50);
+                }}
+                aria-label="Sign out"
+                className={iconBtnClass}
+              >
+                <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
             ) : (
-              <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => {
+                  closeSidebar();
+                  handleLoginClick();
+                }}
+                aria-label="Sign in"
+                className={iconBtnClass}
+              >
+                <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
             )}
-          </button>
+          </div>
         </div>
       </aside>
     </>
