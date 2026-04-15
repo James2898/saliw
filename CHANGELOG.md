@@ -8,6 +8,14 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- **Login page UI + Supabase auth** (`TASK-006`)
+  - `src/app/(auth)/login/page.tsx` — Server Component; calls `supabase.auth.getUser()` on load and redirects authenticated users to `/` before rendering; no flash of login form for signed-in users
+  - `src/components/client/LoginForm.tsx` — Client Component; mode toggle (Password / Magic Link); email+password form calls `signInWithPasswordAction` via `useTransition`; magic link form calls `sendMagicLinkAction` via `useTransition`; inline feedback `<p>` for all error and success states; feedback cleared on field change; no toast library; no direct Supabase calls
+  - `src/app/actions/authActions.ts` — `signInWithPasswordAction` (server-side `redirect('/')` on success outside try/catch to preserve `NEXT_REDIRECT`; unified error copy prevents user enumeration) and `sendMagicLinkAction` (returns `{ success: true }`, uses `NEXT_PUBLIC_SITE_URL` for `emailRedirectTo`); both actions use `@supabase/ssr` server client only; no `SUPABASE_SERVICE_ROLE_KEY` reference
+  - `src/app/auth/auth-code-error/page.tsx` — Server Component; plain error message for failed PKCE exchanges ("The link may have expired or already been used.") with a link back to `/login`; Artisan palette styling
+  - All text WCAG AA compliant: `text-brand-espresso` (~14:1) and `text-brand-brown` (~4.8:1) on cream; `text-brand-tan` on cream never used; input borders `border-brand-brown`; focus rings `ring-brand-brown`
+  - No new npm dependencies introduced; `package.json` unchanged
+
 - **Individual Profile Settings page** (`TASK-005`)
   - `profiles` table created in Supabase with columns `id`, `email`, `full_name`, `role`; RLS enabled with `profiles_select_own` (SELECT) and `profiles_update_own` (UPDATE, `auth.uid() = id`) policies; column-level `REVOKE UPDATE (role, email)` applied as defense-in-depth
   - `src/types/Profile.ts` — plain `export type Profile` with four snake_case fields matching the table schema
