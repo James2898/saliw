@@ -39,7 +39,7 @@ export const NOTES: readonly string[] = [
  * Example non-matches (lyric words): I, A, To, Me, the, in
  */
 export const chordRegex: RegExp =
-  /\b[A-G][b#]?(m7b5|maj13|maj11|maj9|maj7|maj|min13|min11|min9|min7|min|m13|m11|m9|m7|m|add13|add11|add9|sus4|sus2|sus|dim7|dim|aug7|aug|13|11|9|7|6|5|4|2)?(\/[A-G][b#]?)?\b/g;
+  /\b[A-G][b#]?(m7b5|maj13|maj11|maj9|maj7|maj|min13|min11|min9|min7|min|m13|m11|m9|m7|m|add13|add11|add9|sus4|sus2|sus|dim7|dim|aug7|aug|13|11|9|7|6|5|4|2)?(\/[A-G][b#]?)?(?![a-zA-Z0-9#/])/g;
 
 /**
  * Enharmonic equivalents not present in the NOTES array, mapped to their
