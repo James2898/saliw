@@ -6,6 +6,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-15
 
+### Changed
+
+- **Navbar login/logout inline labels + logout confirmation modal** (`TASK-010`)
+  - Removed all tooltip markup (`role="tooltip"`, `group`, `group-hover`) from auth buttons
+  - Desktop navbar login button now shows "Login" text inline to the left of the LogIn icon; logout button shows "Logout" text inline to the left of the LogOut icon
+  - Auth greeting "Hi, {full_name}!" (fallback "Hi there!") preserved in desktop navbar and mobile sidebar footer
+  - Logout flow now requires confirmation via a modal dialog (Cancel / Sign out) before signing out; focus returns to the triggering button on cancel
+  - Mobile sidebar auth button remains icon-only and correctly opens the logout confirmation modal
+  - Affected files: `src/components/client/navbar.tsx`, `src/components/client/logout-modal.tsx`, `src/components/client/button.tsx`
+
 ### Added
 
 - **Navbar UI enhancements: tooltip, auth greeting, and logout confirmation modal** (`TASK-009`)
