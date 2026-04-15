@@ -4,6 +4,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-15
+
+### Added
+
+- **Individual Profile Settings page** (`TASK-005`)
+  - `profiles` table created in Supabase with columns `id`, `email`, `full_name`, `role`; RLS enabled with `profiles_select_own` (SELECT) and `profiles_update_own` (UPDATE, `auth.uid() = id`) policies; column-level `REVOKE UPDATE (role, email)` applied as defense-in-depth
+  - `src/types/Profile.ts` — plain `export type Profile` with four snake_case fields matching the table schema
+  - `src/app/actions/profileActions.ts` — `updateProfileAction` Server Action: auth-gated via `supabase.auth.getUser()`, accepts and writes only `{ full_name }`, wrapped in `try/catch`, no `SUPABASE_SERVICE_ROLE_KEY` reference
+  - `src/app/dashboard/profile/page.tsx` — Server Component; server-side `redirect('/login')` for unauthenticated access; renders "Profile not found" error state when profile row is missing; passes profile prop to `<EditProfileForm>`
+  - `src/components/client/EditProfileForm.tsx` — Client Component; email field rendered `readOnly` and excluded from submission; `role` field absent from DOM; `useTransition` for pending state; inline success/error `<p>` feedback cleared on `onChange`; no toast library used; all colors WCAG AA compliant (`text-brand-brown`, `text-brand-espresso`; `text-brand-tan` never used)
+  - Affected files: `supabase/migrations/20260415000000_create_profiles_table.sql`, `src/types/Profile.ts`, `src/app/actions/profileActions.ts`, `src/components/client/EditProfileForm.tsx`, `src/app/dashboard/profile/page.tsx`
+
+---
+
 ## [Unreleased] — 2026-04-14
 
 ### Added
