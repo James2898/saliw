@@ -6,6 +6,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-15
 
+### Added
+
+- **Musical Logic Engine: chord detection, transposition, and key offset utilities** (`TASK-011`)
+  - `src/utils/musicLogic.ts` — hardened `chordRegex`: replaced trailing `\b` with `(?![a-zA-Z0-9#/])` to prevent `#` (non-word character) from causing boundary backtracking that previously dropped `#` from chord tokens such as `F#`, `C#`, and `D/F#`; `F#` and `C#` are now correctly recognised by `isChordLine`
+  - `NOTES` readonly 12-element chromatic scale array (`C` through `B`, sharps preferred except `Bb`)
+  - `chordRegex` exported `RegExp` matching standard chord notation including slash chords, quality suffixes (maj, min, dim, aug, sus, add, numbered), and sharp/flat roots; anchored to prevent mid-word false positives
+  - `shiftChord(chord, semitones)` transposes root and optional slash bass note independently using canonical `NOTES` indices
+  - `getSemitoneOffset(originalKey, performanceKey)` returns 0–11 semitone offset; returns 0 for unrecognised keys
+  - `isChordLine(line)` heuristic: guards against lyric-indicator words (`I`, `A`, `To`, etc.), then requires >50% of whitespace-delimited tokens to be valid chord tokens
+  - Affected files: `src/utils/musicLogic.ts`
+
 ### Changed
 
 - **Navbar login/logout inline labels + logout confirmation modal** (`TASK-010`)
