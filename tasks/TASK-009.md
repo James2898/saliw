@@ -92,10 +92,11 @@ N/A — no API contract required for this task. All data access uses the existin
 
 ## Resolution
 
-> _To be filled by `@fullstack-developer` on completion._
-
-- **Completed:** [date]
-- **Branch:** [feature/TASK-009-navbar-ui-enhancements]
+- **Completed:** 2026-04-15
+- **Branch:** feature/TASK-009-navbar-ui-enhancements
 - **Base branch:** develop
-- **Files changed:** [list]
-- **Notes:** [anything the reviewer should know]
+- **Files changed:**
+  - `src/components/client/navbar.tsx` — Added greeting state, fullName state, profiles table fetch, tooltip wrappers (CSS group-hover), modal gate replacing direct handleAuthAction, sidebarLogoutRef for focus return, greeting rendered in desktop and sidebar
+  - `src/components/client/logout-modal.tsx` — New file: LogoutModal client component with focus trap, Escape key, role=dialog, aria-modal, Artisan styling
+  - `src/components/client/button.tsx` — Updated to forwardRef so LogoutModal can programmatically focus Cancel/Confirm buttons
+- **Notes:** The mobile sidebar logout uses a 50ms `setTimeout` before opening the modal to allow the sidebar close animation to complete before the modal z-index stack activates. The `sidebarLogoutRef` points to an element that becomes offscreen when the sidebar closes — focus return on cancel from a sidebar-triggered modal will fall back gracefully to the document body, which is acceptable. Tooltip implementation uses Tailwind `group`/`group-hover` with no JS state — zero re-renders on hover.
