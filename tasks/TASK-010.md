@@ -128,10 +128,10 @@ Implement the Song Library page at `src/app/library/page.tsx` as a fully functio
 
 ## Resolution
 
-> _To be filled by `@fullstack-developer` on completion._
-
-- **Completed:** [date]
-- **Branch:** [feature/TASK-010-song-library-base-view]
+- **Completed:** 2026-04-16
+- **Branch:** feature/TASK-010-song-library-base-view
 - **Base branch:** develop
-- **Files changed:** [list]
-- **Notes:** [anything the reviewer should know]
+- **Files changed:**
+  - `src/app/library/page.tsx` — Full Server Component implementation: song fetch with ilike OR search, profiles role query for RBAC, three empty states, Artisan Palette layout, SearchBar integration, Pencil edit link gated to music_director
+  - `src/components/client/SearchBar.tsx` — New Client Component: debounced (300ms) input with router.replace URL navigation, Artisan Palette styling (brand-cream bg, brand-tan border, brand-espresso focus ring)
+- **Notes:** `searchParams` in Next.js App Router is typed as `Promise<...>` and must be awaited (done). The Supabase `.or()` PostgREST ilike filter uses the string form `title.ilike.%q%,artist.ilike.%q%`. isMusicDirector defaults to false on any profile fetch error — graceful degradation. TypeScript compiles cleanly (tsc --noEmit passed with zero errors).
