@@ -4,6 +4,18 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-16
+
+### Added
+
+- **Song Library Base View with Server-Side Search** (`TASK-010`)
+  - `src/app/library/page.tsx` — Full Server Component: fetches `songs` table (id/title/artist/original_key only; `content` excluded for payload minimization), applies `ilike` OR filter on `title`/`artist` when `?q` param is present, orders by `title` ascending; derives `isMusicDirector` server-side via `profiles.role` query; implements three empty states (fetch error, search zero-results, empty library)
+  - `src/components/client/SearchBar.tsx` — New Client Component: debounced 300ms `router.replace` URL navigation, Artisan Palette styling (brand-cream background, brand-tan border, brand-espresso focus ring), accessible with `aria-label`
+  - RBAC: "Edit" Pencil icon link per row visible only to `music_director` users; guests and standard users see navigation-only rows
+  - Artisan Palette: brand-cream container, brand-tan-alpha row backgrounds, brand-espresso titles (WCAG AA), brand-brown artist/key metadata
+
+---
+
 ## [Unreleased] — 2026-04-15
 
 ### Added
