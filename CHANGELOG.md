@@ -4,9 +4,28 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-17
+
+### Fixed
+
+- **Pipe-delimited chord chart detection in `preProcessChords`** (`TASK-011`)
+  - `src/utils/musicLogic.ts` — Added `PIPE_CHART_REGEX` (`/\|.*\|/`) and a new step-3 branch in `preProcessChords` to detect pipe-delimited chord chart lines (e.g. `[Intro]| F | C | G | Am7 || F | C | G | Am7 |`) before the `isChordLine` heuristic. Pipe and double-pipe characters are emitted as non-chord tokens; inter-pipe chord tokens (F, C, G, Am7, etc.) are emitted as `{ isChord: true, originalChord: VALUE }` in the existing `ChordToken` shape. Result is classified as `type: 'chord'` so `ChordSheetClient.tsx` wraps them in `.chord-item[data-original-chord]` spans with no client-side changes required. Live transposition via `useTranspose` applies automatically.
+  - Root cause: `isChordLine` counted `|` and `[Intro]|` as non-chord tokens, reducing the chord ratio below the 50% threshold — line was misclassified as lyric.
+  - No changes to `ChordSheetClient.tsx`, `chordRegex`, or any Supabase queries.
+
+---
+
 ## [Unreleased] — 2026-04-16
 
 ### Added
+
+- **Hybrid Rendering Engine — SongViewer with Live Transposition** (`TASK-011`)
+  - `src/utils/musicLogic.ts` — Added `preProcessChords(content): ProcessedLine[]` function; exports `ProcessedLine` and `ChordToken` discriminated union types; classifies chord-sheet lines as header/chord/lyric/blank with whitespace-preserving tokenization for alignment
+  - `src/hooks/useTranspose.ts` — New `useTranspose(originalKey)` hook managing semitone offset state; derives `displayKey` from `NOTES` array; exposes `increment`/`decrement`/`setTargetKey`/`reset`; always calculates offset relative to `original_key`, never accumulated
+  - `src/components/SongViewer/ChordSheetClient.tsx` — New `'use client'` chord sheet component; renders transposition control bar (12-key dropdown + ±1 stepper); applies transposition via DOM mutation of `.chord-item[data-original-chord]` spans in `useEffect` to avoid React hydration mismatch; uses `.chord-display` and `.section-title` CSS classes
+  - `src/app/library/[id]/page.tsx` — New dynamic route Server Component; auth guard via `supabase.auth.getUser()`; fetches `content`, `original_key`, `title`, `artist` from `songs` table via `@supabase/ssr`; calls `preProcessChords` SSR-side and passes result as prop to `ChordSheetClient`; inline error states for not-found and server error
+  - Artisan Palette: `text-brand-espresso`/`bg-brand-cream` light mode; `text-brand-cream`/`bg-brand-espresso` dark mode; all controls WCAG AA compliant
+  - `src/styles/globals.css` — Chord token styling enhanced: `.chord-item` now renders with a visible badge background in both modes — light: espresso text on tan background (~6.5:1 contrast, WCAG AA); dark: cream text on brown background (~4.7:1 contrast, WCAG AA); `border-radius: 3px` added for pill-badge appearance; no new dependencies
 
 - **Song Library Base View with Server-Side Search** (`TASK-010`)
   - `src/app/library/page.tsx` — Full Server Component: fetches `songs` table (id/title/artist/original_key only; `content` excluded for payload minimization), applies `ilike` OR filter on `title`/`artist` when `?q` param is present, orders by `title` ascending; derives `isMusicDirector` server-side via `profiles.role` query; implements three empty states (fetch error, search zero-results, empty library)
