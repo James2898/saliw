@@ -29,18 +29,21 @@ CREATE TABLE IF NOT EXISTS public.songs (
 ALTER TABLE public.songs ENABLE ROW LEVEL SECURITY;
 
 -- SELECT: all authenticated users may read songs
+DROP POLICY IF EXISTS "songs_select_authenticated" ON public.songs;
 CREATE POLICY "songs_select_authenticated"
   ON public.songs
   FOR SELECT
   USING (auth.role() = 'authenticated');
 
 -- INSERT: only music_directors may create songs
+DROP POLICY IF EXISTS "songs_insert_music_director" ON public.songs;
 CREATE POLICY "songs_insert_music_director"
   ON public.songs
   FOR INSERT
   WITH CHECK (public.is_music_director());
 
 -- UPDATE: only music_directors may update songs
+DROP POLICY IF EXISTS "songs_update_music_director" ON public.songs;
 CREATE POLICY "songs_update_music_director"
   ON public.songs
   FOR UPDATE
@@ -48,6 +51,7 @@ CREATE POLICY "songs_update_music_director"
   WITH CHECK (public.is_music_director());
 
 -- DELETE: only music_directors may delete songs
+DROP POLICY IF EXISTS "songs_delete_music_director" ON public.songs;
 CREATE POLICY "songs_delete_music_director"
   ON public.songs
   FOR DELETE
