@@ -34,7 +34,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
 
   // ── Resolve search params ───────────────────────────────────────────────────
   const params = await searchParams
-  const q = params.q?.trim() ?? ''
+  const q = (params.q?.trim() ?? '').slice(0, 100)
 
   // ── Fetch user role for RBAC ────────────────────────────────────────────────
   let isMusicDirector = false
