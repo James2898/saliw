@@ -6,6 +6,33 @@ import { NOTES, shiftChord } from '@/utils/musicLogic'
 import { useTranspose } from '@/hooks/useTranspose'
 import { useFontSize } from '@/hooks/useFontSize'
 
+// ── Module-level constants — stable class strings extracted to avoid per-render allocations ──
+
+const ctrlBtnClass = [
+  'flex items-center justify-center rounded-lg shrink-0',
+  'font-mono font-bold text-sm',
+  'text-brand-espresso dark:text-brand-cream',
+  'bg-brand-cream dark:bg-brand-espresso',
+  'border border-brand-brown/30 dark:border-brand-tan/30',
+  'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+  'transition-colors duration-200',
+].join(' ')
+
+const toggleBtnClass = [
+  'px-2.5 py-1 rounded-lg shrink-0',
+  'text-xs font-semibold font-sans',
+  'border',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+  'transition-colors duration-200',
+].join(' ')
+
+const toggleActiveClass =
+  'bg-brand-brown text-brand-cream border-brand-brown dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
+
+const toggleInactiveClass =
+  'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10'
+
 interface ChordSheetClientProps {
   processedLines: ProcessedLine[]
   originalKey: string
@@ -59,29 +86,6 @@ export default function ChordSheetClient({
   useEffect(() => {
     sheetRef.current?.style.setProperty('--chord-font-size', `${fontSize}px`)
   }, [fontSize])
-
-  // Shared button class for control bar buttons (ghost style, matches transpose buttons).
-  const ctrlBtnClass = [
-    'flex items-center justify-center rounded-lg shrink-0',
-    'font-mono font-bold text-sm',
-    'text-brand-espresso dark:text-brand-cream',
-    'bg-brand-cream dark:bg-brand-espresso',
-    'border border-brand-brown/30 dark:border-brand-tan/30',
-    'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-    'transition-colors duration-200',
-  ].join(' ')
-
-  const toggleBtnClass = [
-    'px-2.5 py-1 rounded-lg shrink-0',
-    'text-xs font-semibold font-sans',
-    'border',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-    'transition-colors duration-200',
-  ].join(' ')
-
-  const toggleActiveClass = 'bg-brand-brown text-brand-cream border-brand-brown dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
-  const toggleInactiveClass = 'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10'
 
   // Build chord-display container class with conditional modifiers.
   const chordDisplayClass = ['chord-display', chordsHidden && 'chords-hidden', stageMode && 'stage-mode']
