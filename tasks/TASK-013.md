@@ -170,9 +170,21 @@ Two features are implemented together under this task. First, a `NewSongButton` 
 
 ## Resolution
 
-> _To be filled by `@fullstack-developer` on completion._
-
-- **Completed:** [date]
-- **Branch:** [branch name]
-- **Files changed:** [list]
-- **Notes:** [anything the reviewer should know]
+- **Completed:** 2026-04-17
+- **Branch:** `feature/TASK-013-new-song-entry-stage-controls`
+- **Base branch:** `develop`
+- **Files changed:**
+  - `src/hooks/useFontSize.ts` — new hook, 12–48px range, localStorage persistence, useCallback pattern
+  - `src/components/library/NewSongButton.tsx` — new Client Component, desktop + FAB, Loader2 loading state
+  - `src/components/client/NewSongFormClient.tsx` — new form Client Component calling createSong()
+  - `src/app/library/new/page.tsx` — new Server Component route with auth + RBAC guard
+  - `src/app/library/page.tsx` — added NewSongButton import and render in page header
+  - `src/components/SongViewer/ChordSheetClient.tsx` — extended with font-size controls, Hide Chords toggle, Stage Mode toggle
+  - `src/styles/globals.css` — added .chord-display font-size variable, .chords-hidden, .stage-mode rules
+- **Notes:**
+  - No new package dependencies added.
+  - NewSongButton renders both a desktop button (hidden on mobile) and a FAB (hidden on desktop) in one component — the fixed positioning of the FAB is independent of JSX position.
+  - The font-size CSS variable injection uses DOM mutation on sheetRef (same pattern as transposition) — no React re-render on the chord tree.
+  - Hide Chords uses opacity:0 (not visibility:hidden or display:none) to preserve lyric line spacing.
+  - Stage Mode uses filter:saturate(1.5) to avoid hardcoded hex values.
+  - TypeScript check (`npx tsc --noEmit`) passed with zero errors.
