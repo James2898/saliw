@@ -6,6 +6,14 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-17
 
+### Added
+
+- **Artisan Song Editor** (`TASK-012`)
+  - `src/app/library/[id]/edit/page.tsx` — New dynamic Server Component route for Music Directors; enforces auth via `supabase.auth.getUser()` (redirects to `/login`) and RBAC via `profiles.role` check (redirects to read-only view for non-directors); fetches full song row; graceful not-found inline error state; passes song to `SongEditorClient`
+  - `src/components/client/SongEditorClient.tsx` — New `'use client'` editor component; monospaced textarea (`font-mono`, `white-space: pre`, `spellCheck={false}`); dirty-state detection disables "Save Changes" until edits exist; "Clean" button strips trailing whitespace per line and normalizes `\r\n`/`\r` → `\n`; live WYSIWYG preview via `preProcessChords` + `ChordSheetClient`; responsive layout (side-by-side grid on `lg+`, tabbed "Edit"/"Preview" on mobile); `updateSong()` Server Action call with inline success and error feedback; "Unsaved Changes" modal with `role="dialog"`, `aria-modal`, `aria-labelledby`, Escape-to-close, Tab focus trap, and backdrop-click dismiss; `beforeunload` listener for browser-level navigation guard
+  - No new dependencies; uses existing `updateSong`, `preProcessChords`, `chordRegex`, `ChordSheetClient`, and `Song` type
+  - Artisan Palette: `bg-brand-cream dark:bg-brand-darker` page, `bg-brand-cream dark:bg-brand-espresso` panels, `text-brand-espresso dark:text-brand-cream` body text; WCAG AA focus rings on all interactive elements
+
 ### Fixed
 
 - **Pipe-delimited chord chart detection in `preProcessChords`** (`TASK-011`)
