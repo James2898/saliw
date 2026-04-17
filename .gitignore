@@ -18,6 +18,9 @@ out/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
+# Supabase
+supabase/.temp
+
 # Playwright MCP artifacts
 .playwright-mcp/
 
