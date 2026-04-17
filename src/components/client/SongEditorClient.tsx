@@ -33,11 +33,20 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Content state ───────────────────────────────────────────────────────────
   const [currentContent, setCurrentContent] = useState(song.content)
   const [savedBaseline, setSavedBaseline] = useState(song.content)
-  const isDirty = currentContent !== savedBaseline
 
   // ── Singer and Default Key state — lazy initializers avoid setState-in-effect ──
   const [singer, setSinger] = useState(() => song.singer ?? '')
   const [defaultKey, setDefaultKey] = useState(() => song.defaultKey ?? '')
+
+  // ── Saved baselines for singer and defaultKey (for dirty-tracking) ──────────
+  const [savedSinger, setSavedSinger] = useState(() => song.singer ?? '')
+  const [savedDefaultKey, setSavedDefaultKey] = useState(() => song.defaultKey ?? '')
+
+  // isDirty: true if content, singer, or defaultKey diverge from last saved state
+  const isDirty =
+    currentContent !== savedBaseline ||
+    singer !== savedSinger ||
+    defaultKey !== savedDefaultKey
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>('edit')
@@ -149,6 +158,8 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       setSaveError(result.error)
     } else {
       setSavedBaseline(currentContent)
+      setSavedSinger(singer)
+      setSavedDefaultKey(defaultKey)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     }
