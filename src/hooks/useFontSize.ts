@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 
 const STORAGE_KEY = 'saliw-font-size'
 const MIN_SIZE = 12
@@ -34,24 +34,22 @@ export type UseFontSizeReturn = {
  *
  * @returns UseFontSizeReturn
  */
-export function useFontSize(): UseFontSizeReturn {
-  const [fontSize, setFontSize] = useState<number>(DEFAULT_SIZE)
-
-  // Read from localStorage on mount (SSR-safe: only runs on the client).
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored !== null) {
-        const parsed = parseInt(stored, 10)
-        if (!isNaN(parsed)) {
-          setFontSize(clamp(parsed))
-        }
-      }
-    } catch {
-      // localStorage unavailable — use default
+function readStoredFontSize(): number {
+  if (typeof window === 'undefined') return DEFAULT_SIZE
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored !== null) {
+      const parsed = parseInt(stored, 10)
+      if (!isNaN(parsed)) return clamp(parsed)
     }
-  }, [])
+  } catch {
+    // localStorage unavailable — use default
+  }
+  return DEFAULT_SIZE
+}
+
+export function useFontSize(): UseFontSizeReturn {
+  const [fontSize, setFontSize] = useState<number>(readStoredFontSize)
 
   const persist = useCallback((value: number) => {
     try {
