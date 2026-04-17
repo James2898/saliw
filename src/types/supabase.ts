@@ -17,6 +17,8 @@ export type DbSong = {
   original_key: string
   content: string
   created_by: string | null
+  singer: string | null
+  default_key: string | null
 }
 
 /**
