@@ -63,7 +63,6 @@ export default function ChordSheetClient({
     useFontSize()
 
   const [chordsHidden, setChordsHidden] = useState(false)
-  const [stageMode, setStageMode] = useState(false)
 
   const sheetRef = useRef<HTMLDivElement>(null)
 
@@ -88,7 +87,7 @@ export default function ChordSheetClient({
   }, [fontSize])
 
   // Build chord-display container class with conditional modifiers.
-  const chordDisplayClass = ['chord-display', chordsHidden && 'chords-hidden', stageMode && 'stage-mode']
+  const chordDisplayClass = ['chord-display', chordsHidden && 'chords-hidden']
     .filter(Boolean)
     .join(' ')
 
@@ -242,19 +241,6 @@ export default function ChordSheetClient({
           {chordsHidden ? 'Show Chords' : 'Hide Chords'}
         </button>
 
-        {/* Stage Mode toggle */}
-        <button
-          type="button"
-          onClick={() => setStageMode((prev) => !prev)}
-          aria-pressed={stageMode}
-          aria-label={stageMode ? 'Exit stage mode' : 'Enable stage mode'}
-          className={[
-            toggleBtnClass,
-            stageMode ? toggleActiveClass : toggleInactiveClass,
-          ].join(' ')}
-        >
-          {stageMode ? 'Exit Stage' : 'Stage Mode'}
-        </button>
       </div>
 
       {/* ── Chord sheet ────────────────────────────────────────────────────── */}
@@ -282,7 +268,7 @@ export default function ChordSheetClient({
 
           // type === 'chord'
           return (
-            <div key={lineIndex} className="leading-snug">
+            <div key={lineIndex} className="chord-row leading-snug">
               {line.tokens.map((token, tokenIndex) => {
                 if (token.isChord && token.originalChord !== null) {
                   return (
