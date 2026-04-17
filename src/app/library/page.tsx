@@ -4,11 +4,14 @@ import { Pencil } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
 import SearchBar from '@/components/client/SearchBar'
 import NewSongButton from '@/components/library/NewSongButton'
+import PaginationControls from '@/components/client/PaginationControls'
 
 export const metadata = {
   title: 'Song Library — Saliw',
   description: 'Browse and search the full worship song library.',
 }
+
+const PAGE_SIZE = 10
 
 type SongRow = {
   id: string
@@ -18,7 +21,7 @@ type SongRow = {
 }
 
 interface LibraryPageProps {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; page?: string }>
 }
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
@@ -35,7 +38,13 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
 
   // ── Resolve search params ───────────────────────────────────────────────────
   const params = await searchParams
-  const q = (params.q?.trim() ?? '').slice(0, 100)
+  // Strip PostgREST filter metacharacters to prevent filter-clause injection
+  const q = (params.q?.trim() ?? '').slice(0, 100).replace(/[(),%]/g, '')
+
+  // Parse page param — clamp to 1 as a lower bound; upper bound applied after count is known
+  const rawPage = parseInt(params.page ?? '1', 10)
+  const parsedPage = isNaN(rawPage) ? 1 : rawPage
+  const requestedPage = Math.max(1, parsedPage)
 
   // ── Fetch user role for RBAC ────────────────────────────────────────────────
   let isMusicDirector = false
@@ -52,31 +61,40 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     isMusicDirector = false
   }
 
-  // ── Fetch songs ─────────────────────────────────────────────────────────────
+  // ── Fetch songs (paginated, single round-trip) ──────────────────────────────
   // SELECT only metadata columns — content (lyrics/chords) is intentionally excluded
   let songs: SongRow[] = []
   let fetchError = false
+  let count: number | null = null
 
   try {
     let query = supabase
       .from('songs')
-      .select('id, title, artist, original_key')
+      .select('id, title, artist, original_key', { count: 'exact', head: false })
       .order('title', { ascending: true })
 
     if (q) {
       query = query.or(`title.ilike.%${q}%,artist.ilike.%${q}%`)
     }
 
-    const { data, error } = await query
+    const offset = (requestedPage - 1) * PAGE_SIZE
+    const { data, error, count: rowCount } = await query.range(offset, offset + PAGE_SIZE - 1)
 
     if (error) {
       fetchError = true
     } else {
       songs = (data ?? []) as SongRow[]
+      count = rowCount
     }
   } catch {
     fetchError = true
   }
+
+  // ── Derive pagination values ────────────────────────────────────────────────
+  const totalCount = count ?? 0
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  // Clamp currentPage to [1, totalPages] — handles out-of-bounds ?page params
+  const currentPage = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1
 
   // ── Derived empty-state message ─────────────────────────────────────────────
   const emptyMessage = fetchError
@@ -97,7 +115,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           <NewSongButton isMusicDirector={isMusicDirector} />
         </div>
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-6">
-          {songs.length} {songs.length === 1 ? 'song' : 'songs'}{q ? ` matching "${q}"` : ' in library'}
+          {totalCount} {totalCount === 1 ? 'song' : 'songs'}{q ? ` matching "${q}"` : ' in library'}
         </p>
 
         {/* ── Search bar ───────────────────────────────────────────────────── */}
@@ -165,6 +183,18 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
               </li>
             ))}
           </ul>
+        )}
+
+        {/* ── Pagination controls ───────────────────────────────────────────── */}
+        {!fetchError && totalCount > 0 && (
+          <div className="mt-6">
+            <PaginationControls
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={PAGE_SIZE}
+              q={q || undefined}
+            />
+          </div>
         )}
       </div>
     </main>
