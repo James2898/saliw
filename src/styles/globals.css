@@ -128,13 +128,12 @@ body {
 
 /* Stage Mode — wider left border and increased saturation on section headers
    for low-light visibility on stage. Uses filter: saturate() to avoid
-   hardcoded color values and to work in both light and dark modes. */
+   hardcoded color values and to work in both light and dark modes.
+   This rule applies in both light and dark modes — no dark-mode override needed:
+   border-left-width overrides the base 4px from .section-title in both modes,
+   and filter: saturate() is mode-agnostic. */
 .stage-mode .section-title {
   border-left-width: 6px;
-  filter: saturate(1.5);
-}
-
-.dark .stage-mode .section-title {
   filter: saturate(1.5);
 }
 

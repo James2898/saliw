@@ -5,6 +5,20 @@ import { useRouter } from 'next/navigation'
 import { NOTES } from '@/utils/musicLogic'
 import { createSong } from '@/app/actions/songActions'
 
+const inputBaseClass = [
+  'w-full px-3 py-2 rounded-xl',
+  'bg-brand-cream dark:bg-brand-espresso',
+  'text-brand-espresso dark:text-brand-cream',
+  'border border-brand-brown/30 dark:border-brand-tan/30',
+  'text-sm font-sans',
+  'placeholder:text-brand-brown/50 dark:placeholder:text-brand-tan/50',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+  'transition-colors duration-200',
+].join(' ')
+
+const labelClass =
+  'block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5'
+
 /**
  * NewSongFormClient — Form for creating a new song.
  *
@@ -22,19 +36,6 @@ export default function NewSongFormClient() {
   const [content, setContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const inputBaseClass = [
-    'w-full px-3 py-2 rounded-xl',
-    'bg-brand-cream dark:bg-brand-espresso',
-    'text-brand-espresso dark:text-brand-cream',
-    'border border-brand-brown/30 dark:border-brand-tan/30',
-    'text-sm font-sans',
-    'placeholder:text-brand-brown/50 dark:placeholder:text-brand-tan/50',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-    'transition-colors duration-200',
-  ].join(' ')
-
-  const labelClass = 'block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5'
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
