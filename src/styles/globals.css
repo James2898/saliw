@@ -114,6 +114,17 @@ body {
   font-family: var(--font-mono);
   white-space: pre-wrap;
   line-height: 1.8;
+  /* Font size controlled by useFontSize hook via CSS variable injection.
+     Fallback 1rem ensures correct SSR render before hook hydrates. */
+  font-size: var(--chord-font-size, 1rem);
+}
+
+/* ── Stage-Ready Controls ───────────────────────────────────────────────── */
+
+/* Hide Chords — display:none removes chord rows from layout flow entirely,
+   eliminating the blank gap that opacity-0 left above each lyric line. */
+.chords-hidden .chord-row {
+  display: none;
 }
 
 /* Card shell */
