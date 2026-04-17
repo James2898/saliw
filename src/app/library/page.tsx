@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
 import SearchBar from '@/components/client/SearchBar'
+import NewSongButton from '@/components/library/NewSongButton'
 
 export const metadata = {
   title: 'Song Library — Saliw',
@@ -88,9 +89,13 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     <main className="min-h-screen bg-brand-cream px-4 py-8 sm:px-8 font-sans">
       {/* ── Page header ──────────────────────────────────────────────────────── */}
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso mb-1">
-          Song Library
-        </h1>
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso">
+            Song Library
+          </h1>
+          {/* Desktop New Song button — mobile FAB renders at fixed viewport position */}
+          <NewSongButton isMusicDirector={isMusicDirector} />
+        </div>
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-6">
           {songs.length} {songs.length === 1 ? 'song' : 'songs'}{q ? ` matching "${q}"` : ' in library'}
         </p>
