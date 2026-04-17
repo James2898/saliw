@@ -114,6 +114,28 @@ body {
   font-family: var(--font-mono);
   white-space: pre-wrap;
   line-height: 1.8;
+  /* Font size controlled by useFontSize hook via CSS variable injection.
+     Fallback 1rem ensures correct SSR render before hook hydrates. */
+  font-size: var(--chord-font-size, 1rem);
+}
+
+/* ── Stage-Ready Controls ───────────────────────────────────────────────── */
+
+/* Hide Chords — opacity-0 preserves layout space; lyric alignment is not disrupted */
+.chords-hidden .chord-item {
+  opacity: 0;
+}
+
+/* Stage Mode — wider left border and increased saturation on section headers
+   for low-light visibility on stage. Uses filter: saturate() to avoid
+   hardcoded color values and to work in both light and dark modes. */
+.stage-mode .section-title {
+  border-left-width: 6px;
+  filter: saturate(1.5);
+}
+
+.dark .stage-mode .section-title {
+  filter: saturate(1.5);
 }
 
 /* Card shell */

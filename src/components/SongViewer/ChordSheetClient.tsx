@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import type { ProcessedLine } from '@/utils/musicLogic'
 import { NOTES, shiftChord } from '@/utils/musicLogic'
 import { useTranspose } from '@/hooks/useTranspose'
+import { useFontSize } from '@/hooks/useFontSize'
 
 interface ChordSheetClientProps {
   processedLines: ProcessedLine[]
@@ -31,6 +32,12 @@ export default function ChordSheetClient({
   const { semitoneOffset, displayKey, increment, decrement, setTargetKey, reset } =
     useTranspose(originalKey)
 
+  const { fontSize, increase: increaseFont, decrease: decreaseFont, reset: resetFont } =
+    useFontSize()
+
+  const [chordsHidden, setChordsHidden] = useState(false)
+  const [stageMode, setStageMode] = useState(false)
+
   const sheetRef = useRef<HTMLDivElement>(null)
 
   // Apply transposition to all .chord-item spans after mount and on offset changes.
@@ -47,6 +54,40 @@ export default function ChordSheetClient({
     })
   }, [semitoneOffset])
 
+  // Apply font-size CSS variable to the chord-display container.
+  // DOM mutation pattern — avoids React re-renders on the chord node tree.
+  useEffect(() => {
+    sheetRef.current?.style.setProperty('--chord-font-size', `${fontSize}px`)
+  }, [fontSize])
+
+  // Shared button class for control bar buttons (ghost style, matches transpose buttons).
+  const ctrlBtnClass = [
+    'flex items-center justify-center rounded-lg shrink-0',
+    'font-mono font-bold text-sm',
+    'text-brand-espresso dark:text-brand-cream',
+    'bg-brand-cream dark:bg-brand-espresso',
+    'border border-brand-brown/30 dark:border-brand-tan/30',
+    'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+    'transition-colors duration-200',
+  ].join(' ')
+
+  const toggleBtnClass = [
+    'px-2.5 py-1 rounded-lg shrink-0',
+    'text-xs font-semibold font-sans',
+    'border',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+    'transition-colors duration-200',
+  ].join(' ')
+
+  const toggleActiveClass = 'bg-brand-brown text-brand-cream border-brand-brown dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
+  const toggleInactiveClass = 'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10'
+
+  // Build chord-display container class with conditional modifiers.
+  const chordDisplayClass = ['chord-display', chordsHidden && 'chords-hidden', stageMode && 'stage-mode']
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <div>
       {/* ── Transposition control bar ──────────────────────────────────────── */}
@@ -57,9 +98,9 @@ export default function ChordSheetClient({
           'bg-brand-cream dark:bg-brand-espresso',
           'border border-brand-brown/20 dark:border-brand-tan/20',
         ].join(' ')}
-        aria-label="Transposition controls"
+        aria-label="Chord sheet controls"
       >
-        {/* Label */}
+        {/* ── Key transposition ───────────────────────────────────────────── */}
         <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
           Key
         </span>
@@ -69,16 +110,7 @@ export default function ChordSheetClient({
           type="button"
           onClick={decrement}
           aria-label="Transpose down one semitone"
-          className={[
-            'w-8 h-8 flex items-center justify-center rounded-lg shrink-0',
-            'font-mono font-bold text-sm',
-            'text-brand-espresso dark:text-brand-cream',
-            'bg-brand-cream dark:bg-brand-espresso',
-            'border border-brand-brown/30 dark:border-brand-tan/30',
-            'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-            'transition-colors duration-200',
-          ].join(' ')}
+          className={[ctrlBtnClass, 'w-8 h-8'].join(' ')}
         >
           −1
         </button>
@@ -111,21 +143,12 @@ export default function ChordSheetClient({
           type="button"
           onClick={increment}
           aria-label="Transpose up one semitone"
-          className={[
-            'w-8 h-8 flex items-center justify-center rounded-lg shrink-0',
-            'font-mono font-bold text-sm',
-            'text-brand-espresso dark:text-brand-cream',
-            'bg-brand-cream dark:bg-brand-espresso',
-            'border border-brand-brown/30 dark:border-brand-tan/30',
-            'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-            'transition-colors duration-200',
-          ].join(' ')}
+          className={[ctrlBtnClass, 'w-8 h-8'].join(' ')}
         >
           +1
         </button>
 
-        {/* Reset — only show when transposed */}
+        {/* Reset key — only show when transposed */}
         {semitoneOffset !== 0 && (
           <button
             type="button"
@@ -133,7 +156,7 @@ export default function ChordSheetClient({
             aria-label="Reset to original key"
             className={[
               'px-2.5 py-1 rounded-lg shrink-0',
-              'text-xs font-semibold',
+              'text-xs font-semibold font-sans',
               'text-brand-brown dark:text-brand-tan',
               'hover:text-brand-espresso dark:hover:text-brand-cream',
               'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
@@ -149,10 +172,89 @@ export default function ChordSheetClient({
         <span className="ml-auto text-xs font-medium text-brand-brown dark:text-brand-tan shrink-0">
           Original: {originalKey}
         </span>
+
+        {/* ── Divider ─────────────────────────────────────────────────────── */}
+        <span className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0" aria-hidden="true" />
+
+        {/* ── Font size controls ───────────────────────────────────────────── */}
+        <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
+          Size
+        </span>
+
+        {/* A− decrease font */}
+        <button
+          type="button"
+          onClick={decreaseFont}
+          aria-label="Decrease font size"
+          className={[ctrlBtnClass, 'w-8 h-8 text-xs'].join(' ')}
+        >
+          A−
+        </button>
+
+        {/* Font size indicator — click to reset */}
+        <button
+          type="button"
+          onClick={resetFont}
+          aria-label={`Font size ${fontSize}px — click to reset`}
+          title="Click to reset font size"
+          className={[
+            'px-2 py-1 rounded-lg shrink-0',
+            'text-xs font-mono font-bold',
+            'text-brand-espresso dark:text-brand-cream',
+            'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+            'transition-colors duration-200',
+          ].join(' ')}
+        >
+          {fontSize}px
+        </button>
+
+        {/* A+ increase font */}
+        <button
+          type="button"
+          onClick={increaseFont}
+          aria-label="Increase font size"
+          className={[ctrlBtnClass, 'w-8 h-8 text-xs'].join(' ')}
+        >
+          A+
+        </button>
+
+        {/* ── Divider ─────────────────────────────────────────────────────── */}
+        <span className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0" aria-hidden="true" />
+
+        {/* ── Stage-ready toggles ──────────────────────────────────────────── */}
+
+        {/* Hide Chords toggle */}
+        <button
+          type="button"
+          onClick={() => setChordsHidden((prev) => !prev)}
+          aria-pressed={chordsHidden}
+          aria-label={chordsHidden ? 'Show chords' : 'Hide chords'}
+          className={[
+            toggleBtnClass,
+            chordsHidden ? toggleActiveClass : toggleInactiveClass,
+          ].join(' ')}
+        >
+          {chordsHidden ? 'Show Chords' : 'Hide Chords'}
+        </button>
+
+        {/* Stage Mode toggle */}
+        <button
+          type="button"
+          onClick={() => setStageMode((prev) => !prev)}
+          aria-pressed={stageMode}
+          aria-label={stageMode ? 'Exit stage mode' : 'Enable stage mode'}
+          className={[
+            toggleBtnClass,
+            stageMode ? toggleActiveClass : toggleInactiveClass,
+          ].join(' ')}
+        >
+          {stageMode ? 'Exit Stage' : 'Stage Mode'}
+        </button>
       </div>
 
       {/* ── Chord sheet ────────────────────────────────────────────────────── */}
-      <div ref={sheetRef} className="chord-display" aria-label="Chord sheet">
+      <div ref={sheetRef} className={chordDisplayClass} aria-label="Chord sheet">
         {processedLines.map((line, lineIndex) => {
           if (line.type === 'blank') {
             return <div key={lineIndex} className="h-4" aria-hidden="true" />
