@@ -8,6 +8,9 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- Edit button on song viewer page (`/library/[id]`) that navigates to the edit view; visible to `music_director` role only.
+  - Affected files: `src/app/library/[id]/page.tsx`
+
 - **Setlist Songs Junction Actions** (`TASK-017`)
   - `src/app/actions/setlistActions.ts` — fixed `addSongToSetlist` to compute `order_index` server-side via MAX query and validate `original_key` against `NOTES`; renamed `reorderSetlist` → `updateSetlistSongOrder`; added `removeSongFromSetlist` (delete + sequential re-index loop), `updatePerformanceDetails` (conditional payload build preserving omitted `singer`), and `getSetlistWithSongs` (single join query, no N+1)
   - `src/types/supabase.ts` — extended `DbSetlistSong` with `singer: string | null`
