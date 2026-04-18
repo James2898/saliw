@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/services/supabase/server'
-import { chordRegex } from '@/utils/musicLogic'
+import { chordRegex, NOTES } from '@/utils/musicLogic'
 import type { DbSong } from '@/types/supabase'
 
 /**
@@ -33,6 +33,10 @@ export async function createSong(
 
     if (!user) {
       return { data: null, error: 'Unauthorized' }
+    }
+
+    if (input.original_key !== undefined && !(NOTES as readonly string[]).includes(input.original_key)) {
+      return { data: null, error: 'Invalid key. Must be one of: ' + NOTES.join(', ') }
     }
 
     if (!hasValidChordContent(input.content)) {
@@ -90,6 +94,10 @@ export async function updateSong(
 
     if (!user) {
       return { data: null, error: 'Unauthorized' }
+    }
+
+    if (input.original_key !== undefined && !(NOTES as readonly string[]).includes(input.original_key)) {
+      return { data: null, error: 'Invalid key. Must be one of: ' + NOTES.join(', ') }
     }
 
     if (input.content !== undefined && !hasValidChordContent(input.content)) {
