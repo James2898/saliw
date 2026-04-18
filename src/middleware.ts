@@ -1,7 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_PATHS = ['/dashboard', '/library', '/setlists']
+const PROTECTED_PATHS = ['/dashboard']
+
+function isProtectedPath(pathname: string): boolean {
+  if (PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return true
+  }
+  // Protect edit/create routes under /library
+  if (pathname === '/library/new') return true
+  if (/^\/library\/[^/]+\/edit(\/.*)?$/.test(pathname)) return true
+  return false
+}
 
 export async function middleware(request: NextRequest) {
   // Start with a passthrough response carrying the original request headers.
@@ -39,11 +49,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isProtected = PROTECTED_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + '/')
-  )
 
-  if (!user && isProtected) {
+  if (!user && isProtectedPath(pathname)) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

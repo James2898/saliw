@@ -4,6 +4,45 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-19
+
+### Added
+
+- **Setlist Archive & Index Hub** (`TASK-020`)
+  - `src/app/setlists/page.tsx` — Full server-rendered, paginated, searchable setlist index replacing the prior stub; `force-dynamic`; fetches from `setlists` with embedded `setlist_songs(count)`; `?q=` search with PostgREST metacharacter sanitization; `?page=` pagination with `count: 'exact'` and page-clamp guard; three distinct empty/error states; `music_director` RBAC gate for New Setlist controls; Artisan card layout with `border-l-4 border-[--brand-tan]`; sticky header containing title, count subtitle, and `SearchBar`; page metadata `title: 'Setlists — Saliw'`.
+  - `src/app/setlists/loading.tsx` — Created; 3 `animate-pulse bg-brand-brown/10` skeleton cards matching desktop/mobile card layout, plus header skeleton (title, button, count, search bar).
+  - `src/components/setlists/NewSetlistButton.tsx` — Created; `music_director`-gated Client Component; desktop `hidden md:inline-flex` button and mobile `fixed bottom-6 right-6 z-[80]` FAB; rendered disabled with hint text "Creating new setlists coming soon." until `/setlists/new` route is built; no `setState`-in-`useEffect` pattern.
+  - `src/components/client/SearchBar.tsx` — Added optional `basePath` prop (default `'/library'`); replaces hardcoded `/library` with `basePath` in `router.replace` calls; existing library usage unchanged.
+  - `src/components/client/PaginationControls.tsx` — Added optional `basePath` prop (default `'/library'`); updated `buildUrl` signature and all four call sites; existing library usage unchanged.
+  - `src/app/library/page.tsx` — Passes `basePath="/library"` explicitly to `SearchBar` and `PaginationControls` (no behaviour change).
+  - Known deviation: leader display name omitted from cards — `profiles_select_own` RLS blocks cross-user profile lookups and PostgREST cannot join across the `auth` schema boundary; approved in integration contract.
+  - Affected files: `src/app/setlists/page.tsx`, `src/app/setlists/loading.tsx`, `src/components/setlists/NewSetlistButton.tsx`, `src/components/client/SearchBar.tsx`, `src/components/client/PaginationControls.tsx`, `src/app/library/page.tsx`
+
+---
+
+## [Unreleased] — 2026-04-18
+
+### Added
+
+- **Stage-Ready Setlist Viewer** (`TASK-018`)
+  - Long-scrolling setlist viewer page at `/setlists/[id]` with auth guard, setlist header display, and per-song chord sheets initialized to each song's stored `performance_key`.
+  - Sticky `ServiceNavigator` — fixed sidebar on desktop (lg+), sticky top bar on mobile; IntersectionObserver scroll-spy highlights the active song in `--brand-tan`; observer disconnected on unmount to prevent memory leaks.
+  - Per-song `SetlistSongSection` with `useTransition`-gated Sync button (leader-only); captures current transpose key via `onKeyChange` callback; success Check icon for 2 seconds on save; inline error display on failure; disabled + Loader2 spinner while in-flight.
+  - `ChordSheetClient` wrapped in `React.memo` at call site to prevent re-renders from IntersectionObserver state changes.
+  - `preProcessChords` called server-side for all songs; no SSR hydration mismatches.
+  - Affected files: `src/app/setlists/[id]/page.tsx`, `src/components/client/ServiceNavigator.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/app/actions/setlistActions.ts` (added `getSetlistById`), `src/components/SongViewer/ChordSheetClient.tsx` (added optional `onKeyChange` prop)
+
+- Edit button on song viewer page (`/library/[id]`) that navigates to the edit view; visible to `music_director` role only.
+  - Affected files: `src/app/library/[id]/page.tsx`
+
+- **Setlist Songs Junction Actions** (`TASK-017`)
+  - `src/app/actions/setlistActions.ts` — fixed `addSongToSetlist` to compute `order_index` server-side via MAX query and validate `original_key` against `NOTES`; renamed `reorderSetlist` → `updateSetlistSongOrder`; added `removeSongFromSetlist` (delete + sequential re-index loop), `updatePerformanceDetails` (conditional payload build preserving omitted `singer`), and `getSetlistWithSongs` (single join query, no N+1)
+  - `src/types/supabase.ts` — extended `DbSetlistSong` with `singer: string | null`
+  - `supabase/migrations/20260418000001_add_singer_to_setlist_songs.sql` — adds nullable `singer TEXT` column to `public.setlist_songs`
+  - Affected files: `src/app/actions/setlistActions.ts`, `src/types/supabase.ts`, `supabase/migrations/20260418000001_add_singer_to_setlist_songs.sql`
+
+---
+
 ## [Unreleased] — 2026-04-17
 
 ### Added

@@ -349,17 +349,26 @@ export function isChordLine(line: string): boolean {
 
   const tokens = line.trim().split(/\s+/);
 
-  // Guard: any lyric-indicator word makes the whole line a lyric line.
+  // Hoist regex construction so it can be reused for both the guard check and
+  // the chord-count pass below.
+  const localRegex = new RegExp(chordRegex.source, "g");
+
+  // Guard: a lyric-indicator word makes the whole line a lyric — but only when
+  // the token is not itself a valid chord (e.g. "A" is both a guard word AND a
+  // chord; skip the guard so "A" on its own line is correctly detected).
   for (const token of tokens) {
-    if (LYRIC_GUARD_WORDS.has(token)) return false;
+    if (LYRIC_GUARD_WORDS.has(token)) {
+      localRegex.lastIndex = 0;
+      const m = token.match(localRegex);
+      if (!m || m[0] !== token) return false;
+    }
   }
 
   // Count how many tokens are fully consumed by a single chord match.
   let chordCount = 0;
-  // Reset lastIndex before reusing the global regex.
-  const localRegex = new RegExp(chordRegex.source, "g");
 
   for (const token of tokens) {
+    localRegex.lastIndex = 0;
     const match = token.match(localRegex);
     // The token is a chord token only if the entire token string is the match.
     if (match && match[0] === token) {
