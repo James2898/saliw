@@ -4,6 +4,18 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-18
+
+### Added
+
+- **Setlist Songs Junction Actions** (`TASK-017`)
+  - `src/app/actions/setlistActions.ts` — fixed `addSongToSetlist` to compute `order_index` server-side via MAX query and validate `original_key` against `NOTES`; renamed `reorderSetlist` → `updateSetlistSongOrder`; added `removeSongFromSetlist` (delete + sequential re-index loop), `updatePerformanceDetails` (conditional payload build preserving omitted `singer`), and `getSetlistWithSongs` (single join query, no N+1)
+  - `src/types/supabase.ts` — extended `DbSetlistSong` with `singer: string | null`
+  - `supabase/migrations/20260418000001_add_singer_to_setlist_songs.sql` — adds nullable `singer TEXT` column to `public.setlist_songs`
+  - Affected files: `src/app/actions/setlistActions.ts`, `src/types/supabase.ts`, `supabase/migrations/20260418000001_add_singer_to_setlist_songs.sql`
+
+---
+
 ## [Unreleased] — 2026-04-17
 
 ### Added
