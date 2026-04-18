@@ -8,6 +8,14 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- **Stage-Ready Setlist Viewer** (`TASK-018`)
+  - Long-scrolling setlist viewer page at `/setlists/[id]` with auth guard, setlist header display, and per-song chord sheets initialized to each song's stored `performance_key`.
+  - Sticky `ServiceNavigator` — fixed sidebar on desktop (lg+), sticky top bar on mobile; IntersectionObserver scroll-spy highlights the active song in `--brand-tan`; observer disconnected on unmount to prevent memory leaks.
+  - Per-song `SetlistSongSection` with `useTransition`-gated Sync button (leader-only); captures current transpose key via `onKeyChange` callback; success Check icon for 2 seconds on save; inline error display on failure; disabled + Loader2 spinner while in-flight.
+  - `ChordSheetClient` wrapped in `React.memo` at call site to prevent re-renders from IntersectionObserver state changes.
+  - `preProcessChords` called server-side for all songs; no SSR hydration mismatches.
+  - Affected files: `src/app/setlists/[id]/page.tsx`, `src/components/client/ServiceNavigator.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/app/actions/setlistActions.ts` (added `getSetlistById`), `src/components/SongViewer/ChordSheetClient.tsx` (added optional `onKeyChange` prop)
+
 - Edit button on song viewer page (`/library/[id]`) that navigates to the edit view; visible to `music_director` role only.
   - Affected files: `src/app/library/[id]/page.tsx`
 
