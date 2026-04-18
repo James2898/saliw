@@ -40,4 +40,5 @@ export type DbSetlistSong = {
   song_id: string
   order_index: number
   performance_key: string
+  singer: string | null   // Added by migration 20260418000001_add_singer_to_setlist_songs.sql
 }
