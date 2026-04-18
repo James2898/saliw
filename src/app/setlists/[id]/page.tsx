@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
@@ -18,14 +17,10 @@ export default async function SetlistViewerPage({ params }: SetlistViewerPagePro
   const { id } = await params
   const supabase = await createClient()
 
-  // ── Auth guard ──────────────────────────────────────────────────────────────
+  // ── Auth check (no redirect — page is public; user drives isLeader below) ──
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
 
   // ── Fetch setlist header ────────────────────────────────────────────────────
   const { data: setlist, error: setlistError } = await getSetlistById({ id })
@@ -88,7 +83,7 @@ export default async function SetlistViewerPage({ params }: SetlistViewerPagePro
   }
 
   // ── Compute leader status ───────────────────────────────────────────────────
-  const isLeader = user.id === setlist.leader_id
+  const isLeader = user != null && user.id === setlist.leader_id
 
   // ── Sort songs by order_index ascending ────────────────────────────────────
   const songs = (songsRaw ?? []).slice().sort((a, b) => a.order_index - b.order_index)

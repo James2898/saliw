@@ -16,11 +16,6 @@ export async function getSetlistById(
 ): Promise<{ data: { id: string; name: string; date: string; leader_id: string; is_public: boolean } | null; error: string | null }> {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return { data: null, error: 'Unauthorized' }
-    }
 
     const { data, error } = await supabase
       .from('setlists')
@@ -366,11 +361,6 @@ export async function getSetlistWithSongs(
 }> {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return { data: null, error: 'Unauthorized' }
-    }
 
     const { data, error } = await supabase
       .from('setlist_songs')
