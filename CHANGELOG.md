@@ -4,6 +4,22 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-19
+
+### Added
+
+- **Setlist Archive & Index Hub** (`TASK-020`)
+  - `src/app/setlists/page.tsx` — Full server-rendered, paginated, searchable setlist index replacing the prior stub; `force-dynamic`; fetches from `setlists` with embedded `setlist_songs(count)`; `?q=` search with PostgREST metacharacter sanitization; `?page=` pagination with `count: 'exact'` and page-clamp guard; three distinct empty/error states; `music_director` RBAC gate for New Setlist controls; Artisan card layout with `border-l-4 border-[--brand-tan]`; sticky header containing title, count subtitle, and `SearchBar`; page metadata `title: 'Setlists — Saliw'`.
+  - `src/app/setlists/loading.tsx` — Created; 3 `animate-pulse bg-brand-brown/10` skeleton cards matching desktop/mobile card layout, plus header skeleton (title, button, count, search bar).
+  - `src/components/setlists/NewSetlistButton.tsx` — Created; `music_director`-gated Client Component; desktop `hidden md:inline-flex` button and mobile `fixed bottom-6 right-6 z-[80]` FAB; rendered disabled with hint text "Creating new setlists coming soon." until `/setlists/new` route is built; no `setState`-in-`useEffect` pattern.
+  - `src/components/client/SearchBar.tsx` — Added optional `basePath` prop (default `'/library'`); replaces hardcoded `/library` with `basePath` in `router.replace` calls; existing library usage unchanged.
+  - `src/components/client/PaginationControls.tsx` — Added optional `basePath` prop (default `'/library'`); updated `buildUrl` signature and all four call sites; existing library usage unchanged.
+  - `src/app/library/page.tsx` — Passes `basePath="/library"` explicitly to `SearchBar` and `PaginationControls` (no behaviour change).
+  - Known deviation: leader display name omitted from cards — `profiles_select_own` RLS blocks cross-user profile lookups and PostgREST cannot join across the `auth` schema boundary; approved in integration contract.
+  - Affected files: `src/app/setlists/page.tsx`, `src/app/setlists/loading.tsx`, `src/components/setlists/NewSetlistButton.tsx`, `src/components/client/SearchBar.tsx`, `src/components/client/PaginationControls.tsx`, `src/app/library/page.tsx`
+
+---
+
 ## [Unreleased] — 2026-04-18
 
 ### Added
