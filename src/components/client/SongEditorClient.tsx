@@ -42,13 +42,13 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
 
   // ── Original key state ───────────────────────────────────────────────────────
   const [originalKey, setOriginalKey] = useState(() => song.original_key ?? 'C')
-  const savedOriginalKey = useRef(song.original_key ?? 'C')
+  const [savedOriginalKey, setSavedOriginalKey] = useState(() => song.original_key ?? 'C')
 
   // isDirty: true if content, singer, or original key diverge from last saved state
   const isDirty =
     currentContent !== savedBaseline ||
     singer !== savedSinger ||
-    originalKey !== savedOriginalKey.current
+    originalKey !== savedOriginalKey
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>('edit')
@@ -160,7 +160,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     } else {
       setSavedBaseline(currentContent)
       setSavedSinger(singer)
-      savedOriginalKey.current = originalKey
+      setSavedOriginalKey(originalKey)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     }
