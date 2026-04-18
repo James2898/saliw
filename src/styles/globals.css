@@ -75,15 +75,19 @@ body {
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
+/* Light mode: espresso text (#2D1F1B) on tan background (#BC8E5C) — contrast ~6.5:1, WCAG AA pass */
 .chord-item {
   color: var(--brand-espresso);
+  background-color: var(--brand-tan);
   padding: 0 4px;
+  border-radius: 3px;
   font-family: var(--font-mono);
 }
 
+/* Dark mode: cream text (#FDF8F3) on brown background (#835B43) — contrast ~4.7:1, WCAG AA pass */
 .dark .chord-item {
   color: var(--brand-cream);
-  background-color: var(--brand-espresso);
+  background-color: var(--brand-brown);
 }
 
 /* Section header — [VERSE], [CHORUS], etc. */
@@ -110,6 +114,17 @@ body {
   font-family: var(--font-mono);
   white-space: pre-wrap;
   line-height: 1.8;
+  /* Font size controlled by useFontSize hook via CSS variable injection.
+     Fallback 1rem ensures correct SSR render before hook hydrates. */
+  font-size: var(--chord-font-size, 1rem);
+}
+
+/* ── Stage-Ready Controls ───────────────────────────────────────────────── */
+
+/* Hide Chords — display:none removes chord rows from layout flow entirely,
+   eliminating the blank gap that opacity-0 left above each lyric line. */
+.chords-hidden .chord-row {
+  display: none;
 }
 
 /* Card shell */

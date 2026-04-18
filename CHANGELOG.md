@@ -4,7 +4,66 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-17
+
+### Added
+
+- **Artisan New Song Entry Point & Stage-Ready UI Controls** (`TASK-013`)
+  - `src/components/library/NewSongButton.tsx` — New Client Component; renders only for `music_director` (DOM-absent for non-directors); desktop inline button (`bg-brand-tan`, `rounded-xl`, Plus icon, "New Song" label, `hover:scale-105 hover:shadow-md`) and mobile FAB (`fixed bottom-6 right-6 z-[80]`, icon-only with `aria-label`); Loader2 loading state on click while `router.push('/library/new')` fires; WCAG AA contrast confirmed (espresso on tan ~6.5:1)
+  - `src/app/library/new/page.tsx` — New dynamic Server Component route; auth guard (redirect `/login`) + RBAC guard (redirect `/library` for non-directors, graceful degrade on profile fetch failure); renders `NewSongFormClient`; page title "New Song — Saliw"; back link to `/library` with ChevronLeft; Artisan `bg-brand-cream dark:bg-brand-darker` styling
+  - `src/components/client/NewSongFormClient.tsx` — New Client Component form; fields: `title`, `artist`, `original_key` (NOTES select), `content` (textarea, `font-mono`, `spellCheck={false}`); calls existing `createSong()` Server Action; navigates to `/library/[id]` on success; inline error display; "Creating..." label + disabled state during submission
+  - `src/hooks/useFontSize.ts` — New custom hook; 12–48px range, 2px steps, default 16px; `localStorage` persistence (`"saliw-font-size"`); SSR-safe `useEffect` read with clamping; `useCallback`-memoized `increase`, `decrease`, `reset`; does not apply CSS variable (consumer responsibility)
+  - `src/components/SongViewer/ChordSheetClient.tsx` — Extended with three Stage-Ready control groups: (1) Font-size group (A− / `NNpx` indicator / A+) applying `--chord-font-size` CSS variable via DOM mutation on `sheetRef`; (2) Hide Chords toggle toggling `chords-hidden` class on `.chord-display`; (3) Stage Mode toggle toggling `stage-mode` class on `.chord-display`; all buttons with full Artisan focus rings and `aria-pressed`
+  - `src/styles/globals.css` — `.chord-display` extended with `font-size: var(--chord-font-size, 1rem)`; new rules: `.chords-hidden .chord-item { opacity: 0; }` (preserves layout/lyric alignment); `.stage-mode .section-title { border-left-width: 6px; filter: saturate(1.5); }` for low-light stage visibility
+  - `src/app/library/page.tsx` — Updated to render `<NewSongButton isMusicDirector={isMusicDirector} />` in the page header flex row (uses existing role check, no new Supabase query)
+
+- **Artisan Song Editor** (`TASK-012`)
+  - `src/app/library/[id]/edit/page.tsx` — New dynamic Server Component route for Music Directors; enforces auth via `supabase.auth.getUser()` (redirects to `/login`) and RBAC via `profiles.role` check (redirects to read-only view for non-directors); fetches full song row; graceful not-found inline error state; passes song to `SongEditorClient`
+  - `src/components/client/SongEditorClient.tsx` — New `'use client'` editor component; monospaced textarea (`font-mono`, `white-space: pre`, `spellCheck={false}`); dirty-state detection disables "Save Changes" until edits exist; "Clean" button strips trailing whitespace per line and normalizes `\r\n`/`\r` → `\n`; live WYSIWYG preview via `preProcessChords` + `ChordSheetClient`; responsive layout (side-by-side grid on `lg+`, tabbed "Edit"/"Preview" on mobile); `updateSong()` Server Action call with inline success and error feedback; "Unsaved Changes" modal with `role="dialog"`, `aria-modal`, `aria-labelledby`, Escape-to-close, Tab focus trap, and backdrop-click dismiss; `beforeunload` listener for browser-level navigation guard
+  - No new dependencies; uses existing `updateSong`, `preProcessChords`, `chordRegex`, `ChordSheetClient`, and `Song` type
+  - Artisan Palette: `bg-brand-cream dark:bg-brand-darker` page, `bg-brand-cream dark:bg-brand-espresso` panels, `text-brand-espresso dark:text-brand-cream` body text; WCAG AA focus rings on all interactive elements
+
+### Fixed
+
+- **Pipe-delimited chord chart detection in `preProcessChords`** (`TASK-011`)
+  - `src/utils/musicLogic.ts` — Added `PIPE_CHART_REGEX` (`/\|.*\|/`) and a new step-3 branch in `preProcessChords` to detect pipe-delimited chord chart lines (e.g. `[Intro]| F | C | G | Am7 || F | C | G | Am7 |`) before the `isChordLine` heuristic. Pipe and double-pipe characters are emitted as non-chord tokens; inter-pipe chord tokens (F, C, G, Am7, etc.) are emitted as `{ isChord: true, originalChord: VALUE }` in the existing `ChordToken` shape. Result is classified as `type: 'chord'` so `ChordSheetClient.tsx` wraps them in `.chord-item[data-original-chord]` spans with no client-side changes required. Live transposition via `useTranspose` applies automatically.
+  - Root cause: `isChordLine` counted `|` and `[Intro]|` as non-chord tokens, reducing the chord ratio below the 50% threshold — line was misclassified as lyric.
+  - No changes to `ChordSheetClient.tsx`, `chordRegex`, or any Supabase queries.
+
+---
+
+## [Unreleased] — 2026-04-16
+
+### Added
+
+- **Hybrid Rendering Engine — SongViewer with Live Transposition** (`TASK-011`)
+  - `src/utils/musicLogic.ts` — Added `preProcessChords(content): ProcessedLine[]` function; exports `ProcessedLine` and `ChordToken` discriminated union types; classifies chord-sheet lines as header/chord/lyric/blank with whitespace-preserving tokenization for alignment
+  - `src/hooks/useTranspose.ts` — New `useTranspose(originalKey)` hook managing semitone offset state; derives `displayKey` from `NOTES` array; exposes `increment`/`decrement`/`setTargetKey`/`reset`; always calculates offset relative to `original_key`, never accumulated
+  - `src/components/SongViewer/ChordSheetClient.tsx` — New `'use client'` chord sheet component; renders transposition control bar (12-key dropdown + ±1 stepper); applies transposition via DOM mutation of `.chord-item[data-original-chord]` spans in `useEffect` to avoid React hydration mismatch; uses `.chord-display` and `.section-title` CSS classes
+  - `src/app/library/[id]/page.tsx` — New dynamic route Server Component; auth guard via `supabase.auth.getUser()`; fetches `content`, `original_key`, `title`, `artist` from `songs` table via `@supabase/ssr`; calls `preProcessChords` SSR-side and passes result as prop to `ChordSheetClient`; inline error states for not-found and server error
+  - Artisan Palette: `text-brand-espresso`/`bg-brand-cream` light mode; `text-brand-cream`/`bg-brand-espresso` dark mode; all controls WCAG AA compliant
+  - `src/styles/globals.css` — Chord token styling enhanced: `.chord-item` now renders with a visible badge background in both modes — light: espresso text on tan background (~6.5:1 contrast, WCAG AA); dark: cream text on brown background (~4.7:1 contrast, WCAG AA); `border-radius: 3px` added for pill-badge appearance; no new dependencies
+
+- **Song Library Base View with Server-Side Search** (`TASK-010`)
+  - `src/app/library/page.tsx` — Full Server Component: fetches `songs` table (id/title/artist/original_key only; `content` excluded for payload minimization), applies `ilike` OR filter on `title`/`artist` when `?q` param is present, orders by `title` ascending; derives `isMusicDirector` server-side via `profiles.role` query; implements three empty states (fetch error, search zero-results, empty library)
+  - `src/components/client/SearchBar.tsx` — New Client Component: debounced 300ms `router.replace` URL navigation, Artisan Palette styling (brand-cream background, brand-tan border, brand-espresso focus ring), accessible with `aria-label`
+  - RBAC: "Edit" Pencil icon link per row visible only to `music_director` users; guests and standard users see navigation-only rows
+  - Artisan Palette: brand-cream container, brand-tan-alpha row backgrounds, brand-espresso titles (WCAG AA), brand-brown artist/key metadata
+
+---
+
 ## [Unreleased] — 2026-04-15
+
+### Added
+
+- **Musical Logic Engine: chord detection, transposition, and key offset utilities** (`TASK-011`)
+  - `src/utils/musicLogic.ts` — hardened `chordRegex`: replaced trailing `\b` with `(?![a-zA-Z0-9#/])` to prevent `#` (non-word character) from causing boundary backtracking that previously dropped `#` from chord tokens such as `F#`, `C#`, and `D/F#`; `F#` and `C#` are now correctly recognised by `isChordLine`
+  - `NOTES` readonly 12-element chromatic scale array (`C` through `B`, sharps preferred except `Bb`)
+  - `chordRegex` exported `RegExp` matching standard chord notation including slash chords, quality suffixes (maj, min, dim, aug, sus, add, numbered), and sharp/flat roots; anchored to prevent mid-word false positives
+  - `shiftChord(chord, semitones)` transposes root and optional slash bass note independently using canonical `NOTES` indices
+  - `getSemitoneOffset(originalKey, performanceKey)` returns 0–11 semitone offset; returns 0 for unrecognised keys
+  - `isChordLine(line)` heuristic: guards against lyric-indicator words (`I`, `A`, `To`, etc.), then requires >50% of whitespace-delimited tokens to be valid chord tokens
+  - Affected files: `src/utils/musicLogic.ts`
 
 ### Changed
 
