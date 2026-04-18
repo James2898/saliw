@@ -345,8 +345,10 @@ export async function getSetlistWithSongs(
       return { data: null, error: 'Unable to load setlist. Please try again.' }
     }
 
-    // Empty array is a valid success (setlist exists but has no songs)
-    return { data: (data ?? []) as Array<{
+    // Empty array is a valid success (setlist exists but has no songs).
+    // Supabase infers the embedded relation as an array; cast via unknown to match the
+    // contract shape where songs is a single object (FK relationship guarantees one song per row).
+    return { data: (data ?? []) as unknown as Array<{
       id: string
       song_id: string
       order_index: number
