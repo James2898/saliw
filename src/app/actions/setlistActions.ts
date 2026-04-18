@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/services/supabase/server'
+import { NOTES } from '@/utils/musicLogic'
 import type { DbSetlist, DbSetlistSong } from '@/types/supabase'
 
 /**
@@ -45,13 +46,14 @@ export async function createSetlist(
 /**
  * Adds a song to a setlist.
  * Fetches the song's original_key and uses it as the initial performance_key.
+ * Computes order_index server-side as MAX(order_index) + 1 (or 0 for empty setlists).
  * Only the setlist's leader may add songs (enforced via RLS on setlist_songs).
  *
- * @param input - The setlist id, song id, and desired order position
+ * @param input - The setlist id and song id
  * @returns The created setlist_songs row, or an error message
  */
 export async function addSongToSetlist(
-  input: { setlist_id: string; song_id: string; order_index: number }
+  input: { setlist_id: string; song_id: string }
 ): Promise<{ data: DbSetlistSong | null; error: string | null }> {
   try {
     const supabase = await createClient()
@@ -61,6 +63,17 @@ export async function addSongToSetlist(
       return { data: null, error: 'Unauthorized' }
     }
 
+    // Compute next order_index server-side using maybeSingle() to handle empty setlist gracefully
+    const { data: maxRow } = await supabase
+      .from('setlist_songs')
+      .select('order_index')
+      .eq('setlist_id', input.setlist_id)
+      .order('order_index', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const nextIndex = maxRow ? maxRow.order_index + 1 : 0
+
     // Fetch the song's original_key to use as the default performance_key
     const { data: song, error: songError } = await supabase
       .from('songs')
@@ -68,8 +81,17 @@ export async function addSongToSetlist(
       .eq('id', input.song_id)
       .single()
 
-    if (songError || !song) {
+    if (songError?.code === 'PGRST116' || !song) {
       return { data: null, error: 'Song not found.' }
+    }
+
+    if (songError) {
+      return { data: null, error: 'Song not found.' }
+    }
+
+    // Validate the original_key against the canonical NOTES array
+    if (!(NOTES as readonly string[]).includes(song.original_key)) {
+      return { data: null, error: 'Song has an invalid original key.' }
     }
 
     const { data, error } = await supabase
@@ -77,8 +99,9 @@ export async function addSongToSetlist(
       .insert({
         setlist_id: input.setlist_id,
         song_id: input.song_id,
-        order_index: input.order_index,
+        order_index: nextIndex,
         performance_key: song.original_key,
+        singer: null,
       })
       .select()
       .single()
@@ -97,6 +120,74 @@ export async function addSongToSetlist(
 }
 
 /**
+ * Removes a song entry from a setlist, then re-indexes the remaining entries
+ * sequentially (0, 1, 2, …) to close the gap.
+ * Only the setlist's leader may remove songs (enforced via RLS on setlist_songs).
+ *
+ * @param input - The setlist_songs PK (id) and the setlist_id for RLS scoping
+ * @returns The deleted setlist_songs id, or an error message
+ */
+export async function removeSongFromSetlist(
+  input: { id: string; setlist_id: string }
+): Promise<{ data: { id: string } | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    // Delete the target row, scoped to the setlist for RLS
+    const { error: deleteError, count } = await supabase
+      .from('setlist_songs')
+      .delete({ count: 'exact' })
+      .eq('id', input.id)
+      .eq('setlist_id', input.setlist_id)
+
+    if (deleteError) {
+      if (deleteError.code === '42501') {
+        return { data: null, error: 'You do not have permission to modify this setlist.' }
+      }
+      return { data: null, error: 'Unable to reorder setlist after removal. Please try again.' }
+    }
+
+    if (count === 0) {
+      return { data: null, error: 'Song entry not found in setlist.' }
+    }
+
+    // Fetch remaining rows ordered by current order_index to re-index them
+    const { data: remaining, error: fetchError } = await supabase
+      .from('setlist_songs')
+      .select('id')
+      .eq('setlist_id', input.setlist_id)
+      .order('order_index', { ascending: true })
+
+    if (fetchError) {
+      return { data: null, error: 'Unable to reorder setlist after removal. Please try again.' }
+    }
+
+    // Sequential re-index loop — each update scoped to setlist_id for RLS
+    for (let i = 0; i < (remaining ?? []).length; i++) {
+      const row = remaining![i]
+      const { error: updateError } = await supabase
+        .from('setlist_songs')
+        .update({ order_index: i })
+        .eq('id', row.id)
+        .eq('setlist_id', input.setlist_id)
+
+      if (updateError) {
+        return { data: null, error: 'Unable to reorder setlist after removal. Please try again.' }
+      }
+    }
+
+    return { data: { id: input.id }, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
  * Reorders songs within a setlist by updating order_index for each specified entry.
  * Only the setlist's leader may reorder (enforced via RLS on setlist_songs).
  *
@@ -104,7 +195,7 @@ export async function addSongToSetlist(
  *                where id is the setlist_songs.id (junction table PK)
  * @returns The updated setlist_songs rows, or an error message
  */
-export async function reorderSetlist(
+export async function updateSetlistSongOrder(
   input: { setlist_id: string; updates: Array<{ id: string; order_index: number }> }
 ): Promise<{ data: DbSetlistSong[] | null; error: string | null }> {
   try {
@@ -143,6 +234,132 @@ export async function reorderSetlist(
     }
 
     return { data: updatedRows, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
+ * Updates the performance_key and/or singer for a specific setlist_songs entry.
+ * Only the setlist's leader may update performance details (enforced via RLS).
+ *
+ * @param input - The setlist_songs PK (id), the setlist_id for RLS scoping,
+ *                and optional performance_key / singer fields
+ * @returns The full updated setlist_songs row, or an error message
+ */
+export async function updatePerformanceDetails(
+  input: { id: string; setlist_id: string; performance_key?: string; singer?: string | null }
+): Promise<{ data: DbSetlistSong | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    // Guard: at least one field must be supplied
+    if (input.performance_key === undefined && !('singer' in input)) {
+      return { data: null, error: 'No fields to update.' }
+    }
+
+    // Validate performance_key against NOTES if provided
+    if (input.performance_key !== undefined) {
+      if (!(NOTES as readonly string[]).includes(input.performance_key)) {
+        return { data: null, error: 'Invalid performance key. Must be one of: ' + NOTES.join(', ') }
+      }
+    }
+
+    // Build payload conditionally: only include fields that are explicitly present
+    // Use 'singer' in input to distinguish omitted (preserve existing) from null (clear it)
+    const payload: Record<string, unknown> = {}
+    if (input.performance_key !== undefined) payload.performance_key = input.performance_key
+    if ('singer' in input) payload.singer = input.singer
+
+    const { data, error } = await supabase
+      .from('setlist_songs')
+      .update(payload)
+      .eq('id', input.id)
+      .eq('setlist_id', input.setlist_id)
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === '42501') {
+        return { data: null, error: 'You do not have permission to modify this setlist.' }
+      }
+      if (error.code === 'PGRST116') {
+        return { data: null, error: 'Setlist song entry not found.' }
+      }
+      return { data: null, error: 'Unable to update performance details. Please try again.' }
+    }
+
+    return { data: data as DbSetlistSong, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
+ * Fetches all songs for a setlist in a single join query (no N+1).
+ * Returns setlist_songs rows with embedded song data, ordered by order_index ascending.
+ * Any authenticated user may read (setlist_songs_select_authenticated RLS policy).
+ *
+ * @param input - The setlist id to fetch songs for
+ * @returns An array of setlist_songs with joined song fields, or an error message
+ */
+export async function getSetlistWithSongs(
+  input: { setlist_id: string }
+): Promise<{
+  data: Array<{
+    id: string
+    song_id: string
+    order_index: number
+    performance_key: string
+    singer: string | null
+    songs: {
+      id: string
+      title: string
+      artist: string
+      original_key: string
+      content: string
+    }
+  }> | null
+  error: string | null
+}> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('setlist_songs')
+      .select('id, song_id, order_index, performance_key, singer, songs(id, title, artist, original_key, content)')
+      .eq('setlist_id', input.setlist_id)
+      .order('order_index', { ascending: true })
+
+    if (error) {
+      return { data: null, error: 'Unable to load setlist. Please try again.' }
+    }
+
+    // Empty array is a valid success (setlist exists but has no songs)
+    return { data: (data ?? []) as Array<{
+      id: string
+      song_id: string
+      order_index: number
+      performance_key: string
+      singer: string | null
+      songs: {
+        id: string
+        title: string
+        artist: string
+        original_key: string
+        content: string
+      }
+    }>, error: null }
   } catch {
     return { data: null, error: 'An unexpected error occurred. Please try again.' }
   }
