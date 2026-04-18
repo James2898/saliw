@@ -94,6 +94,7 @@ export default async function SetlistViewerPage({ params }: SetlistViewerPagePro
     setlistId: id,
     title: entry.songs.title,
     artist: entry.songs.artist,
+    originalKey: entry.songs.original_key,
     performanceKey: entry.performance_key,
     processedLines: preProcessChords(entry.songs.content),
   }))
@@ -166,6 +167,7 @@ export default async function SetlistViewerPage({ params }: SetlistViewerPagePro
                   title={song.title}
                   artist={song.artist}
                   processedLines={song.processedLines}
+                  originalKey={song.originalKey}
                   performanceKey={song.performanceKey}
                   isLeader={isLeader}
                 />

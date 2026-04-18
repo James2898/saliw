@@ -12,6 +12,7 @@ interface SetlistSongSectionProps {
   title: string
   artist: string
   processedLines: ProcessedLine[]
+  originalKey: string
   performanceKey: string
   isLeader: boolean
 }
@@ -35,6 +36,7 @@ function SetlistSongSection({
   title,
   artist,
   processedLines,
+  originalKey,
   performanceKey,
   isLeader,
 }: SetlistSongSectionProps) {
@@ -146,8 +148,8 @@ function SetlistSongSection({
         IntersectionObserver state changes in the navigator do not cause
         re-renders of the chord sheet (AC-11).
 
-        originalKey is set to performanceKey (not songs.original_key) so that
-        the transpose control initializes at the setlist's stored performance key (AC-10).
+        originalKey is the song's stored key so transposition math stays correct.
+        initialKey is the setlist's performanceKey so the sheet opens at that key on load.
 
         onKeyChange lifts the current displayKey back to this component
         so the Sync button can capture it without breaking ChordSheetClient's
@@ -155,7 +157,8 @@ function SetlistSongSection({
       */}
       <MemoChordSheetClient
         processedLines={processedLines}
-        originalKey={performanceKey}
+        originalKey={originalKey}
+        initialKey={performanceKey}
         onKeyChange={isLeader ? handleKeyChange : undefined}
       />
     </section>
