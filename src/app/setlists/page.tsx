@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/services/supabase/server'
 
 export const metadata = {
@@ -11,10 +10,6 @@ export default async function SetlistsPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
 
   return (
     <main
