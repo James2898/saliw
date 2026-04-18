@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
 import Card from '@/components/server/card'
 import SongEditorClient from '@/components/client/SongEditorClient'
+import SongEditorBreadcrumb from '@/components/server/SongEditorBreadcrumb'
 import type { Song } from '@/types/Song'
 
 export const dynamic = 'force-dynamic'
@@ -79,19 +78,7 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
     return (
       <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
         <div className="max-w-5xl mx-auto">
-          <Link
-            href="/library"
-            className={[
-              'inline-flex items-center gap-1.5 mb-6',
-              'text-sm font-medium text-brand-brown dark:text-brand-tan',
-              'hover:text-brand-espresso dark:hover:text-brand-cream',
-              'transition-colors duration-200',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
-            ].join(' ')}
-          >
-            <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
-            Back to Library
-          </Link>
+          <SongEditorBreadcrumb songId={id} />
 
           <Card>
             <p className="text-sm font-semibold text-brand-brown dark:text-brand-tan text-center py-6">
@@ -115,20 +102,8 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
       <div className="max-w-5xl mx-auto">
-        {/* ── Back link ─────────────────────────────────────────────────────── */}
-        <Link
-          href={`/library/${id}`}
-          className={[
-            'inline-flex items-center gap-1.5 mb-6',
-            'text-sm font-medium text-brand-brown dark:text-brand-tan',
-            'hover:text-brand-espresso dark:hover:text-brand-cream',
-            'transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
-          ].join(' ')}
-        >
-          <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
-          Back to Song
-        </Link>
+        {/* ── Breadcrumb ────────────────────────────────────────────────────── */}
+        <SongEditorBreadcrumb songId={id} songTitle={song.title} />
 
         {/* ── Song header ───────────────────────────────────────────────────── */}
         <div className="mb-6">
