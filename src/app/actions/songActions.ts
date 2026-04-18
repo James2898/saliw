@@ -25,7 +25,7 @@ function hasValidChordContent(content: string): boolean {
  * @returns The created song row, or an error message
  */
 export async function createSong(
-  input: { title: string; artist: string; original_key: string; content: string }
+  input: { title: string; artist: string; original_key: string; content: string; singer?: string }
 ): Promise<{ data: DbSong | null; error: string | null }> {
   try {
     const supabase = await createClient()
@@ -47,8 +47,9 @@ export async function createSong(
         original_key: input.original_key,
         content: input.content,
         created_by: user.id,
+        singer: input.singer ?? null,
       })
-      .select()
+      .select('id, title, artist, original_key, content, created_by, singer')
       .single()
 
     if (error) {
@@ -80,6 +81,7 @@ export async function updateSong(
     artist?: string
     original_key?: string
     content?: string
+    singer?: string
   }
 ): Promise<{ data: DbSong | null; error: string | null }> {
   try {
@@ -103,7 +105,7 @@ export async function updateSong(
       .from('songs')
       .update(updatePayload)
       .eq('id', id)
-      .select()
+      .select('id, title, artist, original_key, content, created_by, singer')
       .single()
 
     if (error) {

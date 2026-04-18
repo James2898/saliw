@@ -7,6 +7,20 @@ import { updateSong } from '@/app/actions/songActions'
 import ChordSheetClient from '@/components/SongViewer/ChordSheetClient'
 import type { Song } from '@/types/Song'
 
+const inputBaseClass = [
+  'w-full px-3 py-2 rounded-xl',
+  'bg-brand-cream dark:bg-brand-espresso',
+  'text-brand-espresso dark:text-brand-cream',
+  'border border-brand-brown/30 dark:border-brand-tan/30',
+  'text-sm font-sans',
+  'placeholder:text-brand-brown/50 dark:placeholder:text-brand-tan/50',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+  'transition-colors duration-200',
+].join(' ')
+
+const labelClass =
+  'block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5'
+
 interface SongEditorClientProps {
   song: Song
 }
@@ -19,7 +33,17 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Content state ───────────────────────────────────────────────────────────
   const [currentContent, setCurrentContent] = useState(song.content)
   const [savedBaseline, setSavedBaseline] = useState(song.content)
-  const isDirty = currentContent !== savedBaseline
+
+  // ── Singer state — lazy initializer avoids setState-in-effect ──────────────
+  const [singer, setSinger] = useState(() => song.singer ?? '')
+
+  // ── Saved baseline for singer (for dirty-tracking) ──────────────────────────
+  const [savedSinger, setSavedSinger] = useState(() => song.singer ?? '')
+
+  // isDirty: true if content or singer diverge from last saved state
+  const isDirty =
+    currentContent !== savedBaseline ||
+    singer !== savedSinger
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>('edit')
@@ -121,6 +145,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       artist: song.artist,
       original_key: song.original_key,
       content: currentContent,
+      singer: singer || undefined,
     })
 
     setIsSaving(false)
@@ -129,6 +154,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       setSaveError(result.error)
     } else {
       setSavedBaseline(currentContent)
+      setSavedSinger(singer)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     }
@@ -184,6 +210,24 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
 
   return (
     <>
+      {/* ── Metadata fields — Singer ────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:gap-6">
+        {/* Singer */}
+        <div className="flex-1">
+          <label htmlFor="editor-singer" className={labelClass}>
+            Singer
+          </label>
+          <input
+            id="editor-singer"
+            type="text"
+            value={singer}
+            onChange={(e) => setSinger(e.target.value)}
+            placeholder="Vocalist name"
+            className={inputBaseClass}
+          />
+        </div>
+      </div>
+
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 flex-wrap mb-4">
         <button

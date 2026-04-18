@@ -12,4 +12,5 @@ export type Song = {
   artist: string
   original_key: string
   content: string
+  singer?: string
 }
