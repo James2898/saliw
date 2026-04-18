@@ -209,7 +209,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     <div className="overflow-x-auto">
       <ChordSheetClient
         processedLines={processedLines}
-        originalKey={song.original_key}
+        originalKey={originalKey}
       />
     </div>
   )
