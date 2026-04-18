@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Pencil } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
 import { preProcessChords } from '@/utils/musicLogic'
 import Card from '@/components/server/card'
@@ -39,13 +38,25 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  // ── Auth guard ──────────────────────────────────────────────────────────────
+  // ── Auth check (no redirect — page is public; used only for RBAC below) ───
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
+  // ── Fetch user role for RBAC (only when authenticated) ────────────────────
+  let isMusicDirector = false
+  if (user) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      isMusicDirector = profile?.role === 'music_director'
+    } catch {
+      isMusicDirector = false
+    }
   }
 
   // ── Fetch song ──────────────────────────────────────────────────────────────
@@ -116,9 +127,26 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
 
         {/* ── Song header ───────────────────────────────────────────────────── */}
         <div className="mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
-            {song.title}
-          </h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
+              {song.title}
+            </h1>
+            {/* Edit button — music_director only */}
+            {isMusicDirector && (
+              <Link
+                href={`/library/${id}/edit`}
+                className={[
+                  'shrink-0 flex items-center justify-center w-9 h-9 rounded-lg',
+                  'text-brand-brown hover:text-brand-espresso hover:bg-brand-brown/10',
+                  'transition-colors duration-200',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1',
+                ].join(' ')}
+                aria-label="Edit song"
+              >
+                <Pencil size={15} strokeWidth={2} aria-hidden="true" />
+              </Link>
+            )}
+          </div>
           <div className="flex items-center gap-3 flex-wrap">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
               {song.artist}
