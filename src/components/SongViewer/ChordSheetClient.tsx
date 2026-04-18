@@ -67,7 +67,9 @@ export default function ChordSheetClient({
   const sheetRef = useRef<HTMLDivElement>(null)
 
   // Apply transposition to all .chord-item spans after mount and on offset changes.
+  // Also runs when chordsHidden flips to false so re-rendered spans get the correct transposed text.
   useEffect(() => {
+    if (chordsHidden) return
     const container = sheetRef.current
     if (!container) return
 
@@ -78,7 +80,7 @@ export default function ChordSheetClient({
         span.innerText = shiftChord(original, semitoneOffset)
       }
     })
-  }, [semitoneOffset])
+  }, [semitoneOffset, chordsHidden])
 
   // Apply font-size CSS variable to the chord-display container.
   // DOM mutation pattern — avoids React re-renders on the chord node tree.
@@ -266,7 +268,9 @@ export default function ChordSheetClient({
             )
           }
 
-          // type === 'chord'
+          // type === 'chord' — omit entire row when chords are hidden
+          if (chordsHidden) return null
+
           return (
             <div key={lineIndex} className="chord-row leading-snug">
               {line.tokens.map((token, tokenIndex) => {
