@@ -36,6 +36,8 @@ const toggleInactiveClass =
 interface ChordSheetClientProps {
   processedLines: ProcessedLine[]
   originalKey: string
+  /** Optional callback fired whenever the displayed (transposed) key changes. */
+  onKeyChange?: (key: string) => void
 }
 
 /**
@@ -55,6 +57,7 @@ interface ChordSheetClientProps {
 export default function ChordSheetClient({
   processedLines,
   originalKey,
+  onKeyChange,
 }: ChordSheetClientProps) {
   const { semitoneOffset, displayKey, increment, decrement, setTargetKey, reset } =
     useTranspose(originalKey)
@@ -81,6 +84,11 @@ export default function ChordSheetClient({
       }
     })
   }, [semitoneOffset, chordsHidden])
+
+  // Notify parent whenever the displayed key changes (e.g. for Sync button in SetlistSongSection).
+  useEffect(() => {
+    onKeyChange?.(displayKey)
+  }, [displayKey, onKeyChange])
 
   // Apply font-size CSS variable to the chord-display container.
   // DOM mutation pattern — avoids React re-renders on the chord node tree.
