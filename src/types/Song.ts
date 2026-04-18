@@ -13,5 +13,4 @@ export type Song = {
   original_key: string
   content: string
   singer?: string
-  defaultKey?: string
 }

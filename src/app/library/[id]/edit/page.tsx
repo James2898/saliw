@@ -65,7 +65,7 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
   // ── Fetch song ──────────────────────────────────────────────────────────────
   const songResult = await supabase
     .from('songs')
-    .select('id, title, artist, original_key, content, singer, default_key')
+    .select('id, title, artist, original_key, content, singer')
     .eq('id', id)
     .single()
 
@@ -110,7 +110,6 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
     original_key: songData.original_key,
     content: songData.content,
     singer: songData.singer ?? undefined,
-    defaultKey: songData.default_key ?? undefined,
   }
 
   return (
