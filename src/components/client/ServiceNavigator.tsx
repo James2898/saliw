@@ -82,7 +82,7 @@ export default function ServiceNavigator({ songs }: ServiceNavigatorProps) {
   return (
     <div
       className={[
-        'sticky top-0 z-50 w-full',
+        'sticky top-16 z-40 w-full',
         'bg-brand-espresso',
         'border-b border-brand-tan/20',
       ].join(' ')}
