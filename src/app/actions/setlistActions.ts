@@ -5,6 +5,43 @@ import { NOTES } from '@/utils/musicLogic'
 import type { DbSetlist, DbSetlistSong } from '@/types/supabase'
 
 /**
+ * Fetches the header fields of a single setlist by its ID.
+ * Any authenticated user may read setlists (setlists_select_authenticated RLS policy).
+ *
+ * @param input - The setlist UUID to fetch
+ * @returns The setlist header row, or an error message
+ */
+export async function getSetlistById(
+  input: { id: string }
+): Promise<{ data: { id: string; name: string; date: string; leader_id: string; is_public: boolean } | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('setlists')
+      .select('id, name, date, leader_id, is_public')
+      .eq('id', input.id)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return { data: null, error: 'Unable to load setlist. Please try again.' }
+      }
+      return { data: null, error: 'Unable to load setlist. Please try again.' }
+    }
+
+    return { data: data as { id: string; name: string; date: string; leader_id: string; is_public: boolean }, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
  * Creates a new setlist owned by the currently authenticated user.
  * Any authenticated user may create a setlist; leader_id is set to auth.uid().
  *
