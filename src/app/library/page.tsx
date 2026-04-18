@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
@@ -27,14 +26,10 @@ interface LibraryPageProps {
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const supabase = await createClient()
 
-  // ── Auth check ─────────────────────────────────────────────────────────────
+  // ── Auth check (no redirect — page is public; used only for RBAC below) ───
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
 
   // ── Resolve search params ───────────────────────────────────────────────────
   const params = await searchParams
@@ -46,19 +41,20 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const parsedPage = isNaN(rawPage) ? 1 : rawPage
   const requestedPage = Math.max(1, parsedPage)
 
-  // ── Fetch user role for RBAC ────────────────────────────────────────────────
+  // ── Fetch user role for RBAC (only when authenticated) ────────────────────
   let isMusicDirector = false
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+  if (user) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-    isMusicDirector = profile?.role === 'music_director'
-  } catch {
-    // Degrade gracefully — no Edit links shown if profile fetch fails
-    isMusicDirector = false
+      isMusicDirector = profile?.role === 'music_director'
+    } catch {
+      isMusicDirector = false
+    }
   }
 
   // ── Fetch songs (paginated, single round-trip) ──────────────────────────────
