@@ -83,7 +83,7 @@ export default async function SetlistViewerPage({ params }: SetlistViewerPagePro
   }
 
   // ── Compute leader status ───────────────────────────────────────────────────
-  const isLeader = user.id === setlist.leader_id
+  const isLeader = user != null && user.id === setlist.leader_id
 
   // ── Sort songs by order_index ascending ────────────────────────────────────
   const songs = (songsRaw ?? []).slice().sort((a, b) => a.order_index - b.order_index)

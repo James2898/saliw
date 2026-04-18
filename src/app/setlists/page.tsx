@@ -40,7 +40,7 @@ export default async function SetlistsPage() {
           color: 'var(--brand-tan)',
         }}
       >
-        {user.email}
+        {user?.email ?? ''}
       </p>
     </main>
   )
