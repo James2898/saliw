@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { preProcessChords } from '@/utils/musicLogic'
+import { preProcessChords, NOTES } from '@/utils/musicLogic'
 import { updateSong } from '@/app/actions/songActions'
 import ChordSheetClient from '@/components/SongViewer/ChordSheetClient'
 import type { Song } from '@/types/Song'
@@ -40,10 +40,15 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Saved baseline for singer (for dirty-tracking) ──────────────────────────
   const [savedSinger, setSavedSinger] = useState(() => song.singer ?? '')
 
-  // isDirty: true if content or singer diverge from last saved state
+  // ── Original key state ───────────────────────────────────────────────────────
+  const [originalKey, setOriginalKey] = useState(() => song.original_key ?? 'C')
+  const savedOriginalKey = useRef(song.original_key ?? 'C')
+
+  // isDirty: true if content, singer, or original key diverge from last saved state
   const isDirty =
     currentContent !== savedBaseline ||
-    singer !== savedSinger
+    singer !== savedSinger ||
+    originalKey !== savedOriginalKey.current
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>('edit')
@@ -143,7 +148,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       id: song.id,
       title: song.title,
       artist: song.artist,
-      original_key: song.original_key,
+      original_key: originalKey,
       content: currentContent,
       singer: singer || undefined,
     })
@@ -155,6 +160,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     } else {
       setSavedBaseline(currentContent)
       setSavedSinger(singer)
+      savedOriginalKey.current = originalKey
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     }
@@ -210,7 +216,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
 
   return (
     <>
-      {/* ── Metadata fields — Singer ────────────────────────────────────────── */}
+      {/* ── Metadata fields — Singer + Original Key ─────────────────────────── */}
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:gap-6">
         {/* Singer */}
         <div className="flex-1">
@@ -225,6 +231,25 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
             placeholder="Vocalist name"
             className={inputBaseClass}
           />
+        </div>
+
+        {/* Original Key */}
+        <div>
+          <label htmlFor="editor-original-key" className={labelClass}>
+            Original Key
+          </label>
+          <select
+            id="editor-original-key"
+            value={originalKey}
+            onChange={(e) => setOriginalKey(e.target.value)}
+            className={[inputBaseClass, 'cursor-pointer', 'font-mono font-bold'].join(' ')}
+          >
+            {(NOTES as string[]).map((note) => (
+              <option key={note} value={note}>
+                {note}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
