@@ -123,8 +123,8 @@ export default async function SetlistViewerPage({ params }: SetlistViewerPagePro
       {/* ── Service Navigator ──────────────────────────────────────────────── */}
       <ServiceNavigator songs={navigatorSongs} />
 
-      {/* ── Main content — offset for sidebar on large screens ─────────────── */}
-      <main className="lg:pl-64">
+      {/* ── Main content ───────────────────────────────────────────────────── */}
+      <main className="pt-4">
         <div className="max-w-3xl mx-auto px-4 py-8 sm:px-8">
           {/* ── Back link ───────────────────────────────────────────────────── */}
           <Link
