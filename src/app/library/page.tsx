@@ -116,7 +116,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
 
         {/* ── Search bar ───────────────────────────────────────────────────── */}
         <div className="mb-6">
-          <SearchBar defaultValue={q} />
+          <SearchBar defaultValue={q} basePath="/library" />
         </div>
 
         {/* ── Song list ────────────────────────────────────────────────────── */}
@@ -189,6 +189,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
               totalCount={totalCount}
               pageSize={PAGE_SIZE}
               q={q || undefined}
+              basePath="/library"
             />
           </div>
         )}

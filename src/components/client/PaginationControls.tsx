@@ -9,13 +9,14 @@ interface PaginationControlsProps {
   totalCount: number
   pageSize: number
   q?: string
+  basePath?: string
 }
 
-function buildUrl(page: number, q?: string): string {
+function buildUrl(page: number, basePath: string, q?: string): string {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
   params.set('page', String(page))
-  return `/library?${params.toString()}`
+  return `${basePath}?${params.toString()}`
 }
 
 export default function PaginationControls({
@@ -23,6 +24,7 @@ export default function PaginationControls({
   totalCount,
   pageSize,
   q,
+  basePath = '/library',
 }: PaginationControlsProps) {
   const router = useRouter()
   const totalPages = Math.ceil(totalCount / pageSize)
@@ -36,7 +38,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(1, q))}
+        onClick={() => router.replace(buildUrl(1, basePath, q))}
         disabled={isFirst}
         aria-label="Go to first page"
         aria-disabled={isFirst}
@@ -48,7 +50,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(currentPage - 1, q))}
+        onClick={() => router.replace(buildUrl(currentPage - 1, basePath, q))}
         disabled={isFirst}
         aria-label="Go to previous page"
         aria-disabled={isFirst}
@@ -68,7 +70,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(currentPage + 1, q))}
+        onClick={() => router.replace(buildUrl(currentPage + 1, basePath, q))}
         disabled={isLast}
         aria-label="Go to next page"
         aria-disabled={isLast}
@@ -80,7 +82,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(totalPages, q))}
+        onClick={() => router.replace(buildUrl(totalPages, basePath, q))}
         disabled={isLast}
         aria-label="Go to last page"
         aria-disabled={isLast}

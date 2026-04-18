@@ -6,6 +6,7 @@ import { Search } from 'lucide-react'
 
 interface SearchBarProps {
   defaultValue: string
+  basePath?: string
 }
 
 /**
@@ -18,7 +19,7 @@ interface SearchBarProps {
  * Uses `router.replace` to avoid polluting browser history on every keypress.
  * Does NOT call Supabase or any Server Action.
  */
-export default function SearchBar({ defaultValue }: SearchBarProps) {
+export default function SearchBar({ defaultValue, basePath = '/library' }: SearchBarProps) {
   const router = useRouter()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -32,13 +33,13 @@ export default function SearchBar({ defaultValue }: SearchBarProps) {
 
       debounceRef.current = setTimeout(() => {
         if (term) {
-          router.replace(`/library?q=${encodeURIComponent(term)}`)
+          router.replace(`${basePath}?q=${encodeURIComponent(term)}`)
         } else {
-          router.replace('/library')
+          router.replace(basePath)
         }
       }, 300)
     },
-    [router]
+    [router, basePath]
   )
 
   return (
