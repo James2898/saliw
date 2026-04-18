@@ -388,23 +388,6 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         </div>
       </div>
 
-      {/* ── Secondary back navigation with guard ────────────────────────────── */}
-      <div className="mt-6">
-        <a
-          href={`/library/${song.id}`}
-          onClick={(e) => handleGuardedNavigation(e, `/library/${song.id}`)}
-          className={[
-            'inline-flex items-center gap-1.5',
-            'text-sm font-medium text-brand-brown dark:text-brand-tan',
-            'hover:text-brand-espresso dark:hover:text-brand-cream',
-            'transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
-          ].join(' ')}
-        >
-          ← Back to Song View
-        </a>
-      </div>
-
       {/* ── Unsaved Changes Modal ────────────────────────────────────────────── */}
       {isModalOpen && (
         <div
