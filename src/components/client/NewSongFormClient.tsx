@@ -34,7 +34,6 @@ export default function NewSongFormClient() {
   const [artist, setArtist] = useState("");
   const [originalKey, setOriginalKey] = useState<string>(NOTES[0] as string);
   const [singer, setSinger] = useState("");
-  const [defaultKey, setDefaultKey] = useState("");
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +50,6 @@ export default function NewSongFormClient() {
         original_key: originalKey,
         content,
         singer: singer.trim() || undefined,
-        default_key: defaultKey || undefined,
       });
 
       if (result.error) {
@@ -134,30 +132,6 @@ export default function NewSongFormClient() {
               "font-mono font-bold",
             ].join(" ")}
           >
-            {(NOTES as string[]).map((note) => (
-              <option key={note} value={note}>
-                {note}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ── Default Key ────────────────────────────────────────────────────── */}
-        <div>
-          <label htmlFor="song-default-key" className={labelClass}>
-            Default Key
-          </label>
-          <select
-            id="song-default-key"
-            value={defaultKey}
-            onChange={(e) => setDefaultKey(e.target.value)}
-            className={[
-              inputBaseClass,
-              "cursor-pointer",
-              "font-mono font-bold",
-            ].join(" ")}
-          >
-            <option value="">— select key —</option>
             {(NOTES as string[]).map((note) => (
               <option key={note} value={note}>
                 {note}
