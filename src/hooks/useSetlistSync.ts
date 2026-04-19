@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createClient } from '@/services/supabase/client'
+import { getRealtimeClient } from '@/services/supabase/client'
 import { getSetlistWithSongs, updatePerformanceDetails } from '@/app/actions/setlistActions'
 import { REALTIME_EVENTS } from '@/utils/realtimeEvents'
 import type { SongChangePayload, KeyChangePayload } from '@/utils/realtimeEvents'
@@ -80,11 +80,12 @@ export function useSetlistSync({
   setlistId,
   songs,
 }: UseSetlistSyncParams): UseSetlistSyncFullReturn {
-  // Supabase browser client — instantiated exactly once via useState lazy initializer (AC-38)
-  // useState with a lazy initializer runs createClient() exactly once on mount — never on
-  // re-renders. The returned value is stable for the component's lifetime and avoids the
-  // react-hooks/refs lint error caused by reading .current during render.
-  const [supabase] = useState<SupabaseClient>(() => createClient())
+  // Supabase browser client — module-level singleton via getRealtimeClient().
+  // Survives React Strict Mode remounts (double-mount in dev) because the instance
+  // is created once for the entire page lifetime, not per component mount.
+  // This fixes the D-2 "Starting…" spinner getting stuck when Strict Mode's unmount
+  // cleanup removed the channel before SUBSCRIBED could fire.
+  const supabase = getRealtimeClient()
 
   // ── Channel ref ──────────────────────────────────────────────────────────
   // Single ref holds the Supabase channel instance — no re-creation on re-renders (AC-35)
@@ -215,7 +216,7 @@ export function useSetlistSync({
         }
       })
     }
-  }, [isLive, setlistId, supabase])
+  }, [isLive, setlistId])
 
   // ── Director: active song change → SONG_CHANGE broadcast ─────────────────
 
@@ -393,7 +394,7 @@ export function useSetlistSync({
         })
       })()
     }
-  }, [isFollowing, setlistId, stateCheckSnapshot, supabase])
+  }, [isFollowing, setlistId, stateCheckSnapshot])
 
   // ── Keep validJunctionIdsRef in sync with validJunctionIds (RF-3) ───────────
   useEffect(() => {
@@ -408,7 +409,7 @@ export function useSetlistSync({
         channelRef.current = null
       }
     }
-  }, [supabase])
+  }, [])
 
   return {
     // Director
