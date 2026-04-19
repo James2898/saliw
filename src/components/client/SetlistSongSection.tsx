@@ -60,6 +60,13 @@ function SetlistSongSection({
     setCurrentKey(key)
   }, [])
 
+  const handleKeyChangeLive = useCallback(
+    (key: string) => {
+      onKeyChangeLive?.(junctionId, key)
+    },
+    [onKeyChangeLive, junctionId],
+  )
+
   const handleSync = () => {
     setSyncError(null)
     setSyncSuccess(false)
@@ -194,9 +201,7 @@ function SetlistSongSection({
         initialKey={performanceKey}
         onKeyChange={isLeader ? handleKeyChange : undefined}
         externalKey={overrideKey}
-        onKeyChangeLive={
-          onKeyChangeLive ? (key) => onKeyChangeLive(junctionId, key) : undefined
-        }
+        onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
       />
     </section>
   )
