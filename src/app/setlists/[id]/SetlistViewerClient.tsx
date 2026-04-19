@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import ServiceNavigator from '@/components/client/ServiceNavigator'
 import SetlistSongSection from '@/components/client/SetlistSongSection'
 import { useSetlistSync } from '@/hooks/useSetlistSync'
@@ -47,11 +48,13 @@ export default function SetlistViewerClient({
   isLeader,
   isAuthenticated,
 }: SetlistViewerClientProps) {
-  // Prepare the songs array expected by useSetlistSync
-  const syncSongs = songs.map((s) => ({
-    junctionId: s.junctionId,
-    performanceKey: s.performanceKey,
-  }))
+  // Prepare the songs array expected by useSetlistSync.
+  // Wrapped in useMemo so syncSongs keeps a stable reference between renders,
+  // preventing validJunctionIds inside useSetlistSync from recomputing unnecessarily.
+  const syncSongs = useMemo(
+    () => songs.map((s) => ({ junctionId: s.junctionId, performanceKey: s.performanceKey })),
+    [songs],
+  )
 
   const sync = useSetlistSync({
     setlistId,
