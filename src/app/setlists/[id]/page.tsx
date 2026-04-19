@@ -26,6 +26,21 @@ export default async function SetlistViewerPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // ── Resolve music director role ─────────────────────────────────────────────
+  let isMusicDirector = false;
+  if (user) {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      isMusicDirector = profile?.role === "music_director";
+    } catch {
+      isMusicDirector = false;
+    }
+  }
+
   // ── Fetch setlist header ────────────────────────────────────────────────────
   const { data: setlist, error: setlistError } = await getSetlistById({ id });
 
@@ -89,7 +104,7 @@ export default async function SetlistViewerPage({
   }
 
   // ── Compute leader status ───────────────────────────────────────────────────
-  const isLeader = user != null && user.id === setlist.leader_id;
+  const isLeader = isMusicDirector;
   const isAuthenticated = user != null;
 
   // ── Sort songs by order_index ascending ────────────────────────────────────
