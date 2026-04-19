@@ -25,16 +25,20 @@ export type UseTransposeReturn = {
 /**
  * Manages live transposition state for a chord sheet.
  *
- * - Always initializes at semitoneOffset = 0 (originalKey).
+ * - Initializes at semitoneOffset = 0 (originalKey) unless initialKey is provided,
+ *   in which case the offset is pre-computed so the sheet opens at initialKey.
  * - `displayKey` is derived from originalKey + semitoneOffset — never stored as a
  *   separate string to avoid drift.
  * - All offsets are relative to originalKey, never accumulated across prior states.
  *
  * @param originalKey - The song's stored key (e.g. "G"), from the `original_key` DB column.
+ * @param initialKey  - Optional key to display on first render (e.g. the setlist performanceKey).
  * @returns UseTransposeReturn
  */
-export function useTranspose(originalKey: string): UseTransposeReturn {
-  const [semitoneOffset, setSemitoneOffset] = useState<number>(0)
+export function useTranspose(originalKey: string, initialKey?: string): UseTransposeReturn {
+  const [semitoneOffset, setSemitoneOffset] = useState<number>(() =>
+    initialKey && initialKey !== originalKey ? getSemitoneOffset(originalKey, initialKey) : 0
+  )
 
   // Derive the display key from the chromatic index.
   // NOTES has 12 entries (indices 0–11). We resolve the originalKey's index

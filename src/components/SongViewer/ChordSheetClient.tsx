@@ -36,6 +36,8 @@ const toggleInactiveClass =
 interface ChordSheetClientProps {
   processedLines: ProcessedLine[]
   originalKey: string
+  /** If provided, the sheet opens at this key instead of originalKey (e.g. setlist performanceKey). */
+  initialKey?: string
   /** Optional callback fired whenever the displayed (transposed) key changes. */
   onKeyChange?: (key: string) => void
 }
@@ -57,10 +59,11 @@ interface ChordSheetClientProps {
 export default function ChordSheetClient({
   processedLines,
   originalKey,
+  initialKey,
   onKeyChange,
 }: ChordSheetClientProps) {
   const { semitoneOffset, displayKey, increment, decrement, setTargetKey, reset } =
-    useTranspose(originalKey)
+    useTranspose(originalKey, initialKey)
 
   const { fontSize, increase: increaseFont, decrease: decreaseFont, reset: resetFont } =
     useFontSize()
