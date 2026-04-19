@@ -5,6 +5,7 @@ import { RefreshCw, Check, Loader2 } from 'lucide-react'
 import type { ProcessedLine } from '@/utils/musicLogic'
 import { updatePerformanceDetails } from '@/app/actions/setlistActions'
 import ChordSheetClient from '@/components/SongViewer/ChordSheetClient'
+import type { SongSyncState } from '@/hooks/useSetlistSync'
 
 interface SetlistSongSectionProps {
   junctionId: string
@@ -15,6 +16,12 @@ interface SetlistSongSectionProps {
   originalKey: string
   performanceKey: string
   isLeader: boolean
+  /** NEW — Key override from Follow Leader mode. Passed to ChordSheetClient as externalKey. */
+  overrideKey?: string
+  /** NEW — Callback for every key change for debounced Go Live persist. */
+  onKeyChangeLive?: (junctionId: string, key: string) => void
+  /** NEW — Per-song live sync status from useSetlistSync (D-4/D-5/D-6). */
+  liveSyncState?: SongSyncState
 }
 
 // Wrap ChordSheetClient in React.memo to prevent re-renders triggered
@@ -39,6 +46,9 @@ function SetlistSongSection({
   originalKey,
   performanceKey,
   isLeader,
+  overrideKey,
+  onKeyChangeLive,
+  liveSyncState,
 }: SetlistSongSectionProps) {
   // Track the current display key as reported by ChordSheetClient via onKeyChange
   const [currentKey, setCurrentKey] = useState<string>(performanceKey)
@@ -93,6 +103,29 @@ function SetlistSongSection({
         {/* ── Sync button — leader only (AC-12) ──────────────────────────────── */}
         {isLeader && (
           <div className="flex flex-col items-end gap-1 shrink-0">
+            {/* ── Per-song Go Live sync status (D-4 / D-5 / D-6) ───────────── */}
+            {liveSyncState && liveSyncState.status !== 'idle' && (
+              <div className="inline-flex items-center gap-1 text-xs" aria-live="polite">
+                {liveSyncState.status === 'saving' && (
+                  <>
+                    <Loader2 size={12} className="animate-spin text-brand-brown dark:text-brand-tan" aria-hidden="true" />
+                    <span className="text-brand-brown dark:text-brand-tan">Saving…</span>
+                  </>
+                )}
+                {liveSyncState.status === 'saved' && (
+                  <>
+                    <Check size={12} className="text-green-600 dark:text-green-400" aria-hidden="true" />
+                    <span className="text-green-600 dark:text-green-400">Synced</span>
+                  </>
+                )}
+                {liveSyncState.status === 'error' && (
+                  <span role="alert" className="text-xs text-red-500 max-w-[200px] text-right">
+                    {liveSyncState.errorMessage}
+                  </span>
+                )}
+              </div>
+            )}
+
             <button
               type="button"
               onClick={handleSync}
@@ -160,6 +193,10 @@ function SetlistSongSection({
         originalKey={originalKey}
         initialKey={performanceKey}
         onKeyChange={isLeader ? handleKeyChange : undefined}
+        externalKey={overrideKey}
+        onKeyChangeLive={
+          onKeyChangeLive ? (key) => onKeyChangeLive(junctionId, key) : undefined
+        }
       />
     </section>
   )
