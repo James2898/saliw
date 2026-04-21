@@ -13,6 +13,7 @@ interface ClientSong {
   setlistId: string
   title: string
   artist: string
+  originalKey: string
   processedLines: ProcessedLine[]
   performanceKey: string
 }
@@ -97,6 +98,7 @@ export default function SetlistViewerClient({
               setlistId={song.setlistId}
               title={song.title}
               artist={song.artist}
+              originalKey={song.originalKey}
               processedLines={song.processedLines}
               performanceKey={song.performanceKey}
               isLeader={isLeader}
