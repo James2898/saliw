@@ -3,15 +3,19 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
+import { NOTES } from '@/utils/musicLogic'
 import type { SortableSong } from './SetlistBuilderClient'
 
 interface SortableSongRowProps {
   song: SortableSong
-  onRemove: (junctionId: string) => void
-  isRemoving: boolean
+  onRemove: (songId: string) => void
+  onKeyChange: (songId: string, key: string) => void
 }
 
-export default function SortableSongRow({ song, onRemove, isRemoving }: SortableSongRowProps) {
+export default function SortableSongRow({ song, onRemove, onKeyChange }: SortableSongRowProps) {
+  // Use songId as the DnD id when junctionId is null (newly added), otherwise use junctionId
+  const dndId = song.junctionId ?? song.songId
+
   const {
     attributes,
     listeners,
@@ -19,7 +23,7 @@ export default function SortableSongRow({ song, onRemove, isRemoving }: Sortable
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: song.junctionId })
+  } = useSortable({ id: dndId })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -61,19 +65,26 @@ export default function SortableSongRow({ song, onRemove, isRemoving }: Sortable
         {song.originalKey}
       </span>
 
+      {/* Performance key selector */}
+      <select
+        value={song.performanceKey}
+        onChange={e => onKeyChange(song.songId, e.target.value)}
+        aria-label={`Performance key for ${song.title}`}
+        className="text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream text-brand-espresso focus:outline-none focus:ring-1 focus:ring-brand-espresso shrink-0"
+      >
+        {NOTES.map(note => (
+          <option key={note} value={note}>{note}</option>
+        ))}
+      </select>
+
       {/* Remove button */}
       <button
         type="button"
         aria-label={`Remove ${song.title} from setlist`}
-        onClick={() => onRemove(song.junctionId)}
-        disabled={isRemoving}
-        className="text-brand-brown/60 hover:text-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 text-sm font-medium"
+        onClick={() => onRemove(song.songId)}
+        className="text-brand-brown/60 hover:text-red-600 transition-colors duration-200 shrink-0 text-sm font-medium"
       >
-        {isRemoving ? (
-          <span className="inline-block w-4 h-4 border-2 border-brand-brown/40 border-t-brand-brown rounded-full animate-spin" aria-hidden="true" />
-        ) : (
-          'Remove'
-        )}
+        Remove
       </button>
     </div>
   )

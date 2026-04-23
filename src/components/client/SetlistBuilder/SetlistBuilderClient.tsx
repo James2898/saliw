@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   addSongToSetlist,
   removeSongFromSetlist,
   updateSetlistSongOrder,
+  updatePerformanceDetails,
+  createSetlist,
+  updateSetlist,
 } from '@/app/actions/setlistActions'
 import ErrorBanner from './ErrorBanner'
 import SetlistPanel from './SetlistPanel'
@@ -13,12 +17,13 @@ import LibraryPanel from './LibraryPanel'
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
 export interface SortableSong {
-  junctionId: string       // setlist_songs.id — used as DnD id and for reorder updates
+  junctionId: string | null  // null = newly added (not yet persisted)
   songId: string
   title: string
   artist: string
-  originalKey: string      // display only, never edited here
-  orderIndex: number       // current local position
+  originalKey: string
+  performanceKey: string     // editable, defaults to originalKey on add
+  orderIndex: number
 }
 
 export interface SongLibraryItem {
@@ -31,11 +36,22 @@ export interface SongLibraryItem {
 // ── Props ──────────────────────────────────────────────────────────────────────
 
 export interface SetlistBuilderClientProps {
-  setlistId: string
-  setlistName: string
+  setlistId: string | null          // null = create mode
+  setlistName: string               // empty string in create mode
   initialSongs: SortableSong[]
   allSongs: SongLibraryItem[]
   libraryError?: string | null
+  initialDate?: string              // empty string in create mode
+}
+
+// ── Pure helper ────────────────────────────────────────────────────────────────
+
+function computeIsDirty(local: SortableSong[], initial: SortableSong[]): boolean {
+  if (local.length !== initial.length) return true
+  return local.some((s, i) => {
+    const orig = initial[i]
+    return s.songId !== orig.songId || s.performanceKey !== orig.performanceKey
+  })
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -46,89 +62,199 @@ export default function SetlistBuilderClient({
   initialSongs,
   allSongs,
   libraryError,
+  initialDate,
 }: SetlistBuilderClientProps) {
+  const router = useRouter()
+
   // All lazy initialisers — never seeded inside useEffect (MEMORY.md warning)
-  const [songs, setSongs] = useState<SortableSong[]>(() => initialSongs)
-  const [lastPersistedOrder, setLastPersistedOrder] = useState<string[]>(
-    () => initialSongs.map((s) => s.junctionId)
-  )
-  const [error, setError] = useState<string | null>(null)
-  const [addingId, setAddingId] = useState<string | null>(null)
-  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [localSongs, setLocalSongs] = useState<SortableSong[]>(() => initialSongs)
+  const [name, setName] = useState(() => setlistName)
+  const [date, setDate] = useState(() => initialDate ?? '')
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
-  const [, startTransition] = useTransition()
+  // Dirty: compare local vs initial (name, date, songs)
+  const isDirty =
+    name !== setlistName ||
+    date !== (initialDate ?? '') ||
+    computeIsDirty(localSongs, initialSongs)
 
   // Derived values — never stored as separate state
-  const isDirty = songs.map((s) => s.junctionId).join(',') !== lastPersistedOrder.join(',')
-  const addedIds = new Set(songs.map((s) => s.songId))
+  const addedIds = new Set(localSongs.map((s) => s.songId))
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   function handleAdd(song: SongLibraryItem) {
-    startTransition(async () => {
-      setAddingId(song.id)
-      const { data, error: actionError } = await addSongToSetlist({
-        setlist_id: setlistId,
-        song_id: song.id,
-      })
-      if (actionError || !data) {
-        setError(actionError ?? 'Failed to add song.')
-      } else {
-        const newSong: SortableSong = {
-          junctionId: data.id,
-          songId: data.song_id,
-          title: song.title,
-          artist: song.artist,
-          originalKey: song.original_key,
-          orderIndex: songs.length,
-        }
-        setSongs((prev) => [...prev, newSong])
-        setLastPersistedOrder((prev) => [...prev, data.id])
-      }
-      setAddingId(null)
-    })
+    setLocalSongs((prev) => [
+      ...prev,
+      {
+        junctionId: null,
+        songId: song.id,
+        title: song.title,
+        artist: song.artist,
+        originalKey: song.original_key,
+        performanceKey: song.original_key,
+        orderIndex: prev.length,
+      },
+    ])
   }
 
-  function handleRemove(junctionId: string) {
-    startTransition(async () => {
-      setRemovingId(junctionId)
-      const { error: actionError } = await removeSongFromSetlist({
-        id: junctionId,
-        setlist_id: setlistId,
-      })
-      if (actionError) {
-        setError(actionError)
-      } else {
-        setSongs((prev) =>
-          prev
-            .filter((s) => s.junctionId !== junctionId)
-            .map((s, i) => ({ ...s, orderIndex: i }))
-        )
-        setLastPersistedOrder((prev) => prev.filter((id) => id !== junctionId))
-      }
-      setRemovingId(null)
-    })
+  function handleRemove(songId: string) {
+    setLocalSongs((prev) =>
+      prev
+        .filter((s) => s.songId !== songId)
+        .map((s, i) => ({ ...s, orderIndex: i }))
+    )
+  }
+
+  function handleKeyChange(songId: string, key: string) {
+    setLocalSongs((prev) =>
+      prev.map((s) => (s.songId === songId ? { ...s, performanceKey: key } : s))
+    )
   }
 
   function handleReorder(newSongs: SortableSong[]) {
-    setSongs(newSongs)
+    setLocalSongs(newSongs)
   }
 
   async function handleSave() {
+    if (setlistId === null && !name.trim()) {
+      setError('Setlist name is required.')
+      return
+    }
     setIsSaving(true)
+    setError(null)
     try {
-      const { error: actionError } = await updateSetlistSongOrder({
-        setlist_id: setlistId,
-        updates: songs.map((s, i) => ({ id: s.junctionId, order_index: i })),
-      })
-      if (actionError) throw new Error(actionError)
-      setLastPersistedOrder(songs.map((s) => s.junctionId))
+      if (setlistId === null) {
+        // ── CREATE MODE ────────────────────────────────────────────────────────
+        const { data: created, error: createError } = await createSetlist({
+          name: name.trim(),
+          date: date,
+        })
+        if (createError || !created) {
+          throw new Error(createError ?? 'Failed to create setlist.')
+        }
+        const newId = created.id
+
+        // Add all songs
+        const addedJunctionIds: Record<string, string> = {}
+        for (const song of localSongs) {
+          const { data, error: addErr } = await addSongToSetlist({
+            setlist_id: newId,
+            song_id: song.songId,
+          })
+          if (addErr || !data) throw new Error(addErr ?? 'Failed to add song.')
+          addedJunctionIds[song.songId] = data.id
+        }
+
+        // Reorder if there are songs
+        if (localSongs.length > 0) {
+          const updates = localSongs.map((s, i) => ({
+            id: addedJunctionIds[s.songId]!,
+            order_index: i,
+          }))
+          const { error: orderErr } = await updateSetlistSongOrder({
+            setlist_id: newId,
+            updates,
+          })
+          if (orderErr) throw new Error(orderErr)
+        }
+
+        // Update performance keys that differ from original
+        for (const song of localSongs) {
+          if (song.performanceKey !== song.originalKey) {
+            const { error: keyErr } = await updatePerformanceDetails({
+              id: addedJunctionIds[song.songId]!,
+              setlist_id: newId,
+              performance_key: song.performanceKey,
+            })
+            if (keyErr) throw new Error(keyErr)
+          }
+        }
+
+        router.push(`/setlists/${newId}`)
+      } else {
+        // ── EDIT MODE ─────────────────────────────────────────────────────────
+
+        // Update setlist name/date if changed
+        if (name !== setlistName || date !== (initialDate ?? '')) {
+          const { error: updateErr } = await updateSetlist({
+            id: setlistId,
+            name: name.trim() || setlistName,
+            date: date,
+          })
+          if (updateErr) throw new Error(updateErr)
+        }
+
+        // 1. Determine adds (junctionId === null)
+        const toAdd = localSongs.filter((s) => s.junctionId === null)
+
+        // 2. Determine removes (in initial but not in local by songId)
+        const localSongIds = new Set(localSongs.map((s) => s.songId))
+        const toRemove = initialSongs.filter((s) => !localSongIds.has(s.songId))
+
+        // 3. Determine key changes (junctionId exists, performanceKey changed)
+        const toUpdateKey = localSongs.filter((s) => {
+          if (!s.junctionId) return false
+          const orig = initialSongs.find((o) => o.junctionId === s.junctionId)
+          return orig && orig.performanceKey !== s.performanceKey
+        })
+
+        // Execute removes
+        for (const song of toRemove) {
+          const { error: removeErr } = await removeSongFromSetlist({
+            id: song.junctionId!,
+            setlist_id: setlistId,
+          })
+          if (removeErr) throw new Error(removeErr)
+        }
+
+        // Execute adds — capture returned junction IDs
+        const addedJunctionIds: Record<string, string> = {}
+        for (const song of toAdd) {
+          const { data, error: addErr } = await addSongToSetlist({
+            setlist_id: setlistId,
+            song_id: song.songId,
+          })
+          if (addErr || !data) throw new Error(addErr ?? 'Failed to add song.')
+          addedJunctionIds[song.songId] = data.id
+        }
+
+        // Rebuild junction IDs in local songs for subsequent operations
+        const songsWithIds = localSongs.map((s) => ({
+          ...s,
+          junctionId: s.junctionId ?? addedJunctionIds[s.songId] ?? null,
+        }))
+
+        // Execute reorder (full list)
+        const validSongs = songsWithIds.filter((s) => s.junctionId !== null)
+        if (validSongs.length > 0) {
+          const { error: orderErr } = await updateSetlistSongOrder({
+            setlist_id: setlistId,
+            updates: validSongs.map((s, i) => ({
+              id: s.junctionId!,
+              order_index: i,
+            })),
+          })
+          if (orderErr) throw new Error(orderErr)
+        }
+
+        // Execute key updates
+        for (const song of toUpdateKey) {
+          const { error: keyErr } = await updatePerformanceDetails({
+            id: song.junctionId!,
+            setlist_id: setlistId,
+            performance_key: song.performanceKey,
+          })
+          if (keyErr) throw new Error(keyErr)
+        }
+
+        // Full navigation to re-mount with fresh server props (avoids stale name/date state)
+        router.push(`/setlists/${setlistId}/edit`)
+      }
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'Unable to save order. Please try again.'
-      )
+      setError(e instanceof Error ? e.message : 'Unable to save. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -136,12 +262,39 @@ export default function SetlistBuilderClient({
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const inputClass = [
+    'w-full rounded-xl border border-brand-brown/20 bg-brand-cream',
+    'px-4 py-2.5 text-sm text-brand-espresso placeholder:text-brand-brown/40',
+    'focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1',
+  ].join(' ')
+
+  const labelClass =
+    'block text-xs font-semibold uppercase tracking-widest text-brand-brown mb-1.5'
+
   return (
     <div>
-      {/* Page title */}
-      <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-6">
-        {setlistName}
-      </h1>
+      {/* Name + date fields — always shown (create or edit mode) */}
+      <div className="flex flex-col gap-4 mb-6">
+        <div>
+          <label className={labelClass}>Setlist Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Sunday Morning Service"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass}>Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded-xl border border-brand-brown/20 bg-brand-cream px-4 py-2.5 text-sm text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1"
+          />
+        </div>
+      </div>
 
       {/* Error banner */}
       {error && (
@@ -155,13 +308,13 @@ export default function SetlistBuilderClient({
         {/* Setlist Panel — left / top */}
         <div>
           <p className="text-sm font-semibold text-brand-brown/60 uppercase tracking-widest mb-4">
-            Setlist ({songs.length} {songs.length === 1 ? 'song' : 'songs'})
+            Setlist ({localSongs.length} {localSongs.length === 1 ? 'song' : 'songs'})
           </p>
           <SetlistPanel
-            songs={songs}
+            songs={localSongs}
             onReorder={handleReorder}
             onRemove={handleRemove}
-            removingId={removingId}
+            onKeyChange={handleKeyChange}
             isDirty={isDirty}
             onSave={handleSave}
             isSaving={isSaving}
@@ -174,7 +327,7 @@ export default function SetlistBuilderClient({
             songs={allSongs}
             addedIds={addedIds}
             onAdd={handleAdd}
-            addingId={addingId}
+            addingId={null}
             query={query}
             onQueryChange={setQuery}
             libraryError={libraryError}

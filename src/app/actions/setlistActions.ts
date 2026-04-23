@@ -395,6 +395,46 @@ export async function getSetlistWithSongs(
 }
 
 /**
+ * Updates the name and/or date of an existing setlist.
+ * Only the setlist's leader may update it (enforced via RLS on setlists).
+ *
+ * @param input - The setlist id, new name, and new date
+ * @returns The updated setlist id, or an error message
+ */
+export async function updateSetlist(
+  input: { id: string; name: string; date: string }
+): Promise<{ data: { id: string } | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    const { error, count } = await supabase
+      .from('setlists')
+      .update({ name: input.name, date: input.date || null }, { count: 'exact' })
+      .eq('id', input.id)
+
+    if (error) {
+      if (error.code === '42501') {
+        return { data: null, error: 'You do not have permission to modify this setlist.' }
+      }
+      return { data: null, error: 'Unable to update setlist. Please try again.' }
+    }
+
+    if (count === 0) {
+      return { data: null, error: 'You do not have permission to modify this setlist.' }
+    }
+
+    return { data: { id: input.id }, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
  * Deletes a setlist and all its associated setlist_songs entries (via CASCADE).
  * Only the setlist's leader may delete it (enforced via RLS on setlists).
  *

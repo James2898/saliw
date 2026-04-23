@@ -20,8 +20,8 @@ import type { SortableSong } from './SetlistBuilderClient'
 interface SetlistPanelProps {
   songs: SortableSong[]
   onReorder: (newSongs: SortableSong[]) => void
-  onRemove: (junctionId: string) => void
-  removingId: string | null
+  onRemove: (songId: string) => void
+  onKeyChange: (songId: string, key: string) => void
   isDirty: boolean
   onSave: () => void
   isSaving: boolean
@@ -31,7 +31,7 @@ export default function SetlistPanel({
   songs,
   onReorder,
   onRemove,
-  removingId,
+  onKeyChange,
   isDirty,
   onSave,
   isSaving,
@@ -42,8 +42,13 @@ export default function SetlistPanel({
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const oldIndex = songs.findIndex((s) => s.junctionId === active.id)
-    const newIndex = songs.findIndex((s) => s.junctionId === over.id)
+    // Match by junctionId (persisted) or songId (newly added, junctionId is null)
+    const oldIndex = songs.findIndex(
+      (s) => (s.junctionId ?? s.songId) === active.id
+    )
+    const newIndex = songs.findIndex(
+      (s) => (s.junctionId ?? s.songId) === over.id
+    )
     if (oldIndex === newIndex) return
 
     const reordered = arrayMove(songs, oldIndex, newIndex).map((s, i) => ({
@@ -70,18 +75,19 @@ export default function SetlistPanel({
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          id="setlist-dnd"
         >
           <SortableContext
-            items={songs.map((s) => s.junctionId)}
+            items={songs.map((s) => s.junctionId ?? s.songId)}
             strategy={verticalListSortingStrategy}
           >
             <div className="flex flex-col gap-2">
               {songs.map((song) => (
                 <SortableSongRow
-                  key={song.junctionId}
+                  key={song.junctionId ?? song.songId}
                   song={song}
                   onRemove={onRemove}
-                  isRemoving={removingId === song.junctionId}
+                  onKeyChange={onKeyChange}
                 />
               ))}
             </div>
@@ -107,7 +113,7 @@ export default function SetlistPanel({
                 Saving…
               </>
             ) : (
-              'Save Order'
+              'Save'
             )}
           </Button>
         </div>
