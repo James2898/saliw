@@ -478,7 +478,7 @@ feat(TASK-024): implement dashboard landing page with widgets
 72. The pre-existing Next Up hero limit-1 query and the new Upcoming Setlists limit-5 query both run in parallel; they are not merged (their semantics differ because Next Up falls back to past setlists).
 73. On the public view, the dashboard page performs a single Supabase query — upcoming setlists for `date >= todayISO` ordered ascending with `limit(5)` — wrapped in try/catch, before returning `<PublicDashboardView />`. On error, an empty array is passed.
 74. `PublicDashboardView` accepts an `upcomingSetlists` prop and renders `<UpcomingSetlists />` below the three feature cards, full-width.
-75. AC 53 is replaced: the public path performs at most ONE Supabase table query — the upcoming-setlists fetch — plus the `auth.getUser()` branch check. No `profiles`, `songs`, or other table reads occur on the guest path.
+75. ~~AC 53 is replaced: the public path performs at most ONE Supabase table query — the upcoming-setlists fetch — plus the `auth.getUser()` branch check. No `profiles`, `songs`, or other table reads occur on the guest path.~~ — superseded by AC 83 (amendment 3)
 76. The public hero H1 is `<h1>Saliw <span className="text-brand-brown font-normal">(sa·líw)</span></h1>` using the same size/weight classes as the previous H1 (`text-3xl md:text-4xl font-extrabold tracking-tight text-brand-espresso`). The pronunciation span uses `font-normal text-brand-brown` to de-emphasize.
 77. Immediately below the H1, a meaning subtitle renders with exact text: "Saliw is the gentle art of accompaniment, where music and voice weave together in a soulful, rhythmic embrace." Classes: `text-lg text-brand-espresso italic max-w-prose`.
 78. Below the meaning subtitle, a public-toned description paragraph renders with exact text: "A space for worship leaders, musicians, and congregations — where every song finds its key, every setlist finds its flow, and every service is shared in sync." Classes: `text-base text-brand-brown max-w-prose`.
@@ -506,3 +506,36 @@ feat(TASK-024): implement dashboard landing page with widgets
   - No forbidden token pair (`text-brand-tan` on `bg-brand-cream`). Hero uses `text-brand-espresso` and `text-brand-brown` on the cream layout card; the pronunciation span `text-brand-brown` on `bg-brand-cream` matches the approved contrast pattern already used in `NextUpCard`.
   - All interactive links retain `focus-visible:ring-2 focus-visible:ring-brand-espresso`.
   - `npx tsc --noEmit` passes clean. `npx next lint` surfaces only the pre-existing warnings unrelated to touched files — no new warnings introduced.
+
+---
+
+## Amendment 3 — Recent Songs on public dashboard (2026-04-24)
+
+> Added after amendment 2. User requested that the Recent Songs widget appear on the public (guest) dashboard view alongside Upcoming Setlists, using the same widget and query as the authenticated view.
+
+### Behavior
+
+83. The guest branch in `src/app/dashboard/page.tsx` (the `!user` path) runs exactly TWO Supabase table queries in parallel via a single `Promise.all`: (1) `setlists` upcoming (`date >= todayISO`, ordered ascending, limit 5) and (2) `songs` ordered by `created_at desc` limit 5. Both are wrapped in a single try/catch defaulting each resolved list to `[]` on error. This supersedes AC 75 — the public path now performs exactly TWO table queries, not one.
+84. `PublicDashboardView` accepts a `recentSongs: RecentSong[]` prop (imported from `@/components/dashboard/RecentSongs`) in addition to the existing `upcomingSetlists` prop. The `RecentSong` shape is `{ id: string; title: string; artist: string; original_key: string }` (matches the existing `RecentSongs` component's exported type).
+85. `PublicDashboardView` renders `<RecentSongs />` and `<UpcomingSetlists />` side-by-side in a `grid grid-cols-1 md:grid-cols-2 gap-6` container placed below the three-card feature strip. Document order inside the grid: `RecentSongs` first (left column on md+), `UpcomingSetlists` second (right column on md+). This matches the authenticated view's ordering.
+86. No new widget components are created for amendment 3 — the existing `RecentSongs` Server Component is reused as-is with no changes to its internals or prop shape.
+87. RLS on `songs` was already public-readable via migration `20260418000003_allow_public_read_songs.sql` (`USING (true)` on `SELECT`), so no new policy is required for guest access to `songs`.
+
+### Amendment 3 Resolution
+
+- **Completed:** 2026-04-24
+- **Branch:** `feature/TASK-024-dashboard-landing`
+- **Commit SHA:** `a4f4563`
+- **Files changed (amendment 3):**
+  - `src/app/dashboard/page.tsx` (MODIFIED) — guest branch switched from a single `setlists` query to a `Promise.all` of two queries (`setlists` + `songs`). Both responses mapped to their widget prop shapes and passed to `PublicDashboardView`. Error path swallows and defaults each list to `[]`. No change to the authenticated branch — it still runs the same 3-query `Promise.all` plus the conditional past-setlist fallback.
+  - `src/components/dashboard/PublicDashboardView.tsx` (MODIFIED) — added `recentSongs: RecentSong[]` prop and `RecentSongs` import. Replaced the full-width `<UpcomingSetlists />` slot with a two-column responsive grid (`grid grid-cols-1 md:grid-cols-2 gap-6`) containing `<RecentSongs />` (left) and `<UpcomingSetlists />` (right). All other hero/feature-strip content unchanged.
+- **AC added:** 83–87.
+- **AC superseded:** 75 (public-path query count raised from 1 to 2).
+- **Notes:**
+  - `RecentSongs` is reused as-is — no component changes. It remains a Server Component with no client boundary.
+  - Guest path runs exactly 2 `.from(...)` calls (`setlists`, `songs`) and no others; verified by code trace. No `profiles` fetch happens on the guest path.
+  - Authenticated path is byte-identical to its previous form — only the `!user` branch was modified.
+  - Layout: on viewports narrower than `md`, the two widgets stack (Recent Songs above Upcoming Setlists); at `md+` they render side-by-side matching the authenticated dashboard's Recent Songs / Upcoming Setlists grid.
+  - No forbidden color pair (`text-brand-tan` on `bg-brand-cream`) introduced — reusing existing widgets inherits their approved palette usage.
+  - All interactive links in `RecentSongs` already carry `focus-visible:ring-2 focus-visible:ring-brand-espresso` from the original implementation.
+  - `npx tsc --noEmit` passes clean. `npx next lint` surfaces only the same pre-existing warnings (`ServiceNavigator.tsx`, `useSetlistSync.ts`) — no new warnings in touched files.
