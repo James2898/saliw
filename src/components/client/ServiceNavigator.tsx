@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Music, Loader2 } from 'lucide-react'
 import Button from '@/components/client/button'
 
@@ -282,48 +282,48 @@ export default function ServiceNavigator({
   const followButtonRef = useRef<HTMLButtonElement>(null)
 
   // ── TASK-023: Go Live toggle guard ────────────────────────────────────────
-  const handleGoLiveClick = () => {
+  const handleGoLiveClick = useCallback(() => {
     // If already connecting (disabled state), do nothing — button is disabled anyway
     if (sync.isLiveConnecting) return
     // If dialog is already open, ignore second click (criterion 30)
     if (showGoLiveDialog) return
     setShowGoLiveDialog(true)
-  }
+  }, [sync.isLiveConnecting, showGoLiveDialog])
 
-  const handleGoLiveConfirm = () => {
+  const handleGoLiveConfirm = useCallback(() => {
     setShowGoLiveDialog(false)
     sync.toggleLive()
     // Restore focus to the toggle button
     goLiveButtonRef.current?.focus()
-  }
+  }, [sync.toggleLive])
 
-  const handleGoLiveCancel = () => {
+  const handleGoLiveCancel = useCallback(() => {
     setShowGoLiveDialog(false)
     // Restore focus to the toggle button
     goLiveButtonRef.current?.focus()
-  }
+  }, [])
 
   // ── TASK-023: Follow Leader toggle guard ──────────────────────────────────
-  const handleFollowClick = () => {
+  const handleFollowClick = useCallback(() => {
     // If already checking state (disabled state), do nothing — button is disabled anyway
     if (sync.isStateChecking) return
     // If dialog is already open, ignore second click (criterion 30)
     if (showFollowDialog) return
     setShowFollowDialog(true)
-  }
+  }, [sync.isStateChecking, showFollowDialog])
 
-  const handleFollowConfirm = () => {
+  const handleFollowConfirm = useCallback(() => {
     setShowFollowDialog(false)
     sync.toggleFollow()
     // Restore focus to the toggle button
     followButtonRef.current?.focus()
-  }
+  }, [sync.toggleFollow])
 
-  const handleFollowCancel = () => {
+  const handleFollowCancel = useCallback(() => {
     setShowFollowDialog(false)
     // Restore focus to the toggle button
     followButtonRef.current?.focus()
-  }
+  }, [])
 
   // ── Dialog content (direction-aware) ──────────────────────────────────────
   const goLiveDialogContent = sync.isLive ? goLiveOffDialog : goLiveOnDialog
