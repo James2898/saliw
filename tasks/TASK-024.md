@@ -75,11 +75,11 @@ Replace the stub `/dashboard` route with a functional landing page that greets t
 
 ### Activity Feed
 
-36. The Activity Feed widget fetches in parallel: 5 latest songs by `updated_at desc` and 5 latest setlists by `updated_at desc`.
-37. The two result sets are merged in JavaScript and sorted by `updated_at desc`, then the top 6 items are taken.
-38. Each activity row renders: a type icon (`Music` from lucide-react for songs, `ListMusic` for setlists), the item name, and a relative time string (e.g. "2 hours ago", "3 days ago").
-39. The relative time string is computed in the Server Component from `updated_at` relative to the current server timestamp at render time.
-40. When both the songs and setlists fetches return empty results, the Activity Feed renders nothing — no empty state message, no container element.
+~~36. The Activity Feed widget fetches in parallel: 5 latest songs by `updated_at desc` and 5 latest setlists by `updated_at desc`.~~ — superseded by amendment 2
+~~37. The two result sets are merged in JavaScript and sorted by `updated_at desc`, then the top 6 items are taken.~~ — superseded by amendment 2
+~~38. Each activity row renders: a type icon (`Music` from lucide-react for songs, `ListMusic` for setlists), the item name, and a relative time string (e.g. "2 hours ago", "3 days ago").~~ — superseded by amendment 2
+~~39. The relative time string is computed in the Server Component from `updated_at` relative to the current server timestamp at render time.~~ — superseded by amendment 2
+~~40. When both the songs and setlists fetches return empty results, the Activity Feed renders nothing — no empty state message, no container element.~~ — superseded by amendment 2
 
 ### Responsive Layout
 
@@ -459,3 +459,50 @@ feat(TASK-024): implement dashboard landing page with widgets
   - No `text-brand-tan on bg-brand-cream` anywhere in the public view. Hero h1 uses `text-brand-espresso` on the `bg-brand-cream` layout card. Subtitle uses `text-brand-brown`. Primary CTA uses `text-brand-espresso` on `bg-brand-tan` (matches AC 47 contrast rule). Feature card titles use `text-brand-espresso`, descriptions use `text-brand-brown`, icons use `text-brand-brown`.
   - All interactive links use the same `focus-visible:ring-2 focus-visible:ring-brand-espresso` pattern present in `NextUpCard.tsx`.
   - `npx tsc --noEmit` passes clean. `npx next lint` surfaces only the same pre-existing warnings as before — no new warnings in any file touched by this amendment.
+
+---
+
+## Amendment 2 — Upcoming Setlists widget & Public hero rebrand (2026-04-24)
+
+> Added after amendment 1. User requested: (1) replace the Activity Feed with an Upcoming Setlists widget on the authenticated view, (2) mirror the same widget on the public view, (3) rework the public hero around the Saliw brand name + meaning, and (4) remove both CTAs from the public view.
+
+### Behavior
+
+65. The `ActivityFeed` widget is removed entirely: the file `src/components/dashboard/ActivityFeed.tsx` is deleted, all imports are removed from `src/app/dashboard/page.tsx`, and the two `updated_at desc` queries (for songs and setlists) are removed from the `Promise.all`. AC 36–40 are superseded by this amendment.
+66. A new Server Component `src/components/dashboard/UpcomingSetlists.tsx` exists with no `'use client'` directive and no hooks. It accepts `setlists: Array<{ id: string; name: string; date: string; songCount: number }>` as its only prop.
+67. `UpcomingSetlists` always renders its section wrapper (`<section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">`) with a title "Upcoming Setlists" — the container is not conditionally hidden when the list is empty.
+68. When the `setlists` prop is empty, `UpcomingSetlists` renders the exact text "No upcoming setlists scheduled." inside the section.
+69. When the `setlists` prop is non-empty, `UpcomingSetlists` renders up to 5 rows, each wrapped in a `<Link href={\`/setlists/\${id}\`}>` with `focus-visible:ring-2 focus-visible:ring-brand-espresso` focus styling.
+70. Each Upcoming Setlists row displays: setlist name (bold `text-brand-espresso`), song count formatted as "{n} songs" (singular "1 song") in muted `text-brand-brown`, and the date formatted via `toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })`.
+71. On the authenticated view, the dashboard page queries `setlists` for `date >= todayISO` ordered ascending with `limit(5)` as part of the main `Promise.all`, maps the result to `{ id, name, date, songCount }`, and renders `<UpcomingSetlists />` in place of the former `<ActivityFeed />` slot in the 2-column grid. Recent Songs remains in its column.
+72. The pre-existing Next Up hero limit-1 query and the new Upcoming Setlists limit-5 query both run in parallel; they are not merged (their semantics differ because Next Up falls back to past setlists).
+73. On the public view, the dashboard page performs a single Supabase query — upcoming setlists for `date >= todayISO` ordered ascending with `limit(5)` — wrapped in try/catch, before returning `<PublicDashboardView />`. On error, an empty array is passed.
+74. `PublicDashboardView` accepts an `upcomingSetlists` prop and renders `<UpcomingSetlists />` below the three feature cards, full-width.
+75. AC 53 is replaced: the public path performs at most ONE Supabase table query — the upcoming-setlists fetch — plus the `auth.getUser()` branch check. No `profiles`, `songs`, or other table reads occur on the guest path.
+76. The public hero H1 is `<h1>Saliw <span className="text-brand-brown font-normal">(sa·líw)</span></h1>` using the same size/weight classes as the previous H1 (`text-3xl md:text-4xl font-extrabold tracking-tight text-brand-espresso`). The pronunciation span uses `font-normal text-brand-brown` to de-emphasize.
+77. Immediately below the H1, a meaning subtitle renders with exact text: "Saliw is the gentle art of accompaniment, where music and voice weave together in a soulful, rhythmic embrace." Classes: `text-lg text-brand-espresso italic max-w-prose`.
+78. Below the meaning subtitle, a public-toned description paragraph renders with exact text: "A space for worship leaders, musicians, and congregations — where every song finds its key, every setlist finds its flow, and every service is shared in sync." Classes: `text-base text-brand-brown max-w-prose`.
+79. The public view no longer renders the "Sign in" CTA or the "Browse the song library" CTA. AC 57 and AC 58 are superseded.
+80. The public view retains the three feature cards (Music / ListMusic / Sparkles) as specified in AC 59.
+81. Guest visibility into `setlists` is governed by the existing RLS policy (`is_public OR authenticated`); only `is_public = true` rows are visible to unauthenticated visitors. No policy change is required.
+82. All interactive links in the Upcoming Setlists widget use `focus-visible:ring-2 focus-visible:ring-brand-espresso`. No `text-brand-tan` text is placed on `bg-brand-cream` background anywhere in the widget or the reworked public hero.
+
+### Amendment 2 Resolution
+
+- **Completed:** 2026-04-24
+- **Branch:** `feature/TASK-024-dashboard-landing`
+- **Commit SHA:** `3bdce0c`
+- **Files changed (amendment 2):**
+  - `src/components/dashboard/UpcomingSetlists.tsx` (NEW) — Server Component. Always renders the section wrapper + title. Empty state: "No upcoming setlists scheduled." Otherwise renders up to 5 rows with name, song count, and `en-US` long-date, each a `Link` to `/setlists/{id}` with focus ring.
+  - `src/components/dashboard/ActivityFeed.tsx` (DELETED) — entirely removed.
+  - `src/app/dashboard/page.tsx` (MODIFIED) — removed ActivityFeed import + two `updated_at desc` queries + merge/sort logic + `serverNow`. Added Upcoming Setlists query to main `Promise.all` (authenticated branch) and a separate single-query fetch on the guest branch. Passes `upcomingSetlists` into `PublicDashboardView`. Replaces `<ActivityFeed />` with `<UpcomingSetlists />` in the 2-column grid.
+  - `src/components/dashboard/PublicDashboardView.tsx` (MODIFIED) — now accepts `upcomingSetlists` prop. H1 reworked to "Saliw (sa·líw)" with pronunciation span. Added meaning subtitle (italic, `text-lg text-brand-espresso`) and public-toned description. Removed both CTAs (Sign in + Browse song library) and the unused `Link` + `ArrowRight` imports. Added `<UpcomingSetlists />` below feature cards, full-width.
+- **AC added:** 65–82.
+- **AC superseded:** 36–40 (Activity Feed), 53 (rewritten as AC 75), 57–58 (public CTAs removed).
+- **Notes:**
+  - `UpcomingSetlists` is a Server Component — no `'use client'`, no hooks — so BUG-001 / BUG-002 guards remain non-applicable.
+  - Authenticated path uses a single `Promise.all` with three queries: Next Up limit-1, Recent Songs, Upcoming Setlists limit-5. AC 12 still satisfied.
+  - Guest path performs exactly one `.from('setlists')` call and no other `.from()` invocations. RLS restricts the result to `is_public = true` rows — no code change to RLS.
+  - No forbidden token pair (`text-brand-tan` on `bg-brand-cream`). Hero uses `text-brand-espresso` and `text-brand-brown` on the cream layout card; the pronunciation span `text-brand-brown` on `bg-brand-cream` matches the approved contrast pattern already used in `NextUpCard`.
+  - All interactive links retain `focus-visible:ring-2 focus-visible:ring-brand-espresso`.
+  - `npx tsc --noEmit` passes clean. `npx next lint` surfaces only the pre-existing warnings unrelated to touched files — no new warnings introduced.
