@@ -4,6 +4,18 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-24
+### Added
+- Dashboard landing page with Greeting, Next Up hero, Quick Actions (director-only), Recent Songs, and Upcoming Setlists widgets (`TASK-024`)
+  - All authenticated widget data fetched in a single `Promise.all` (Next Up limit-1, Recent Songs, Upcoming Setlists limit-5) in the Server Component; widgets are pure display Server Components receiving data via props.
+  - Next Up hero falls back to the most recent past setlist when no upcoming exists; director-only empty-state CTA to `/setlists/new`.
+  - Upcoming Setlists widget renders up to 5 upcoming setlists with name, song count, and long-format date; each row links to `/setlists/{id}` with focus-visible ring styling; empty state "No upcoming setlists scheduled.".
+  - Supabase migration adds `created_at` / `updated_at` + `set_updated_at()` trigger to `songs` and `setlists`.
+  - Public marketing view at `/dashboard` for unauthenticated visitors: hero headline "Saliw (sa·líw)" with italic meaning subtitle and public-toned description, three-card feature strip (Music / ListMusic / Sparkles), and a responsive two-column grid (`md:grid-cols-2`) below the feature cards containing the Recent Songs widget (left) and the Upcoming Setlists widget (right) — mirroring the authenticated dashboard layout. RLS restricts guest visibility (`setlists` → `is_public = true` rows; `songs` → public read policy). `/dashboard` removed from `PROTECTED_PATHS`; `/dashboard/profile` remains protected. Guest path performs exactly two Supabase table queries in a single `Promise.all` (upcoming setlists + recent songs) plus the `auth.getUser()` branch check — no `profiles` read on the guest path.
+  - Affected files: `src/app/dashboard/page.tsx`, `src/components/dashboard/GreetingStrip.tsx`, `src/components/dashboard/NextUpCard.tsx`, `src/components/dashboard/QuickActions.tsx`, `src/components/dashboard/RecentSongs.tsx`, `src/components/dashboard/UpcomingSetlists.tsx`, `src/components/dashboard/PublicDashboardView.tsx`, `src/middleware.ts`, `src/types/supabase.ts`, `supabase/migrations/20260424000002_add_timestamps_to_songs_and_setlists.sql`
+- Confirmation dialogs for Go Live and Follow Leader toggles (`TASK-023`)
+  - Affected files: `src/components/client/ServiceNavigator.tsx`
+
 ## [Unreleased] — 2026-04-23
 ### Added
 - SetlistBuilder: drag-and-drop setlist composition interface for Music Directors (`TASK-022`)
