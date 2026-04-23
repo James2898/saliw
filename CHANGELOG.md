@@ -4,6 +4,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-23
+### Added
+- SetlistBuilder: drag-and-drop setlist composition interface for Music Directors (`TASK-022`)
+  - Affected files: `src/app/setlists/[id]/edit/page.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/components/client/SetlistBuilder/SetlistPanel.tsx`, `src/components/client/SetlistBuilder/SortableSongRow.tsx`, `src/components/client/SetlistBuilder/LibraryPanel.tsx`, `src/components/client/SetlistBuilder/ErrorBanner.tsx`, `src/app/actions/songActions.ts`, `package.json`, `package-lock.json`
+- `getAllSongs` Server Action: pre-fetch full song library ordered by title (`TASK-022`)
+- Instant client-side song search (title + artist filter) with no URL changes (`TASK-022`)
+- Dirty-state Save Order with batch position update via `updateSetlistSongOrder` (`TASK-022`)
+- Inline dismissible error banner (`role="alert"`) for all action failures (`TASK-022`)
+- Artisan empty state: dashed brown border on cream background in Setlist Panel (`TASK-022`)
+- Active drag feedback: brand-tan border and shadow on dragged row (`TASK-022`)
+
 ## [Unreleased] — 2026-04-19
 
 ### Added
