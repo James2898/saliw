@@ -243,8 +243,8 @@ export default function ServiceNavigator({
             </div>
           )}
 
-          {/* ── Follow Leader button — authenticated non-leader only (AC-19) ── */}
-          {!isLeader && isAuthenticated && (
+          {/* ── Follow Leader button — all non-leader viewers (AC-19) ── */}
+          {!isLeader && (
             <div className="flex flex-col items-end gap-1">
               <button
                 type="button"
