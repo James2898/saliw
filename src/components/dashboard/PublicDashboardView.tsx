@@ -1,9 +1,8 @@
 import type { ReactElement } from 'react'
-import Link from 'next/link'
-import { ArrowRight, ListMusic, Music, Sparkles } from 'lucide-react'
-
-const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso'
+import { ListMusic, Music, Sparkles } from 'lucide-react'
+import UpcomingSetlists, {
+  type UpcomingSetlist,
+} from '@/components/dashboard/UpcomingSetlists'
 
 interface FeatureCardProps {
   icon: ReactElement
@@ -23,46 +22,28 @@ function FeatureCard({ icon, title, description }: FeatureCardProps): ReactEleme
   )
 }
 
-export default function PublicDashboardView(): ReactElement {
+interface PublicDashboardViewProps {
+  upcomingSetlists: UpcomingSetlist[]
+}
+
+export default function PublicDashboardView({
+  upcomingSetlists,
+}: PublicDashboardViewProps): ReactElement {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-espresso">
-          Plan Sunday. Lead the room.
+          Saliw <span className="text-brand-brown font-normal">(sa·líw)</span>
         </h1>
-        <p className="text-base text-brand-brown max-w-prose">
-          Saliw keeps your worship team in sync — chord charts that transpose on the fly,
-          setlists that every musician can follow, and live key changes during service.
+        <p className="text-lg text-brand-espresso italic max-w-prose">
+          Saliw is the gentle art of accompaniment, where music and voice weave
+          together in a soulful, rhythmic embrace.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 mt-2">
-          <Link
-            href="/login"
-            className={[
-              'inline-flex items-center justify-center gap-2 font-sans font-semibold',
-              'bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream',
-              'border border-brand-tan hover:border-brand-brown',
-              'transition-colors duration-200',
-              'text-base px-4 py-2 rounded-xl',
-              focusRing,
-            ].join(' ')}
-          >
-            Sign in
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-          <Link
-            href="/library"
-            className={[
-              'inline-flex items-center justify-center font-sans font-semibold',
-              'bg-transparent text-brand-espresso hover:bg-brand-brown/10',
-              'border border-brand-brown/30 hover:border-brand-brown',
-              'transition-colors duration-200',
-              'text-base px-4 py-2 rounded-xl',
-              focusRing,
-            ].join(' ')}
-          >
-            Browse the song library
-          </Link>
-        </div>
+        <p className="text-base text-brand-brown max-w-prose">
+          A space for worship leaders, musicians, and congregations — where every
+          song finds its key, every setlist finds its flow, and every service is
+          shared in sync.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -82,6 +63,8 @@ export default function PublicDashboardView(): ReactElement {
           description="Crafted for directors, musicians, and the moments in between."
         />
       </div>
+
+      <UpcomingSetlists setlists={upcomingSetlists} />
     </div>
   )
 }

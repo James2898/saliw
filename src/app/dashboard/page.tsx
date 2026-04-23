@@ -4,7 +4,9 @@ import GreetingStrip from '@/components/dashboard/GreetingStrip'
 import NextUpCard, { type NextUpSetlist } from '@/components/dashboard/NextUpCard'
 import QuickActions from '@/components/dashboard/QuickActions'
 import RecentSongs, { type RecentSong } from '@/components/dashboard/RecentSongs'
-import ActivityFeed, { type ActivityItem } from '@/components/dashboard/ActivityFeed'
+import UpcomingSetlists, {
+  type UpcomingSetlist,
+} from '@/components/dashboard/UpcomingSetlists'
 import PublicDashboardView from '@/components/dashboard/PublicDashboardView'
 
 export const metadata: Metadata = {
@@ -18,18 +20,6 @@ type UpcomingRow = {
   setlist_songs: { count: number }[]
 }
 
-type ActivitySongRow = {
-  id: string
-  title: string
-  updated_at: string
-}
-
-type ActivitySetlistRow = {
-  id: string
-  name: string
-  updated_at: string
-}
-
 export default async function DashboardPage() {
   const supabase = await createClient()
 
@@ -38,8 +28,31 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const todayISO = new Date().toISOString().slice(0, 10)
+
   if (!user) {
-    return <PublicDashboardView />
+    // Guest path: fetch only public upcoming setlists (RLS limits to is_public rows).
+    let guestUpcoming: UpcomingSetlist[] = []
+    try {
+      const { data, error } = await supabase
+        .from('setlists')
+        .select('id, name, date, setlist_songs(count)')
+        .gte('date', todayISO)
+        .order('date', { ascending: true })
+        .limit(5)
+
+      if (!error && data) {
+        guestUpcoming = (data as UpcomingRow[]).map((row) => ({
+          id: row.id,
+          name: row.name,
+          date: row.date,
+          songCount: row.setlist_songs[0]?.count ?? 0,
+        }))
+      }
+    } catch {
+      // Swallow — render with empty upcoming list.
+    }
+    return <PublicDashboardView upcomingSetlists={guestUpcoming} />
   }
 
   // ── Profile (role + full name) ──────────────────────────────────────────────
@@ -59,35 +72,30 @@ export default async function DashboardPage() {
   }
 
   // ── Parallel data block — all widget data in a single Promise.all ──────────
-  const todayISO = new Date().toISOString().slice(0, 10)
+  const [upcomingRes, recentSongsRes, upcomingListRes] = await Promise.all([
+    // Next Up hero — single nearest upcoming setlist
+    supabase
+      .from('setlists')
+      .select('id, name, date, setlist_songs(count)')
+      .gte('date', todayISO)
+      .order('date', { ascending: true })
+      .limit(1),
 
-  const [upcomingRes, recentSongsRes, activitySongsRes, activitySetlistsRes] =
-    await Promise.all([
-      supabase
-        .from('setlists')
-        .select('id, name, date, setlist_songs(count)')
-        .gte('date', todayISO)
-        .order('date', { ascending: true })
-        .limit(1),
+    // Recent Songs widget
+    supabase
+      .from('songs')
+      .select('id, title, artist, original_key')
+      .order('created_at', { ascending: false })
+      .limit(5),
 
-      supabase
-        .from('songs')
-        .select('id, title, artist, original_key')
-        .order('created_at', { ascending: false })
-        .limit(5),
-
-      supabase
-        .from('songs')
-        .select('id, title, updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(5),
-
-      supabase
-        .from('setlists')
-        .select('id, name, updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(5),
-    ])
+    // Upcoming Setlists widget — up to 5 upcoming
+    supabase
+      .from('setlists')
+      .select('id, name, date, setlist_songs(count)')
+      .gte('date', todayISO)
+      .order('date', { ascending: true })
+      .limit(5),
+  ])
 
   // ── Resolve Next Up setlist (upcoming first, then most recent past) ────────
   let nextUp: NextUpSetlist | null = null
@@ -133,31 +141,15 @@ export default async function DashboardPage() {
         original_key: s.original_key,
       }))
 
-  // ── Activity Feed (merge + sort + top 6) ───────────────────────────────────
-  const activitySongs: ActivityItem[] = activitySongsRes.error
+  // ── Upcoming Setlists ───────────────────────────────────────────────────────
+  const upcomingSetlists: UpcomingSetlist[] = upcomingListRes.error
     ? []
-    : ((activitySongsRes.data ?? []) as ActivitySongRow[]).map((s) => ({
-        type: 'song' as const,
-        id: s.id,
-        name: s.title,
-        updated_at: s.updated_at,
+    : ((upcomingListRes.data ?? []) as UpcomingRow[]).map((row) => ({
+        id: row.id,
+        name: row.name,
+        date: row.date,
+        songCount: row.setlist_songs[0]?.count ?? 0,
       }))
-
-  const activitySetlists: ActivityItem[] = activitySetlistsRes.error
-    ? []
-    : ((activitySetlistsRes.data ?? []) as ActivitySetlistRow[]).map((s) => ({
-        type: 'setlist' as const,
-        id: s.id,
-        name: s.name,
-        updated_at: s.updated_at,
-      }))
-
-  const feed: ActivityItem[] = [...activitySongs, ...activitySetlists]
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, 6)
-
-  // Render-time timestamp for relative time computation in the Activity Feed.
-  const serverNow = new Date()
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,7 +161,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <RecentSongs songs={recentSongs} />
-        <ActivityFeed items={feed} now={serverNow} />
+        <UpcomingSetlists setlists={upcomingSetlists} />
       </div>
     </div>
   )
