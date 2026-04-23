@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/services/supabase/server'
 import GreetingStrip from '@/components/dashboard/GreetingStrip'
 import NextUpCard, { type NextUpSetlist } from '@/components/dashboard/NextUpCard'
 import QuickActions from '@/components/dashboard/QuickActions'
 import RecentSongs, { type RecentSong } from '@/components/dashboard/RecentSongs'
 import ActivityFeed, { type ActivityItem } from '@/components/dashboard/ActivityFeed'
+import PublicDashboardView from '@/components/dashboard/PublicDashboardView'
 
 export const metadata: Metadata = {
   title: 'Dashboard — Saliw',
@@ -33,13 +33,13 @@ type ActivitySetlistRow = {
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // ── Auth guard (must precede any data query) ────────────────────────────────
+  // ── Auth check — unauthenticated visitors see the public marketing view ────
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    return <PublicDashboardView />
   }
 
   // ── Profile (role + full name) ──────────────────────────────────────────────
