@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
 interface NewSetlistButtonProps {
@@ -11,12 +12,8 @@ interface NewSetlistButtonProps {
  *
  * Renders only when isMusicDirector is true (DOM-absent for non-directors).
  *
- * Desktop: inline button in the setlists page header.
+ * Desktop: inline link styled as a button in the setlists page header.
  * Mobile: Floating Action Button (FAB) fixed bottom-right, z-[80].
- *
- * NOTE: The /setlists/new route does not yet exist. Both controls are rendered
- * as disabled with a tooltip hint: "Creating new setlists coming soon."
- * This prevents linking to a 404 until the creation form is built.
  */
 export default function NewSetlistButton({ isMusicDirector }: NewSetlistButtonProps) {
   // Not a music director — physically absent from DOM.
@@ -29,54 +26,45 @@ export default function NewSetlistButton({ isMusicDirector }: NewSetlistButtonPr
     'focus-visible:ring-offset-2',
   ].join(' ')
 
-  const hintText = 'Creating new setlists coming soon.'
-
   return (
     <>
       {/* ── Desktop button — hidden on mobile ─────────────────────────────── */}
-      <button
-        type="button"
-        disabled
-        aria-label="Add new setlist (coming soon)"
-        title={hintText}
+      <Link
+        href="/setlists/new"
+        aria-label="Create new setlist"
         className={[
           'hidden md:inline-flex items-center gap-2',
           'px-4 py-2 rounded-xl',
-          'bg-brand-tan/40 text-brand-espresso/40',
+          'bg-brand-tan text-brand-espresso',
           'text-sm font-semibold font-sans',
-          'border border-brand-tan/40',
-          'cursor-not-allowed',
+          'border border-brand-tan',
+          'hover:bg-brand-brown hover:text-brand-cream hover:border-brand-brown',
+          'transition-colors duration-200',
           sharedFocusRing,
         ].join(' ')}
       >
         <Plus size={16} strokeWidth={2} aria-hidden="true" />
         New Setlist
-      </button>
+      </Link>
 
       {/* ── Mobile FAB — hidden on desktop, fixed bottom-right ────────────── */}
-      <button
-        type="button"
-        disabled
-        aria-label="Add new setlist (coming soon)"
-        title={hintText}
+      <Link
+        href="/setlists/new"
+        aria-label="Create new setlist"
         className={[
           'md:hidden',
           'fixed bottom-6 right-6 z-[80]',
           'flex items-center justify-center',
           'w-14 h-14 rounded-full',
-          'bg-brand-tan/40 text-brand-espresso/40',
+          'bg-brand-tan text-brand-espresso',
           'shadow-lg',
-          'cursor-not-allowed',
+          'hover:bg-brand-brown hover:text-brand-cream',
+          'transition-colors duration-200',
           sharedFocusRing,
         ].join(' ')}
       >
         <Plus size={24} strokeWidth={2} aria-hidden="true" />
-      </button>
-
-      {/* ── Hint text below desktop button region (visible to screen readers) */}
-      <p className="hidden md:block text-xs text-brand-brown/60 mt-1 text-right" aria-live="polite">
-        {hintText}
-      </p>
+      </Link>
     </>
   )
 }

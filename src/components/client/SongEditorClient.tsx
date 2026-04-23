@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { preProcessChords, NOTES } from '@/utils/musicLogic'
 import { updateSong } from '@/app/actions/songActions'
@@ -105,17 +105,6 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isModalOpen])
-
-  // ── Navigation guard helper ─────────────────────────────────────────────────
-  const handleGuardedNavigation = useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-      if (isDirty) {
-        e.preventDefault()
-        setPendingNavHref(href)
-      }
-    },
-    [isDirty]
-  )
 
   // ── Modal actions ───────────────────────────────────────────────────────────
   const handleStay = () => setPendingNavHref(null)

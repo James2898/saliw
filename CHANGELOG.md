@@ -4,9 +4,28 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-23
+### Added
+- SetlistBuilder: drag-and-drop setlist composition interface for Music Directors (`TASK-022`)
+  - Affected files: `src/app/setlists/[id]/edit/page.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/components/client/SetlistBuilder/SetlistPanel.tsx`, `src/components/client/SetlistBuilder/SortableSongRow.tsx`, `src/components/client/SetlistBuilder/LibraryPanel.tsx`, `src/components/client/SetlistBuilder/ErrorBanner.tsx`, `src/app/actions/songActions.ts`, `package.json`, `package-lock.json`
+- `getAllSongs` Server Action: pre-fetch full song library ordered by title (`TASK-022`)
+- Instant client-side song search (title + artist filter) with no URL changes (`TASK-022`)
+- Dirty-state Save Order with batch position update via `updateSetlistSongOrder` (`TASK-022`)
+- Inline dismissible error banner (`role="alert"`) for all action failures (`TASK-022`)
+- Artisan empty state: dashed brown border on cream background in Setlist Panel (`TASK-022`)
+- Active drag feedback: brand-tan border and shadow on dragged row (`TASK-022`)
+
 ## [Unreleased] — 2026-04-19
 
 ### Added
+
+- **Collaborative Realtime Sync: Go Live & Follow Leader** (`TASK-021`)
+  - Director "Go Live" toggle in `ServiceNavigator` bar (leader-only): D-1/D-2/D-3/D-8 states; Supabase Broadcast channel `setlist_sync:${setlistId}` with `self: false`; `bg-red-600 text-white animate-pulse` LIVE badge; inline error on connection failure.
+  - Key change auto-persist: per-song 400ms debounced persist via `updatePerformanceDetails` + `KEY_CHANGE` broadcast on success; RF-1 monotonic sequence guard prevents stale broadcasts across debounce windows; RF-5 `latestKeyRef` stale-closure guard; D-4/D-5/D-6 per-song sync status UI in `SetlistSongSection`.
+  - "Follow Leader" toggle (authenticated non-leader only): State Check on enable fetches current `performance_key` for all songs; `Map<junctionId, performanceKey>` snapshot stored as revert target; F-2/F-3/F-6/F-7/F-8 states; green `w-2 h-2 bg-green-500` synced dot; "Lost connection." indicator on subscription drop.
+  - Incoming broadcast handling: `SONG_CHANGE` → `scrollIntoView({ behavior: 'smooth', block: 'start' })`; `KEY_CHANGE` → `overrideKeys` Map update → `externalKey` prop chain; RF-2-guarded `useEffect` in `ChordSheetClient` prevents redundant chord mutations on initial mount.
+  - Font size and chord-visibility preferences are never overridden by sync events (out of scope per spec).
+  - Affected files: `src/utils/realtimeEvents.ts` (NEW), `src/hooks/useSetlistSync.ts` (NEW), `src/app/setlists/[id]/SetlistViewerClient.tsx` (NEW), `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/components/client/ServiceNavigator.tsx`, `src/app/setlists/[id]/page.tsx`
 
 - **Setlist Archive & Index Hub** (`TASK-020`)
   - `src/app/setlists/page.tsx` — Full server-rendered, paginated, searchable setlist index replacing the prior stub; `force-dynamic`; fetches from `setlists` with embedded `setlist_songs(count)`; `?q=` search with PostgREST metacharacter sanitization; `?page=` pagination with `count: 'exact'` and page-clamp guard; three distinct empty/error states; `music_director` RBAC gate for New Setlist controls; Artisan card layout with `border-l-4 border-[--brand-tan]`; sticky header containing title, count subtitle, and `SearchBar`; page metadata `title: 'Setlists — Saliw'`.
