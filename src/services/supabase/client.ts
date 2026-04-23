@@ -12,3 +12,14 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
+
+// Module-level singleton for Realtime subscriptions.
+// Instantiated once per browser page load — survives React Strict Mode remounts.
+let _realtimeClient: ReturnType<typeof createClient> | null = null
+
+export function getRealtimeClient() {
+  if (!_realtimeClient) {
+    _realtimeClient = createClient()
+  }
+  return _realtimeClient
+}
