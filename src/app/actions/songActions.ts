@@ -134,6 +134,39 @@ export async function updateSong(
 }
 
 /**
+ * Fetches all songs in the library for display in the SetlistBuilder Add panel.
+ * READ-ONLY. No authentication required (songs_select_public RLS policy uses USING(true)).
+ *
+ * @returns All songs ordered by title ascending, or an error message
+ */
+export async function getAllSongs(): Promise<{
+  data: Array<{
+    id: string
+    title: string
+    artist: string
+    original_key: string
+  }> | null
+  error: string | null
+}> {
+  try {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .from('songs')
+      .select('id, title, artist, original_key')
+      .order('title', { ascending: true })
+
+    if (error) {
+      return { data: null, error: 'Unable to load song library. Please try again.' }
+    }
+
+    return { data: data ?? [], error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
  * Deletes a song from the songs table.
  * Requires: authenticated user with music_director role (enforced via RLS).
  *

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Pencil } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
 import SearchBar from '@/components/client/SearchBar'
 import PaginationControls from '@/components/client/PaginationControls'
@@ -155,13 +156,14 @@ export default async function SetlistsPage({ searchParams }: SetlistsPageProps) 
                   : null
 
                 return (
-                  <li key={setlist.id}>
+                  <li key={setlist.id} className="relative">
                     <Link
                       href={`/setlists/${setlist.id}`}
                       className={[
                         'flex flex-col md:flex-row md:items-center md:justify-between gap-2',
                         'bg-[--brand-cream] dark:bg-brand-espresso',
                         'rounded-xl border-l-4 border-[--brand-tan] p-4',
+                        isMusicDirector ? 'pr-10' : '',
                         'hover:shadow-md transition-shadow duration-200',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2',
                       ].join(' ')}
@@ -195,6 +197,15 @@ export default async function SetlistsPage({ searchParams }: SetlistsPageProps) 
                         </span>
                       </div>
                     </Link>
+                    {isMusicDirector && (
+                      <Link
+                        href={`/setlists/${setlist.id}/edit`}
+                        aria-label={`Edit setlist: ${setlist.name}`}
+                        className="absolute top-3 right-3 p-1.5 rounded-lg text-brand-brown/50 hover:text-brand-brown hover:bg-brand-brown/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1"
+                      >
+                        <Pencil size={13} strokeWidth={2} aria-hidden="true" />
+                      </Link>
+                    )}
                   </li>
                 )
               })}
