@@ -40,6 +40,16 @@ interface ChordSheetClientProps {
   initialKey?: string
   /** Optional callback fired whenever the displayed (transposed) key changes. */
   onKeyChange?: (key: string) => void
+  /**
+   * Optional key injected by Follow Leader mode.
+   * RF-2 guard: effect must NOT call setTargetKey when externalKey === displayKey.
+   */
+  externalKey?: string
+  /**
+   * Optional callback for Go Live auto-persist.
+   * Fired alongside onKeyChange in the same useEffect. Only when provided.
+   */
+  onKeyChangeLive?: (key: string) => void
 }
 
 /**
@@ -61,6 +71,8 @@ export default function ChordSheetClient({
   originalKey,
   initialKey,
   onKeyChange,
+  externalKey,
+  onKeyChangeLive,
 }: ChordSheetClientProps) {
   const { semitoneOffset, displayKey, increment, decrement, setTargetKey, reset } =
     useTranspose(originalKey, initialKey)
@@ -89,9 +101,23 @@ export default function ChordSheetClient({
   }, [semitoneOffset, chordsHidden])
 
   // Notify parent whenever the displayed key changes (e.g. for Sync button in SetlistSongSection).
+  // Also fires onKeyChangeLive for Go Live auto-persist debounce (AC-18).
   useEffect(() => {
     onKeyChange?.(displayKey)
-  }, [displayKey, onKeyChange])
+    onKeyChangeLive?.(displayKey)
+  }, [displayKey, onKeyChange, onKeyChangeLive])
+
+  // RF-2 guard: react to externally injected key changes from Follow Leader mode.
+  // Must NOT fire on initial mount when externalKey === originalKey to avoid
+  // a redundant DOM chord mutation for every song in the setlist.
+  useEffect(() => {
+    if (externalKey !== undefined && externalKey !== displayKey) {
+      setTargetKey(externalKey)
+    }
+    // Intentionally omit displayKey from deps — we only want to react when externalKey changes.
+    // Including displayKey would cause a feedback loop: setTargetKey → displayKey changes → effect re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalKey])
 
   // Apply font-size CSS variable to the chord-display container.
   // DOM mutation pattern — avoids React re-renders on the chord node tree.
