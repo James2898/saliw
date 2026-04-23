@@ -118,6 +118,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
     title: entry.songs.title,
     artist: entry.songs.artist,
     originalKey: entry.songs.original_key,
+    performanceKey: entry.performance_key,
     orderIndex: i,
   }))
 
@@ -144,6 +145,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
             initialSongs={initialSongs}
             allSongs={allSongs}
             libraryError={libraryError}
+            initialDate={setlist.date ? setlist.date.slice(0, 10) : ''}
           />
         </div>
       </main>
