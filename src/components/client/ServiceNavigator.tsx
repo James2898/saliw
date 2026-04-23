@@ -288,14 +288,13 @@ export default function ServiceNavigator({
     // If dialog is already open, ignore second click (criterion 30)
     if (showGoLiveDialog) return
     setShowGoLiveDialog(true)
-  }, [sync.isLiveConnecting, showGoLiveDialog])
+  }, [sync, showGoLiveDialog])
 
   const handleGoLiveConfirm = useCallback(() => {
     setShowGoLiveDialog(false)
     sync.toggleLive()
-    // Restore focus to the toggle button
     goLiveButtonRef.current?.focus()
-  }, [sync.toggleLive])
+  }, [sync])
 
   const handleGoLiveCancel = useCallback(() => {
     setShowGoLiveDialog(false)
@@ -310,14 +309,13 @@ export default function ServiceNavigator({
     // If dialog is already open, ignore second click (criterion 30)
     if (showFollowDialog) return
     setShowFollowDialog(true)
-  }, [sync.isStateChecking, showFollowDialog])
+  }, [sync, showFollowDialog])
 
   const handleFollowConfirm = useCallback(() => {
     setShowFollowDialog(false)
     sync.toggleFollow()
-    // Restore focus to the toggle button
     followButtonRef.current?.focus()
-  }, [sync.toggleFollow])
+  }, [sync])
 
   const handleFollowCancel = useCallback(() => {
     setShowFollowDialog(false)
