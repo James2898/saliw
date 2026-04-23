@@ -181,7 +181,7 @@ export async function removeSongFromSetlist(
       if (deleteError.code === '42501') {
         return { data: null, error: 'You do not have permission to modify this setlist.' }
       }
-      return { data: null, error: 'Unable to reorder setlist after removal. Please try again.' }
+      return { data: null, error: 'Unable to remove song from setlist. Please try again.' }
     }
 
     if (count === 0) {
@@ -196,7 +196,7 @@ export async function removeSongFromSetlist(
       .order('order_index', { ascending: true })
 
     if (fetchError) {
-      return { data: null, error: 'Unable to reorder setlist after removal. Please try again.' }
+      return { data: null, error: 'Unable to remove song from setlist. Please try again.' }
     }
 
     // Sequential re-index loop — each update scoped to setlist_id for RLS
@@ -209,7 +209,7 @@ export async function removeSongFromSetlist(
         .eq('setlist_id', input.setlist_id)
 
       if (updateError) {
-        return { data: null, error: 'Unable to reorder setlist after removal. Please try again.' }
+        return { data: null, error: 'Unable to remove song from setlist. Please try again.' }
       }
     }
 
