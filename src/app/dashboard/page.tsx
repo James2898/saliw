@@ -31,28 +31,51 @@ export default async function DashboardPage() {
   const todayISO = new Date().toISOString().slice(0, 10)
 
   if (!user) {
-    // Guest path: fetch only public upcoming setlists (RLS limits to is_public rows).
+    // Guest path: fetch public upcoming setlists (RLS limits to is_public rows)
+    // AND recent songs (public read policy already in place) in parallel.
     let guestUpcoming: UpcomingSetlist[] = []
+    let guestRecentSongs: RecentSong[] = []
     try {
-      const { data, error } = await supabase
-        .from('setlists')
-        .select('id, name, date, setlist_songs(count)')
-        .gte('date', todayISO)
-        .order('date', { ascending: true })
-        .limit(5)
+      const [guestUpcomingRes, guestRecentSongsRes] = await Promise.all([
+        supabase
+          .from('setlists')
+          .select('id, name, date, setlist_songs(count)')
+          .gte('date', todayISO)
+          .order('date', { ascending: true })
+          .limit(5),
+        supabase
+          .from('songs')
+          .select('id, title, artist, original_key')
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ])
 
-      if (!error && data) {
-        guestUpcoming = (data as UpcomingRow[]).map((row) => ({
+      if (!guestUpcomingRes.error && guestUpcomingRes.data) {
+        guestUpcoming = (guestUpcomingRes.data as UpcomingRow[]).map((row) => ({
           id: row.id,
           name: row.name,
           date: row.date,
           songCount: row.setlist_songs[0]?.count ?? 0,
         }))
       }
+
+      if (!guestRecentSongsRes.error && guestRecentSongsRes.data) {
+        guestRecentSongs = guestRecentSongsRes.data.map((s) => ({
+          id: s.id,
+          title: s.title,
+          artist: s.artist,
+          original_key: s.original_key,
+        }))
+      }
     } catch {
-      // Swallow — render with empty upcoming list.
+      // Swallow — render with empty lists.
     }
-    return <PublicDashboardView upcomingSetlists={guestUpcoming} />
+    return (
+      <PublicDashboardView
+        upcomingSetlists={guestUpcoming}
+        recentSongs={guestRecentSongs}
+      />
+    )
   }
 
   // ── Profile (role + full name) ──────────────────────────────────────────────

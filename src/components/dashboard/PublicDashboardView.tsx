@@ -1,5 +1,8 @@
 import type { ReactElement } from 'react'
 import { ListMusic, Music, Sparkles } from 'lucide-react'
+import RecentSongs, {
+  type RecentSong,
+} from '@/components/dashboard/RecentSongs'
 import UpcomingSetlists, {
   type UpcomingSetlist,
 } from '@/components/dashboard/UpcomingSetlists'
@@ -24,10 +27,12 @@ function FeatureCard({ icon, title, description }: FeatureCardProps): ReactEleme
 
 interface PublicDashboardViewProps {
   upcomingSetlists: UpcomingSetlist[]
+  recentSongs: RecentSong[]
 }
 
 export default function PublicDashboardView({
   upcomingSetlists,
+  recentSongs,
 }: PublicDashboardViewProps): ReactElement {
   return (
     <div className="flex flex-col gap-8">
@@ -64,7 +69,10 @@ export default function PublicDashboardView({
         />
       </div>
 
-      <UpcomingSetlists setlists={upcomingSetlists} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <RecentSongs songs={recentSongs} />
+        <UpcomingSetlists setlists={upcomingSetlists} />
+      </div>
     </div>
   )
 }
