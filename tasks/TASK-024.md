@@ -381,6 +381,36 @@ focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:outline-non
 
 ---
 
+## Amendment — Public Dashboard View (2026-04-24)
+
+> Added after initial ship. User requested that unauthenticated visitors be able to view `/dashboard` with a distinct marketing-style layout (not the authenticated dashboard). AC numbering continues from 49.
+
+### Behavior
+
+50. A request to `/dashboard` with **no authenticated Supabase session** does **not** redirect. The page renders the `<PublicDashboardView />` component instead of the authenticated composition.
+51. A request to `/dashboard` with a valid session renders the existing authenticated composition unchanged — AC 16–49 remain satisfied with no behavioral or visual regression.
+52. `/dashboard` is removed from `PROTECTED_PATHS` in `src/middleware.ts`. `/dashboard/profile` remains protected via an explicit `PROTECTED_PATHS` entry so unauthenticated access to `/dashboard/profile` still redirects to `/login`.
+53. On the public path (`user === null`), the page performs **no Supabase data queries** — the `Promise.all` block and the `profiles` fetch are never reached. The only Supabase call is the `auth.getUser()` check already required for auth detection.
+
+### Public View Content
+
+54. `src/components/dashboard/PublicDashboardView.tsx` exists and is a Server Component (no `'use client'` directive, no hooks).
+55. The public view renders an `<h1>` with classes `text-3xl md:text-4xl font-extrabold tracking-tight text-brand-espresso` and exact text **"Plan Sunday. Lead the room."**.
+56. The public view renders a subtitle `<p>` with classes `text-base text-brand-brown max-w-prose` and exact text **"Saliw keeps your worship team in sync — chord charts that transpose on the fly, setlists that every musician can follow, and live key changes during service."**.
+57. The public view renders a primary CTA `<Link href="/login">` with the exact label "Sign in" and an `ArrowRight` lucide icon at `size={18}`. It uses the same focus-ring and primary-button class pattern as `NextUpCard.tsx`'s "Open Stage View" link (`bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream` plus `focus-visible:ring-2 focus-visible:ring-brand-espresso`).
+58. The public view renders a secondary CTA `<Link href="/library">` with the exact label "Browse the song library", styled as ghost/secondary (transparent background, `border border-brand-brown/30`), with no icon.
+59. Below the CTAs, the public view renders a `grid grid-cols-1 md:grid-cols-3 gap-6` feature strip with three `<section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">` cards, in this order:
+    1. `Music` icon (size 24) — title "Chord charts that transpose" — description "Change keys live without rewriting a single chord."
+    2. `ListMusic` icon (size 24) — title "Setlists that sync" — description "Everyone sees the same song and key during service."
+    3. `Sparkles` icon (size 24) — title "Built for worship" — description "Crafted for directors, musicians, and the moments in between."
+60. The public view does **not** render: Greeting strip, Next Up hero, Quick Actions, Recent Songs, or Activity Feed.
+61. The page `<title>` stays "Dashboard — Saliw" (metadata unchanged).
+62. The public view renders inside the existing `DashboardLayout` `<Card>` wrapper — it does not introduce a second `Card` element (same constraint as AC 15).
+63. No `--brand-tan` text is placed on `--brand-cream` background in the public view (WCAG AA, per coding guidelines).
+64. All interactive elements in the public view use `focus-visible:ring-2 focus-visible:ring-brand-espresso` focus styling, consistent with the rest of the codebase.
+
+---
+
 ## Branch
 
 Create and work on: `feature/TASK-024-dashboard-landing` branched from `develop`.
@@ -414,3 +444,18 @@ feat(TASK-024): implement dashboard landing page with widgets
   - `serverNow` (Activity Feed relative time baseline) is taken after all Promise.all resolves; drift vs individual query timestamps is sub-second and inconsequential for minute/hour/day granularity.
   - `npx tsc --noEmit` passes clean. `npx next lint` surfaces only pre-existing warnings in `ServiceNavigator.tsx` and `useSetlistSync.ts` — no new warnings introduced by this task.
   - The page renders inside the `DashboardLayout` `<Card>` (one `.main-card` in DOM, AC 15). The page itself uses a plain `<div className="flex flex-col gap-6">` wrapper — no second Card.
+
+### Amendment resolution — Public Dashboard View (2026-04-24)
+
+- **Files changed (amendment):**
+  - `src/components/dashboard/PublicDashboardView.tsx` (NEW) — Server Component. Hero `<h1>` + subtitle, primary "Sign in" CTA → `/login` with `ArrowRight` icon (size 18), secondary "Browse the song library" CTA → `/library`, three-card feature strip (`Music` / `ListMusic` / `Sparkles`). No `'use client'`, no hooks, no Supabase.
+  - `src/middleware.ts` (MODIFIED) — `PROTECTED_PATHS` changed from `['/dashboard']` to `['/dashboard/profile']`. `/dashboard` itself is now public; `/dashboard/profile` is still matched (both as exact and via `startsWith(p + '/')` for any deeper subpath).
+  - `src/app/dashboard/page.tsx` (MODIFIED) — Dropped `redirect('/login')`; if `user === null`, the component returns `<PublicDashboardView />` immediately, before the `profiles` fetch or the `Promise.all` data block. Authenticated composition is byte-identical to the pre-amendment version. Removed the now-unused `redirect` import and added the `PublicDashboardView` import.
+- **AC added:** 50–64 (Public Dashboard View).
+- **Notes:**
+  - Authenticated flow (AC 16–49) is untouched — I only added an early-return branch at the `!user` check and did not modify any code reachable when `user` is truthy.
+  - Guest path performs zero Supabase data queries. The only Supabase call on the public path is the existing `auth.getUser()` which the middleware already made; the in-page `auth.getUser()` is also needed to decide branching. No `profiles`, `songs`, or `setlists` reads happen for guests.
+  - `PublicDashboardView` is a Server Component — no `'use client'`, no `useState`/`useEffect`/`useCallback`/`useMemo` — so BUG-001 / BUG-002 guards are not relevant to this amendment.
+  - No `text-brand-tan on bg-brand-cream` anywhere in the public view. Hero h1 uses `text-brand-espresso` on the `bg-brand-cream` layout card. Subtitle uses `text-brand-brown`. Primary CTA uses `text-brand-espresso` on `bg-brand-tan` (matches AC 47 contrast rule). Feature card titles use `text-brand-espresso`, descriptions use `text-brand-brown`, icons use `text-brand-brown`.
+  - All interactive links use the same `focus-visible:ring-2 focus-visible:ring-brand-espresso` pattern present in `NextUpCard.tsx`.
+  - `npx tsc --noEmit` passes clean. `npx next lint` surfaces only the same pre-existing warnings as before — no new warnings in any file touched by this amendment.
