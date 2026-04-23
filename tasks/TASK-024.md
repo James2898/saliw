@@ -491,7 +491,7 @@ feat(TASK-024): implement dashboard landing page with widgets
 
 - **Completed:** 2026-04-24
 - **Branch:** `feature/TASK-024-dashboard-landing`
-- **Commit SHA:** `3bdce0c`
+- **Commit SHA:** `d62b7cb` (amendment 2 implementation commit)
 - **Files changed (amendment 2):**
   - `src/components/dashboard/UpcomingSetlists.tsx` (NEW) — Server Component. Always renders the section wrapper + title. Empty state: "No upcoming setlists scheduled." Otherwise renders up to 5 rows with name, song count, and `en-US` long-date, each a `Link` to `/setlists/{id}` with focus ring.
   - `src/components/dashboard/ActivityFeed.tsx` (DELETED) — entirely removed.
