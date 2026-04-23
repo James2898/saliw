@@ -4,6 +4,11 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-24
+### Added
+- Confirmation dialogs for Go Live and Follow Leader toggles (`TASK-023`)
+  - Affected files: `src/components/client/ServiceNavigator.tsx`
+
 ## [Unreleased] — 2026-04-23
 ### Added
 - SetlistBuilder: drag-and-drop setlist composition interface for Music Directors (`TASK-022`)
