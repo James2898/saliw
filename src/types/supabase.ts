@@ -18,6 +18,8 @@ export type DbSong = {
   content: string
   created_by: string | null
   singer: string | null
+  created_at: string
+  updated_at: string
 }
 
 /**
@@ -29,6 +31,8 @@ export type DbSetlist = {
   date: string
   leader_id: string
   is_public: boolean
+  created_at: string
+  updated_at: string
 }
 
 /**
