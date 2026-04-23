@@ -412,9 +412,9 @@ export async function updateSetlist(
       return { data: null, error: 'Unauthorized' }
     }
 
-    const { error, count } = await supabase
+    const { error } = await supabase
       .from('setlists')
-      .update({ name: input.name, date: input.date || null }, { count: 'exact' })
+      .update({ name: input.name, date: input.date || null })
       .eq('id', input.id)
 
     if (error) {
@@ -422,10 +422,6 @@ export async function updateSetlist(
         return { data: null, error: 'You do not have permission to modify this setlist.' }
       }
       return { data: null, error: 'Unable to update setlist. Please try again.' }
-    }
-
-    if (count === 0) {
-      return { data: null, error: 'You do not have permission to modify this setlist.' }
     }
 
     return { data: { id: input.id }, error: null }
