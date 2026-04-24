@@ -15,7 +15,7 @@ interface NextUpCardProps {
 }
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
 
 export default function NextUpCard({
   setlist,
@@ -24,13 +24,13 @@ export default function NextUpCard({
   // No setlists at all
   if (!setlist) {
     return (
-      <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-2">
+      <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-2">
           Next Up
         </p>
         {isMusicDirector ? (
           <div className="flex flex-col gap-4">
-            <p className="text-base text-brand-espresso">
+            <p className="text-base text-brand-espresso dark:text-brand-cream">
               You don&apos;t have any setlists yet. Build your first one to get started.
             </p>
             <div>
@@ -50,7 +50,7 @@ export default function NextUpCard({
             </div>
           </div>
         ) : (
-          <p className="text-base text-brand-espresso">
+          <p className="text-base text-brand-espresso dark:text-brand-cream">
             No upcoming setlists — check back soon.
           </p>
         )}
@@ -65,16 +65,16 @@ export default function NextUpCard({
   })
 
   return (
-    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
+    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-2">
             Next Up
           </p>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-brand-espresso truncate">
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream truncate">
             {setlist.name}
           </h2>
-          <p className="text-sm text-brand-brown mt-1">
+          <p className="text-sm text-brand-brown dark:text-brand-tan mt-1">
             {formattedDate} &middot; {setlist.songCount}{' '}
             {setlist.songCount === 1 ? 'song' : 'songs'}
           </p>
@@ -85,7 +85,7 @@ export default function NextUpCard({
             aria-label={`Edit ${setlist.name}`}
             className={[
               'shrink-0 flex items-center justify-center w-9 h-9 rounded-lg',
-              'text-brand-brown hover:text-brand-espresso hover:bg-brand-brown/10',
+              'text-brand-brown hover:text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-tan dark:hover:text-brand-cream dark:hover:bg-brand-tan/10',
               'transition-colors duration-200',
               focusRing,
             ].join(' ')}

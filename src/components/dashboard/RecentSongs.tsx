@@ -13,16 +13,16 @@ interface RecentSongsProps {
 }
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
 
 export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
   return (
-    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-3">
+    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
+      <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-3">
         Recent Songs
       </p>
       {songs.length === 0 ? (
-        <p className="text-sm text-brand-brown">No songs in the library yet.</p>
+        <p className="text-sm text-brand-brown dark:text-brand-tan">No songs in the library yet.</p>
       ) : (
         <ul className="flex flex-col gap-2" role="list">
           {songs.map((song) => (
@@ -37,14 +37,14 @@ export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
                 aria-label={`View ${song.title} by ${song.artist}`}
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-brand-espresso leading-snug">
+                  <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
                     {song.title}
                   </p>
-                  <p className="truncate text-xs font-medium text-brand-brown mt-0.5">
+                  <p className="truncate text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5">
                     {song.artist}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs font-semibold text-brand-brown bg-brand-cream rounded-lg px-2 py-0.5 border border-brand-brown/20">
+                <span className="shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-tan bg-brand-cream dark:bg-brand-darker rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
                   {song.original_key}
                 </span>
               </Link>
