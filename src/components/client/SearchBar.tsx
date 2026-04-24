@@ -64,9 +64,9 @@ export default function SearchBar({ defaultValue, basePath = '/library' }: Searc
         aria-label="Search songs by title or artist"
         className={[
           'w-full pl-9 pr-4 py-2 rounded-xl',
-          'bg-brand-cream',
+          'bg-brand-cream dark:bg-brand-espresso',
           'border border-brand-tan',
-          'font-sans text-sm text-brand-espresso',
+          'font-sans text-sm text-brand-espresso dark:text-brand-cream',
           'placeholder:text-brand-tan',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2',
           'transition-colors duration-200',
