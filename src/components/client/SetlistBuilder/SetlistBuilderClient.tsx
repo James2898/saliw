@@ -263,8 +263,8 @@ export default function SetlistBuilderClient({
   // ── Render ───────────────────────────────────────────────────────────────────
 
   const inputClass = [
-    'w-full rounded-xl border border-brand-brown/20 bg-brand-cream',
-    'px-4 py-2.5 text-sm text-brand-espresso placeholder:text-brand-brown/40',
+    'w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso',
+    'px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream placeholder:text-brand-brown/40 dark:placeholder:text-brand-tan/40',
     'focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1',
   ].join(' ')
 
@@ -291,7 +291,7 @@ export default function SetlistBuilderClient({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-xl border border-brand-brown/20 bg-brand-cream px-4 py-2.5 text-sm text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1"
+            className="rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1"
           />
         </div>
       </div>

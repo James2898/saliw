@@ -1,9 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// `/dashboard` itself is public (renders a marketing view for guests);
-// sub-routes like `/dashboard/profile` remain protected via explicit entries.
-const PROTECTED_PATHS = ['/dashboard/profile']
+// `/` itself is public (renders a marketing view for guests);
+// sub-routes like `/profile` remain protected via explicit entries.
+const PROTECTED_PATHS = ['/profile']
 
 function isProtectedPath(pathname: string): boolean {
   if (PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {

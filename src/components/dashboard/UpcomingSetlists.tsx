@@ -13,18 +13,18 @@ interface UpcomingSetlistsProps {
 }
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
 
 export default function UpcomingSetlists({
   setlists,
 }: UpcomingSetlistsProps): ReactElement {
   return (
-    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-3">
+    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
+      <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-3">
         Upcoming Setlists
       </p>
       {setlists.length === 0 ? (
-        <p className="text-sm text-brand-brown">No upcoming setlists scheduled.</p>
+        <p className="text-sm text-brand-brown dark:text-brand-tan">No upcoming setlists scheduled.</p>
       ) : (
         <ul className="flex flex-col gap-2" role="list">
           {setlists.map((setlist) => {
@@ -45,14 +45,14 @@ export default function UpcomingSetlists({
                   aria-label={`Open ${setlist.name} on ${formattedDate}`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-brand-espresso leading-snug">
+                    <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
                       {setlist.name}
                     </p>
-                    <p className="truncate text-xs font-medium text-brand-brown mt-0.5">
+                    <p className="truncate text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5">
                       {setlist.songCount} {setlist.songCount === 1 ? 'song' : 'songs'}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs font-semibold text-brand-brown">
+                  <span className="shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-tan">
                     {formattedDate}
                   </span>
                 </Link>
