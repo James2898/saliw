@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/services/supabase/server";
 import { preProcessChords } from "@/utils/musicLogic";
 import {
@@ -158,29 +158,6 @@ export default async function SetlistViewerPage({
             Back to Setlists
           </Link>
 
-          {/* ── Setlist header ───────────────────────────────────────────────── */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
-              {setlist.name}
-            </h1>
-            <div className="flex items-center gap-3">
-              {formattedDate && (
-                <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
-                  {formattedDate}
-                </p>
-              )}
-              {isLeader && (
-                <Link
-                  href={`/setlists/${id}/edit`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-brand-brown/30 text-brand-brown hover:bg-brand-brown/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2"
-                >
-                  <Pencil size={13} strokeWidth={2} aria-hidden="true" />
-                  Edit Setlist
-                </Link>
-              )}
-            </div>
-          </div>
-
           {/* ── Empty state ──────────────────────────────────────────────────── */}
           {processedSongs.length === 0 ? (
             <>
@@ -191,6 +168,8 @@ export default async function SetlistViewerPage({
                 setlistId={id}
                 isLeader={isLeader}
                 isAuthenticated={isAuthenticated}
+                setlistName={setlist.name}
+                formattedDate={formattedDate}
               />
               <Card>
                 <p className="text-sm font-semibold text-brand-brown dark:text-brand-tan text-center py-6">
@@ -206,6 +185,8 @@ export default async function SetlistViewerPage({
               setlistId={id}
               isLeader={isLeader}
               isAuthenticated={isAuthenticated}
+              setlistName={setlist.name}
+              formattedDate={formattedDate}
             />
           )}
         </div>
