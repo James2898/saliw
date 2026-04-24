@@ -318,6 +318,7 @@ export default function Navbar() {
 
       {/* Backdrop overlay */}
       <div
+        id="mobile-sidebar-backdrop"
         onClick={closeSidebar}
         aria-hidden="true"
         className={[
