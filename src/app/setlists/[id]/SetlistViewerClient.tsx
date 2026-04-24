@@ -6,6 +6,7 @@ import { Pencil } from 'lucide-react'
 import ServiceNavigator from '@/components/client/ServiceNavigator'
 import SetlistSongSection from '@/components/client/SetlistSongSection'
 import GoLiveButton from '@/components/client/GoLiveButton'
+import FollowLeaderButton from '@/components/client/FollowLeaderButton'
 import { useSetlistSync } from '@/hooks/useSetlistSync'
 import type { ProcessedLine } from '@/utils/musicLogic'
 
@@ -101,6 +102,16 @@ export default function SetlistViewerClient({
             }}
             isLeader={isLeader}
           />
+          <FollowLeaderButton
+            sync={{
+              isFollowing: sync.isFollowing,
+              isStateChecking: sync.isStateChecking,
+              followError: sync.followError,
+              followSyncStatus: sync.followSyncStatus,
+              toggleFollow: sync.toggleFollow,
+            }}
+            isLeader={isLeader}
+          />
         </div>
       </div>
 
@@ -112,14 +123,6 @@ export default function SetlistViewerClient({
         isAuthenticated={isAuthenticated}
         sync={{
           isLive: sync.isLive,
-          isLiveConnecting: sync.isLiveConnecting,
-          liveError: sync.liveError,
-          toggleLive: sync.toggleLive,
-          isFollowing: sync.isFollowing,
-          isStateChecking: sync.isStateChecking,
-          followError: sync.followError,
-          followSyncStatus: sync.followSyncStatus,
-          toggleFollow: sync.toggleFollow,
           onActiveSongChange: sync.onActiveSongChange,
         }}
       />

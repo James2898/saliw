@@ -6,15 +6,16 @@ import Button from '@/components/client/button'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface GoLiveSyncProps {
-  isLive: boolean
-  isLiveConnecting: boolean
-  liveError: string | null
-  toggleLive: () => void
+interface FollowLeaderSyncProps {
+  isFollowing: boolean
+  isStateChecking: boolean
+  followError: string | null
+  followSyncStatus: 'synced' | 'lost' | 'idle'
+  toggleFollow: () => void
 }
 
-interface GoLiveButtonProps {
-  sync: GoLiveSyncProps
+interface FollowLeaderButtonProps {
+  sync: FollowLeaderSyncProps
   isLeader: boolean
 }
 
@@ -50,7 +51,7 @@ interface ConfirmDialogProps {
 
 /**
  * ConfirmDialog — Artisan-styled generic confirmation dialog.
- * Matches the pattern in ServiceNavigator.tsx and logout-modal.tsx exactly.
+ * Matches the pattern in ServiceNavigator.tsx / GoLiveButton.tsx / logout-modal.tsx exactly.
  *
  * Accessibility:
  * - role="dialog" + aria-modal="true" + aria-labelledby pointing to titleId
@@ -164,72 +165,72 @@ function ConfirmDialog({
 
 // ── Dialog content map ────────────────────────────────────────────────────────
 
-const goLiveOnDialog = {
-  titleId: 'go-live-dialog-title',
-  title: 'Go Live?',
-  body: 'All musicians will follow your performance key in real-time.',
-  confirmLabel: 'Go Live',
+const followOnDialog = {
+  titleId: 'follow-dialog-title',
+  title: 'Follow the Leader?',
+  body: "Your keys will sync to the director's live session. Your current keys will be saved and restored if you stop following.",
+  confirmLabel: 'Follow',
 }
 
-const goLiveOffDialog = {
-  titleId: 'go-live-dialog-title',
-  title: 'End Live Session?',
-  body: 'Musicians following you will lose the live feed and revert to their last known keys.',
-  confirmLabel: 'End Session',
+const followOffDialog = {
+  titleId: 'follow-dialog-title',
+  title: 'Stop Following?',
+  body: "You'll unsubscribe from the live feed. Your keys will revert to the snapshot taken when you started following.",
+  confirmLabel: 'Stop Following',
 }
 
-// ── GoLiveButton ──────────────────────────────────────────────────────────────
+// ── FollowLeaderButton ────────────────────────────────────────────────────────
 
 /**
- * GoLiveButton — Renders the Go Live toggle button for music directors.
+ * FollowLeaderButton — Renders the Follow Leader toggle button for non-leader viewers.
  *
- * Styled for the light cream header background (BUG-004: explicit dark: variants
- * on every Tailwind utility).
+ * Styled for the light cream header background (BUG-004/005: explicit dark: variants
+ * on every Tailwind utility). Mirrors GoLiveButton's palette for visual consistency.
  *
- * Only renders when isLeader === true.
+ * Only renders when isLeader === false (inverse gate — viewers only).
  *
  * BUG-002: useCallback deps reference the whole `sync` object, not property paths.
  */
-export default function GoLiveButton({ sync, isLeader }: GoLiveButtonProps) {
-  const [showGoLiveDialog, setShowGoLiveDialog] = useState(false)
-  const goLiveButtonRef = useRef<HTMLButtonElement>(null)
+export default function FollowLeaderButton({ sync, isLeader }: FollowLeaderButtonProps) {
+  const [showFollowDialog, setShowFollowDialog] = useState(false)
+  const followButtonRef = useRef<HTMLButtonElement>(null)
 
-  const handleGoLiveClick = useCallback(() => {
-    if (sync.isLiveConnecting) return
-    if (showGoLiveDialog) return
-    setShowGoLiveDialog(true)
-  }, [sync, showGoLiveDialog])
+  const handleFollowClick = useCallback(() => {
+    if (sync.isStateChecking) return
+    if (showFollowDialog) return
+    setShowFollowDialog(true)
+  }, [sync, showFollowDialog])
 
-  const handleGoLiveConfirm = useCallback(() => {
-    setShowGoLiveDialog(false)
-    sync.toggleLive()
-    goLiveButtonRef.current?.focus()
+  const handleFollowConfirm = useCallback(() => {
+    setShowFollowDialog(false)
+    sync.toggleFollow()
+    followButtonRef.current?.focus()
   }, [sync])
 
-  const handleGoLiveCancel = useCallback(() => {
-    setShowGoLiveDialog(false)
-    goLiveButtonRef.current?.focus()
+  const handleFollowCancel = useCallback(() => {
+    setShowFollowDialog(false)
+    followButtonRef.current?.focus()
   }, [])
 
-  if (!isLeader) return null
+  if (isLeader) return null
 
-  const dialogContent = sync.isLive ? goLiveOffDialog : goLiveOnDialog
+  const dialogContent = sync.isFollowing ? followOffDialog : followOnDialog
 
   return (
     <>
       <div className="flex flex-col items-end gap-1">
         <button
-          ref={goLiveButtonRef}
+          ref={followButtonRef}
           type="button"
-          onClick={handleGoLiveClick}
-          disabled={sync.isLiveConnecting}
-          aria-pressed={sync.isLive ? 'true' : 'false'}
+          onClick={handleFollowClick}
+          disabled={sync.isStateChecking}
+          aria-pressed={sync.isFollowing ? 'true' : 'false'}
           aria-label={
-            sync.isLive
-              ? 'Stop live session'
-              : sync.isLiveConnecting
-              ? 'Starting live session…'
-              : 'Go Live'
+            sync.isFollowing
+              ? 'Stop following leader'
+              : sync.isStateChecking
+              ? 'Syncing with leader…'
+              : 'Follow Leader'
           }
           className={[
             'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg',
@@ -237,42 +238,56 @@ export default function GoLiveButton({ sync, isLeader }: GoLiveButtonProps) {
             'border',
             'transition-colors duration-200',
             focusRing,
-            sync.isLiveConnecting
+            sync.isStateChecking
               ? 'text-brand-brown/60 dark:text-brand-tan/60 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed'
-              : sync.isLive
+              : sync.isFollowing
               ? 'bg-red-600 text-white border-red-600 dark:bg-red-600 dark:text-white dark:border-red-600 animate-pulse'
               : 'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
           ].join(' ')}
         >
-          {sync.isLiveConnecting ? (
+          {sync.isStateChecking ? (
             <>
               <Loader2 size={12} className="animate-spin" aria-hidden="true" />
-              Starting…
+              Syncing…
             </>
-          ) : sync.isLive ? (
-            'LIVE'
           ) : (
-            'Go Live'
+            <>
+              {sync.isFollowing ? 'Following' : 'Follow Leader'}
+              {/* AC-24: green synced dot when active */}
+              {sync.isFollowing && sync.followSyncStatus === 'synced' && (
+                <span
+                  className="w-2 h-2 rounded-full bg-green-500 shrink-0"
+                  aria-hidden="true"
+                />
+              )}
+            </>
           )}
         </button>
 
-        {/* AC-5: inline error message on connection failure */}
-        {sync.liveError && (
+        {/* AC-25 / F-6: State Check failure hint */}
+        {sync.followError && (
           <p role="alert" className="text-xs text-red-500 dark:text-red-400">
-            {sync.liveError}
+            {sync.followError}
+          </p>
+        )}
+
+        {/* F-7: connection lost indicator */}
+        {sync.isFollowing && sync.followSyncStatus === 'lost' && (
+          <p className="text-xs text-brand-brown dark:text-brand-tan">
+            Lost connection.
           </p>
         )}
       </div>
 
-      {/* Go Live Confirmation Dialog */}
+      {/* Follow Leader Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={showGoLiveDialog}
+        isOpen={showFollowDialog}
         titleId={dialogContent.titleId}
         title={dialogContent.title}
         body={dialogContent.body}
         confirmLabel={dialogContent.confirmLabel}
-        onConfirm={handleGoLiveConfirm}
-        onCancel={handleGoLiveCancel}
+        onConfirm={handleFollowConfirm}
+        onCancel={handleFollowCancel}
       />
     </>
   )
