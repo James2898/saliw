@@ -104,13 +104,13 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       {/* ── Page header ──────────────────────────────────────────────────────── */}
       <div className="max-w-3xl mx-auto">
         <div className="flex items-start justify-between gap-4 mb-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso">
+          <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream">
             Song Library
           </h1>
           {/* Desktop New Song button — mobile FAB renders at fixed viewport position */}
           <NewSongButton isMusicDirector={isMusicDirector} />
         </div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-6">
           {totalCount} {totalCount === 1 ? 'song' : 'songs'}{q ? ` matching "${q}"` : ' in library'}
         </p>
 
@@ -148,14 +148,14 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                     aria-label={`View ${song.title} by ${song.artist}`}
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-brand-espresso leading-snug">
+                      <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
                         {song.title}
                       </p>
-                      <p className="truncate text-xs font-medium text-brand-brown mt-0.5">
+                      <p className="truncate text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5">
                         {song.artist}
                       </p>
                     </div>
-                    <span className="ml-4 shrink-0 text-xs font-semibold text-brand-brown bg-brand-cream rounded-lg px-2 py-0.5 border border-brand-brown/20">
+                    <span className="ml-4 shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-cream bg-brand-cream dark:bg-brand-espresso rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
                       {song.original_key}
                     </span>
                   </Link>
@@ -166,7 +166,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                       href={`/library/${song.id}/edit`}
                       className={[
                         'shrink-0 flex items-center justify-center w-9 h-9 mr-2 rounded-lg',
-                        'text-brand-brown hover:text-brand-espresso hover:bg-brand-brown/10',
+                        'text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
                         'transition-colors duration-200',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1',
                       ].join(' ')}
