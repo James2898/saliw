@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import ServiceNavigator from '@/components/client/ServiceNavigator'
@@ -71,6 +71,9 @@ export default function SetlistViewerClient({
     songs: syncSongs,
   })
 
+  const [globalChordsHidden, setGlobalChordsHidden] = useState(false)
+  const toggleGlobalChords = useCallback(() => setGlobalChordsHidden((prev) => !prev), [])
+
   return (
     <>
       {/* ── Setlist header (name + date + Go Live button) ──────────────────── */}
@@ -125,6 +128,8 @@ export default function SetlistViewerClient({
           isLive: sync.isLive,
           onActiveSongChange: sync.onActiveSongChange,
         }}
+        chordsHidden={globalChordsHidden}
+        onChordsToggle={toggleGlobalChords}
       />
 
       {/* ── Song sections ──────────────────────────────────────────────────── */}
@@ -147,6 +152,7 @@ export default function SetlistViewerClient({
               overrideKey={overrideKey}
               onKeyChangeLive={isLeader && sync.isLive ? sync.notifyKeyChange : undefined}
               liveSyncState={liveSyncState}
+              externalChordsHidden={globalChordsHidden}
             />
           )
         })}
