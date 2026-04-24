@@ -72,10 +72,14 @@ export default async function HomePage() {
       // Swallow — render with empty lists.
     }
     return (
-      <PublicDashboardView
-        upcomingSetlists={guestUpcoming}
-        recentSongs={guestRecentSongs}
-      />
+      <div className="min-h-screen bg-brand-cream dark:bg-brand-darker p-4 sm:p-8 flex flex-col">
+        <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col">
+          <PublicDashboardView
+            upcomingSetlists={guestUpcoming}
+            recentSongs={guestRecentSongs}
+          />
+        </div>
+      </div>
     )
   }
 
@@ -176,7 +180,7 @@ export default async function HomePage() {
       }))
 
   return (
-    <div className="min-h-screen bg-brand-cream p-4 sm:p-8 flex flex-col">
+    <div className="min-h-screen bg-brand-cream dark:bg-brand-darker p-4 sm:p-8 flex flex-col">
       <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col">
         <Card padding="lg" className="flex-1">
           <div className="flex flex-col gap-6">

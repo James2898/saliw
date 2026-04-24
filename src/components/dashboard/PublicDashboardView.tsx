@@ -15,12 +15,12 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description }: FeatureCardProps): ReactElement {
   return (
-    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
-      <div className="text-brand-brown mb-3" aria-hidden="true">
+    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
+      <div className="text-brand-brown dark:text-brand-tan mb-3" aria-hidden="true">
         {icon}
       </div>
-      <h3 className="text-base font-bold text-brand-espresso mb-1">{title}</h3>
-      <p className="text-sm text-brand-brown">{description}</p>
+      <h3 className="text-base font-bold text-brand-espresso dark:text-brand-cream mb-1">{title}</h3>
+      <p className="text-sm text-brand-brown dark:text-brand-tan">{description}</p>
     </section>
   )
 }
@@ -37,14 +37,14 @@ export default function PublicDashboardView({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-espresso">
-          Saliw <span className="text-brand-brown font-normal">(sa·líw)</span>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream">
+          Saliw <span className="text-brand-brown dark:text-brand-tan font-normal">(sa·líw)</span>
         </h1>
-        <p className="text-lg text-brand-espresso italic max-w-prose">
+        <p className="text-lg text-brand-espresso dark:text-brand-cream italic max-w-prose">
           Saliw is the gentle art of accompaniment, where music and voice weave
           together in a soulful, rhythmic embrace.
         </p>
-        <p className="text-base text-brand-brown max-w-prose">
+        <p className="text-base text-brand-brown dark:text-brand-tan max-w-prose">
           A space for worship leaders, musicians, and congregations — where every
           song finds its key, every setlist finds its flow, and every service is
           shared in sync.
