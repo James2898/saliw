@@ -1,8 +1,12 @@
 'use client'
 
 import { useMemo } from 'react'
+import Link from 'next/link'
+import { Pencil } from 'lucide-react'
 import ServiceNavigator from '@/components/client/ServiceNavigator'
 import SetlistSongSection from '@/components/client/SetlistSongSection'
+import GoLiveButton from '@/components/client/GoLiveButton'
+import FollowLeaderButton from '@/components/client/FollowLeaderButton'
 import { useSetlistSync } from '@/hooks/useSetlistSync'
 import type { ProcessedLine } from '@/utils/musicLogic'
 
@@ -29,6 +33,8 @@ interface SetlistViewerClientProps {
   setlistId: string
   isLeader: boolean
   isAuthenticated: boolean
+  setlistName: string
+  formattedDate: string | null
 }
 
 /**
@@ -48,6 +54,8 @@ export default function SetlistViewerClient({
   setlistId,
   isLeader,
   isAuthenticated,
+  setlistName,
+  formattedDate,
 }: SetlistViewerClientProps) {
   // Prepare the songs array expected by useSetlistSync.
   // Wrapped in useMemo so syncSongs keeps a stable reference between renders,
@@ -65,6 +73,48 @@ export default function SetlistViewerClient({
 
   return (
     <>
+      {/* ── Setlist header (name + date + Go Live button) ──────────────────── */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
+          {setlistName}
+        </h1>
+        <div className="flex items-center gap-3">
+          {formattedDate && (
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
+              {formattedDate}
+            </p>
+          )}
+          {isLeader && (
+            <Link
+              href={`/setlists/${setlistId}/edit`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-brand-brown/30 dark:border-brand-tan/30 text-brand-brown dark:text-brand-tan hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2"
+            >
+              <Pencil size={13} strokeWidth={2} aria-hidden="true" />
+              Edit Setlist
+            </Link>
+          )}
+          <GoLiveButton
+            sync={{
+              isLive: sync.isLive,
+              isLiveConnecting: sync.isLiveConnecting,
+              liveError: sync.liveError,
+              toggleLive: sync.toggleLive,
+            }}
+            isLeader={isLeader}
+          />
+          <FollowLeaderButton
+            sync={{
+              isFollowing: sync.isFollowing,
+              isStateChecking: sync.isStateChecking,
+              followError: sync.followError,
+              followSyncStatus: sync.followSyncStatus,
+              toggleFollow: sync.toggleFollow,
+            }}
+            isLeader={isLeader}
+          />
+        </div>
+      </div>
+
       {/* ── Service Navigator ──────────────────────────────────────────────── */}
       <ServiceNavigator
         songs={navigatorSongs}
@@ -73,14 +123,6 @@ export default function SetlistViewerClient({
         isAuthenticated={isAuthenticated}
         sync={{
           isLive: sync.isLive,
-          isLiveConnecting: sync.isLiveConnecting,
-          liveError: sync.liveError,
-          toggleLive: sync.toggleLive,
-          isFollowing: sync.isFollowing,
-          isStateChecking: sync.isStateChecking,
-          followError: sync.followError,
-          followSyncStatus: sync.followSyncStatus,
-          toggleFollow: sync.toggleFollow,
           onActiveSongChange: sync.onActiveSongChange,
         }}
       />
