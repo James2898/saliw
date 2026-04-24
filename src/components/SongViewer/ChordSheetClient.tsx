@@ -50,6 +50,8 @@ interface ChordSheetClientProps {
    * Fired alongside onKeyChange in the same useEffect. Only when provided.
    */
   onKeyChangeLive?: (key: string) => void
+  /** Global chords visibility override from the setlist toolbar toggle. */
+  externalChordsHidden?: boolean
 }
 
 /**
@@ -73,6 +75,7 @@ export default function ChordSheetClient({
   onKeyChange,
   externalKey,
   onKeyChangeLive,
+  externalChordsHidden,
 }: ChordSheetClientProps) {
   const { semitoneOffset, displayKey, increment, decrement, setTargetKey, reset } =
     useTranspose(originalKey, initialKey)
@@ -119,6 +122,13 @@ export default function ChordSheetClient({
     // Including displayKey would cause a feedback loop: setTargetKey → displayKey changes → effect re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalKey])
+
+  // Sync local chordsHidden state when the global toolbar toggle changes.
+  useEffect(() => {
+    if (externalChordsHidden !== undefined) {
+      setChordsHidden(externalChordsHidden)
+    }
+  }, [externalChordsHidden])
 
   // Apply font-size CSS variable to the chord-display container.
   // DOM mutation pattern — avoids React re-renders on the chord node tree.

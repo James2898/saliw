@@ -22,6 +22,8 @@ interface SetlistSongSectionProps {
   onKeyChangeLive?: (junctionId: string, key: string) => void
   /** NEW — Per-song live sync status from useSetlistSync (D-4/D-5/D-6). */
   liveSyncState?: SongSyncState
+  /** Global chords visibility override from the toolbar toggle. */
+  externalChordsHidden?: boolean
 }
 
 // Wrap ChordSheetClient in React.memo to prevent re-renders triggered
@@ -49,6 +51,7 @@ function SetlistSongSection({
   overrideKey,
   onKeyChangeLive,
   liveSyncState,
+  externalChordsHidden,
 }: SetlistSongSectionProps) {
   // Track the current display key as reported by ChordSheetClient via onKeyChange
   const [currentKey, setCurrentKey] = useState<string>(performanceKey)
@@ -202,6 +205,7 @@ function SetlistSongSection({
         onKeyChange={isLeader ? handleKeyChange : undefined}
         externalKey={overrideKey}
         onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
+        externalChordsHidden={externalChordsHidden}
       />
     </section>
   )
