@@ -238,10 +238,10 @@ export default function GoLiveButton({ sync, isLeader }: GoLiveButtonProps) {
             'transition-colors duration-200',
             focusRing,
             sync.isLiveConnecting
-              ? 'text-brand-espresso/40 dark:text-brand-cream/40 border-brand-espresso/20 dark:border-brand-cream/20 cursor-not-allowed'
+              ? 'text-brand-brown/60 dark:text-brand-tan/60 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed'
               : sync.isLive
-              ? 'bg-brand-espresso text-brand-cream dark:bg-brand-cream dark:text-brand-espresso border-transparent animate-pulse'
-              : 'bg-brand-espresso/10 text-brand-espresso border-brand-espresso/30 hover:bg-brand-espresso/20 dark:bg-brand-cream/10 dark:text-brand-cream dark:border-brand-cream/30 dark:hover:bg-brand-cream/20',
+              ? 'bg-red-600 text-white border-red-600 dark:bg-red-600 dark:text-white dark:border-red-600 animate-pulse'
+              : 'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
           ].join(' ')}
         >
           {sync.isLiveConnecting ? (
