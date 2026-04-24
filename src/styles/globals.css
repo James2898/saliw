@@ -72,6 +72,17 @@ body {
   transition-duration: 300ms;
 }
 
+/* Mobile sidebar + backdrop: override the global * transition-property rule.
+   The * rule (unlayered) only includes background-color, border-color, fill,
+   stroke — which suppresses transform/translate and opacity transitions on
+   these elements. ID selectors beat * in specificity without touching layers. */
+#mobile-sidebar {
+  transition-property: transform, translate;
+}
+#mobile-sidebar-backdrop {
+  transition-property: opacity;
+}
+
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
