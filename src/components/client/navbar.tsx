@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserRound,
 } from "lucide-react";
 import { createClient } from "@/services/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -263,6 +264,21 @@ export default function Navbar() {
               </span>
             )}
 
+            {user && (
+              <Link
+                href="/profile"
+                aria-label="Your profile"
+                className={[
+                  iconBtnClass,
+                  pathname === "/profile"
+                    ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
+                    : "",
+                ].join(" ")}
+              >
+                <UserRound size={18} strokeWidth={2} aria-hidden="true" />
+              </Link>
+            )}
+
             {user ? (
               /* Logout button with inline label */
               <button
@@ -423,6 +439,23 @@ export default function Navbar() {
               )}
               <span>{isDark ? "Light mode" : "Dark mode"}</span>
             </button>
+
+            {/* Profile link (authenticated only) */}
+            {user && (
+              <Link
+                href="/profile"
+                onClick={closeSidebar}
+                aria-label="Your profile"
+                className={[
+                  iconBtnClass,
+                  pathname === "/profile"
+                    ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
+                    : "",
+                ].join(" ")}
+              >
+                <UserRound size={18} strokeWidth={2} aria-hidden="true" />
+              </Link>
+            )}
 
             {/* Auth action */}
             {user ? (
