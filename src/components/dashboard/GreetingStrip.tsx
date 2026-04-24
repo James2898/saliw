@@ -15,7 +15,7 @@ export default function GreetingStrip({
 
   const rolePillClasses = isMusicDirector
     ? 'bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso'
-    : 'bg-brand-tan text-brand-espresso'
+    : 'bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso'
 
   const roleLabel = isMusicDirector ? 'Music Director' : 'Musician'
 
