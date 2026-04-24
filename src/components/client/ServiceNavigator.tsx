@@ -41,9 +41,6 @@ interface ServiceNavigatorProps {
 const toggleActiveClass =
   'bg-brand-brown text-brand-cream border-brand-brown dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
 
-const toggleInactiveClass =
-  'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10'
-
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1'
 
@@ -197,20 +194,6 @@ function ConfirmDialog({
 
 // ── Dialog content map ────────────────────────────────────────────────────────
 
-const goLiveOnDialog = {
-  titleId: 'go-live-dialog-title',
-  title: 'Go Live?',
-  body: 'All musicians will follow your performance key in real-time.',
-  confirmLabel: 'Go Live',
-}
-
-const goLiveOffDialog = {
-  titleId: 'go-live-dialog-title',
-  title: 'End Live Session?',
-  body: 'Musicians following you will lose the live feed and revert to their last known keys.',
-  confirmLabel: 'End Session',
-}
-
 const followOnDialog = {
   titleId: 'follow-dialog-title',
   title: 'Follow the Leader?',
@@ -274,33 +257,10 @@ export default function ServiceNavigator({
   })
 
   // ── TASK-023: Confirmation dialog state ───────────────────────────────────
-  const [showGoLiveDialog, setShowGoLiveDialog] = useState(false)
   const [showFollowDialog, setShowFollowDialog] = useState(false)
 
   // Refs to restore focus to the trigger button after dialog closes
-  const goLiveButtonRef = useRef<HTMLButtonElement>(null)
   const followButtonRef = useRef<HTMLButtonElement>(null)
-
-  // ── TASK-023: Go Live toggle guard ────────────────────────────────────────
-  const handleGoLiveClick = useCallback(() => {
-    // If already connecting (disabled state), do nothing — button is disabled anyway
-    if (sync.isLiveConnecting) return
-    // If dialog is already open, ignore second click (criterion 30)
-    if (showGoLiveDialog) return
-    setShowGoLiveDialog(true)
-  }, [sync, showGoLiveDialog])
-
-  const handleGoLiveConfirm = useCallback(() => {
-    setShowGoLiveDialog(false)
-    sync.toggleLive()
-    goLiveButtonRef.current?.focus()
-  }, [sync])
-
-  const handleGoLiveCancel = useCallback(() => {
-    setShowGoLiveDialog(false)
-    // Restore focus to the toggle button
-    goLiveButtonRef.current?.focus()
-  }, [])
 
   // ── TASK-023: Follow Leader toggle guard ──────────────────────────────────
   const handleFollowClick = useCallback(() => {
@@ -324,7 +284,6 @@ export default function ServiceNavigator({
   }, [])
 
   // ── Dialog content (direction-aware) ──────────────────────────────────────
-  const goLiveDialogContent = sync.isLive ? goLiveOffDialog : goLiveOnDialog
   const followDialogContent = sync.isFollowing ? followOffDialog : followOnDialog
 
   useEffect(() => {
@@ -433,56 +392,6 @@ export default function ServiceNavigator({
           {/* ── Spacer ─────────────────────────────────────────────────────── */}
           <div className="ml-auto flex items-center gap-2 shrink-0">
 
-            {/* ── Go Live button — Director only (AC-1) ──────────────────────── */}
-            {isLeader && (
-              <div className="flex flex-col items-end gap-1">
-                <button
-                  ref={goLiveButtonRef}
-                  type="button"
-                  onClick={handleGoLiveClick}
-                  disabled={sync.isLiveConnecting}
-                  aria-pressed={sync.isLive ? 'true' : 'false'}
-                  aria-label={
-                    sync.isLive
-                      ? 'Stop live session'
-                      : sync.isLiveConnecting
-                      ? 'Starting live session…'
-                      : 'Go Live'
-                  }
-                  className={[
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg',
-                    'text-xs font-semibold',
-                    'border',
-                    'transition-colors duration-200',
-                    focusRing,
-                    sync.isLiveConnecting
-                      ? 'text-brand-cream/60 border-brand-cream/20 cursor-not-allowed'
-                      : sync.isLive
-                      ? 'bg-red-600 text-white border-red-600 animate-pulse'
-                      : [toggleInactiveClass, 'text-brand-cream border-brand-cream/30 hover:bg-brand-cream/10 dark:text-brand-cream dark:border-brand-cream/30'].join(' '),
-                  ].join(' ')}
-                >
-                  {sync.isLiveConnecting ? (
-                    <>
-                      <Loader2 size={12} className="animate-spin" aria-hidden="true" />
-                      Starting…
-                    </>
-                  ) : sync.isLive ? (
-                    'LIVE'
-                  ) : (
-                    'Go Live'
-                  )}
-                </button>
-
-                {/* AC-5: inline error message on connection failure */}
-                {sync.liveError && (
-                  <p role="alert" className="text-xs text-red-500">
-                    {sync.liveError}
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* ── Follow Leader button — all non-leader viewers (AC-19) ── */}
             {!isLeader && (
               <div className="flex flex-col items-end gap-1">
@@ -549,19 +458,6 @@ export default function ServiceNavigator({
           </div>
         </div>
       </div>
-
-      {/* ── TASK-023: Go Live Confirmation Dialog ───────────────────────────── */}
-      {isLeader && (
-        <ConfirmDialog
-          isOpen={showGoLiveDialog}
-          titleId={goLiveDialogContent.titleId}
-          title={goLiveDialogContent.title}
-          body={goLiveDialogContent.body}
-          confirmLabel={goLiveDialogContent.confirmLabel}
-          onConfirm={handleGoLiveConfirm}
-          onCancel={handleGoLiveCancel}
-        />
-      )}
 
       {/* ── TASK-023: Follow Leader Confirmation Dialog ─────────────────────── */}
       {!isLeader && (
