@@ -20,7 +20,7 @@ import type { User } from "@supabase/supabase-js";
 import LogoutModal from "@/components/client/logout-modal";
 
 const navLinks = [
-  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/library", label: "Library", Icon: Library },
   { href: "/setlists", label: "Setlists", Icon: List },
 ] as const;
@@ -215,7 +215,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-1 ml-4">
             {navLinks.map(({ href, label, Icon }) => {
               const isActive =
-                pathname === href || pathname.startsWith(href + "/");
+                pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
               return (
                 <Link
                   key={href}
@@ -373,7 +373,7 @@ export default function Navbar() {
           <ul className="flex flex-col gap-1 list-none m-0 p-0">
             {navLinks.map(({ href, label, Icon }) => {
               const isActive =
-                pathname === href || pathname.startsWith(href + "/");
+                pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
               return (
                 <li key={href}>
                   <Link

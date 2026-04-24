@@ -1,50 +1,52 @@
-# Context Bundle — Setlist Archive & Index Hub
+# Context Bundle — Dark Mode Artisan Palette Audit
 
 ## Relevant Files
+
 | File | Why It's Relevant |
 |------|------------------|
-| `src/app/setlists/page.tsx` | The target file — currently a bare stub with auth check only; must be replaced |
-| `src/app/setlists/[id]/page.tsx` | Sibling page; establishes role-check pattern (isLeader), setlist data fetch pattern, dark mode classes, Card usage |
-| `src/app/library/page.tsx` | Gold-standard reference — full server-side pagination + search + role check + FAB integration |
-| `src/components/client/SearchBar.tsx` | Ready-to-use debounced search, routes to `/library?q=…`; needs a `basePath` prop or a setlists-specific clone |
-| `src/components/client/PaginationControls.tsx` | Ready-to-use pagination; `buildUrl` is hardcoded to `/library` — needs a setlists version |
-| `src/components/library/NewSongButton.tsx` | Only FAB implementation in codebase; dual desktop+mobile pattern to replicate |
-| `src/components/server/card.tsx` | Reusable `<Card>` with `padding` variants; uses `.main-card` CSS class |
-| `src/components/client/button.tsx` | `Button` component with `primary/secondary/ghost` variants and `sm/md/lg` sizes |
-| `src/app/actions/setlistActions.ts` | `createSetlist`, `getSetlistById`, `deleteSetlist` — all mutations; no list/index query exists yet |
-| `src/services/supabase/server.ts` | `createClient()` — canonical server-side Supabase factory |
-| `src/types/supabase.ts` | `DbSetlist` type — `{ id, name, date, leader_id, is_public }` |
-| `src/styles/globals.css` | All brand CSS variables and `.main-card` class defined here |
-| `src/middleware.ts` | Does NOT protect `/setlists` — page is publicly readable (no redirect needed) |
+| `src/app/library/page.tsx` | PRIMARY BUG: `bg-brand-cream` on `<main>` at line 103 has no `dark:` variant — root cause of the reported issue |
+| `src/app/layout.tsx` | Inline `style={{ backgroundColor: "#fdf8f3" }}` on `<body>` — intentional SSR anti-flash literal; not a bug |
+| `src/app/profile/page.tsx` | No page-level background shell at all; text classes `text-brand-espresso` on lines 21 and 25 missing `dark:` |
+| `src/components/client/EditProfileForm.tsx` | Multiple `text-brand-espresso` and `text-brand-brown` labels/inputs without `dark:` variants (lines 43, 50, 58, 67, 73, 76) |
+| `src/components/client/SearchBar.tsx` | `bg-brand-cream` on input (line 67) — no `dark:bg-brand-espresso` |
+| `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx` | `bg-brand-cream` in `inputClass` (line 266) and date input (line 294) — no `dark:` variants |
+| `src/components/client/SetlistBuilder/SetlistPanel.tsx` | `bg-brand-cream` on empty-state div (line 67) — no `dark:` variant |
+| `src/components/client/SetlistBuilder/SortableSongRow.tsx` | `bg-brand-cream` on row div (line 38) and performance key `<select>` (line 73) — no `dark:` variants |
+| `src/components/client/SetlistBuilder/LibraryPanel.tsx` | `bg-brand-cream` on search input (line 75) and song row div (line 94) — no `dark:` variants |
+| `src/components/client/SetlistBuilder/ErrorBanner.tsx` | `bg-brand-cream` (line 12) — no `dark:` variant |
+| `src/components/client/LoginForm.tsx` | Active toggle buttons use `bg-brand-tan` (lines 80, 91) — no `dark:` variants |
+| `src/components/client/button.tsx` | `primary` variant `bg-brand-tan` and `secondary` variant `bg-brand-espresso` — no `dark:` variants (review intended behavior before changing) |
+| `src/components/client/NewSongFormClient.tsx` | Submit button `bg-brand-tan` (line 184) — no `dark:` variant |
+| `src/components/library/NewSongButton.tsx` | Both desktop and FAB use `bg-brand-tan` (lines 60, 87) — no `dark:` variants |
+| `src/components/setlists/NewSetlistButton.tsx` | Both desktop and FAB use `bg-brand-tan` (lines 38, 59) — no `dark:` variants |
+| `src/components/dashboard/GreetingStrip.tsx` | `rolePillClasses` Musician branch `bg-brand-tan text-brand-espresso` (line 18) — no `dark:` variant |
+| `src/styles/globals.css` | Source of truth: `--brand-background`, `--brand-card-bg`, `--brand-text` semantic tokens correctly switch in `.dark` |
 
 ## Reuse Candidates
 
-- `src/components/client/SearchBar.tsx` — Debounced `?q=` search via `router.replace`; currently routes to `/library`. Reuse pattern directly but point URL at `/setlists`. No prop for `basePath` exists — either clone as `SetlistSearchBar.tsx` or add a `basePath` prop to the existing component.
-- `src/components/client/PaginationControls.tsx` — Fully functional with `currentPage / totalCount / pageSize / q` props; `buildUrl` is hardcoded to `/library` (line 16). Needs a setlists variant or a `basePath` prop added.
-- `src/components/library/NewSongButton.tsx` — The only FAB pattern in the codebase. Desktop hidden-on-mobile + mobile fixed-bottom-right (`fixed bottom-6 right-6 z-[80]`) pattern. For "New Setlist" FAB: replicate structure, swap route to `/setlists/new`, guard with `isMusicDirector`.
-- `src/components/server/card.tsx` — Used in `[id]/page.tsx` for both error states and content containers. Reuse for setlist row cards or empty state.
-- `src/components/client/button.tsx` — Available for any interactive controls.
-- `src/app/actions/setlistActions.ts` — `createSetlist()` and `deleteSetlist()` are the relevant mutations. **No paginated list query exists in this file** — must be written directly in the page (pattern: `supabase.from('setlists').select(..., { count: 'exact' }).range(...)`) matching library/page.tsx lines 67–87.
+- `src/app/library/[id]/page.tsx` line 111 — Already correctly uses `bg-brand-cream dark:bg-brand-darker` on `<main>`; this is the direct fix template for `src/app/library/page.tsx` line 103.
+- `src/components/client/SongEditorClient.tsx` `inputBaseClass` — Already uses `bg-brand-cream dark:bg-brand-espresso` for inputs; the SetlistBuilder inputs (`SetlistBuilderClient`, `SortableSongRow`, `LibraryPanel`) should adopt the exact same class string.
+- `src/components/client/SongEditorClient.tsx` `panelClasses` — `bg-brand-cream dark:bg-brand-espresso` for card panels; copy for `SetlistPanel` empty-state and `ErrorBanner`.
+- `src/components/dashboard/GreetingStrip.tsx` lines 16–17 — Music Director pill already has `dark:bg-brand-tan dark:text-brand-espresso`; the Musician pill (line 18) should add analogous `dark:bg-brand-brown dark:text-brand-cream` (or whichever dark variant matches the design intent).
 
 ## Patterns to Follow
 
-- **Server-side pagination with URL params**: See `src/app/library/page.tsx` lines 33–93 — `searchParams: Promise<{ q?: string; page?: string }>`, sanitize `q` (strip `[(),%]`), clamp page, use `.range(offset, offset + PAGE_SIZE - 1)` with `{ count: 'exact' }`.
-- **Role check (music_director)**: See `src/app/library/page.tsx` lines 44–58 — fetch `profiles.role` only when `user` is non-null; `isMusicDirector = profile?.role === 'music_director'`. Do not check role in middleware for read pages.
-- **Auth without redirect (public page)**: See `src/app/setlists/[id]/page.tsx` line 21 — `supabase.auth.getUser()` result used for `isLeader` only; no `redirect()` call.
-- **Supabase server client**: `import { createClient } from '@/services/supabase/server'` then `const supabase = await createClient()` — always `await` the factory.
-- **Dark mode classes**: See `[id]/page.tsx` — pair `bg-brand-cream dark:bg-brand-darker` on `<main>`, `text-brand-espresso dark:text-brand-cream` on headings, `text-brand-brown dark:text-brand-tan` on secondary text.
-- **Empty state**: `rounded-2xl border border-brand-brown/20 bg-[var(--brand-tan-alpha)] px-6 py-10 text-center` with `role="status" aria-live="polite"` — see library/page.tsx lines 127–133.
-- **Tailwind brand utilities**: Use `bg-brand-cream`, `text-brand-espresso`, `text-brand-brown`, `text-brand-tan`, `border-brand-brown/20` etc. (Tailwind v4 `@theme` tokens from globals.css lines 13–27). Arbitrary values allowed for alpha: `bg-[var(--brand-tan-alpha)]`.
-- **Input sanitization**: Strip PostgREST metacharacters from `q` — `q.slice(0, 100).replace(/[(),%]/g, '')` — see library/page.tsx line 37.
-- **Mobile FAB dual-render pattern**: `hidden md:inline-flex` for desktop button + `md:hidden fixed bottom-6 right-6 z-[80] w-14 h-14 rounded-full` for mobile FAB — see `NewSongButton.tsx` lines 57–101.
+- **Page shell pattern**: See `src/app/library/[id]/page.tsx` line 111 — `<main className="min-h-screen bg-brand-cream dark:bg-brand-darker ...">`. Every `<main>` or top-level page wrapper must pair `bg-brand-cream` with `dark:bg-brand-darker`.
+- **Card/input bg pattern**: See `src/components/client/SongEditorClient.tsx` `panelClasses` and `inputBaseClass` — always `bg-brand-cream dark:bg-brand-espresso` for card-depth and form elements.
+- **Primary text pattern**: `text-brand-espresso dark:text-brand-cream` for headings and primary labels.
+- **Secondary text pattern**: `text-brand-brown dark:text-brand-tan` for metadata and secondary labels.
+- **CSS-variable arbitrary values**: `bg-[var(--brand-background)]` and `bg-[var(--brand-tan-alpha)]` switch automatically via `.dark` root class and do NOT need `dark:` pairing — see `navbar.tsx` and `logout-modal.tsx` for correct usage.
 
 ## Anti-Patterns Flagged
 
-- `src/app/setlists/page.tsx` lines 17–46: Current stub uses inline `style={{}}` objects for brand colors (`backgroundColor: 'var(--brand-background)'`, `color: 'var(--brand-espresso)'`) rather than Tailwind utility classes. This violates the Tailwind-first guideline in `docs/coding-guidelines.md` — do not replicate; use `className` with Tailwind utilities instead.
-- `src/components/client/PaginationControls.tsx` line 16: `buildUrl` hardcodes `/library` — anti-pattern for a shared component. If this component is reused for setlists, the URL must be corrected (add `basePath` prop or use a dedicated setlists version).
-- `src/components/client/SearchBar.tsx` lines 31–37: `router.replace` routes hardcoded to `/library` — same concern as above.
+- `src/app/library/page.tsx` line 103: `<main className="min-h-screen bg-brand-cream ...">` — bare `bg-brand-cream` on a page shell without `dark:bg-brand-darker`. This is the exact bug being fixed. Do not write bare `bg-brand-cream` on page shells.
+- `src/components/client/EditProfileForm.tsx` lines 43, 50, 58, 67, 73, 76: All label/input text classes use `text-brand-espresso` / `text-brand-brown` without `dark:` — violates BUG-004 pattern.
+- `src/app/profile/page.tsx` lines 21, 25: `text-brand-espresso` without `dark:text-brand-cream` on a page that has no bg shell of its own.
+- `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx` lines 266, 294: `bg-brand-cream` in `inputClass` and date input — entire SetlistBuilder component family never received dark mode treatment.
+- `src/components/client/LoginForm.tsx` lines 80, 91: Active mode toggle `bg-brand-tan text-brand-espresso border-brand-tan` — no `dark:` variants; active button becomes illegible in dark mode.
 
 ## MEMORY.md Notes
 
-- **useFontSize setState-in-effect bug** (from `~/.claude/projects/-Users-adish-projects-saliw/memory/MEMORY.md`): Synchronous `setState` inside `useEffect` caused a Vercel build error; fixed with a lazy `useState` initializer. Relevant if any Client Component in this feature initializes state from a prop or effect — use lazy initializer form `useState(() => computeValue())` rather than `useState(computeValue())` or `setState(...)` inside an effect.
-- No project-level `MEMORY.md` exists at `/Users/adish/projects/saliw/MEMORY.md`.
+- **BUG-003**: Every return branch in a Server Component must independently include the layout shell. Confirmed: `src/app/library/page.tsx` has a single return path missing `dark:bg-brand-darker`.
+- **BUG-004**: All 6 dashboard components previously used hard-coded Artisan palette classes without `dark:` variants — they are now fixed. The same pattern of omission is present in the Library page, Profile page, SearchBar, SetlistBuilder family, LoginForm toggle buttons, and NewSong/NewSetlist button components.
+- **Key rule**: Tailwind named utilities (`bg-brand-cream`, `text-brand-espresso`, etc.) do NOT respond to the `.dark` class automatically. They must be paired with explicit `dark:` utilities. CSS-variable arbitrary values (`bg-[var(--brand-background)]`) DO switch automatically and need no `dark:` pair.

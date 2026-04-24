@@ -9,7 +9,7 @@ export default function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
   return (
     <div
       role="alert"
-      className="bg-brand-cream border border-brand-brown/30 rounded-lg px-4 py-3 flex items-start gap-2"
+      className="bg-brand-cream dark:bg-brand-espresso border border-brand-brown/30 rounded-lg px-4 py-3 flex items-start gap-2"
     >
       <p className="text-sm text-brand-brown flex-1">{message}</p>
       <button

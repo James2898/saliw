@@ -35,7 +35,7 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
       ref={setNodeRef}
       style={style}
       className={[
-        'flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream',
+        'flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso',
         isDragging
           ? 'border border-[var(--brand-tan)] shadow-lg shadow-[var(--brand-tan)]/20 z-10'
           : 'border border-brand-brown/10',
@@ -45,7 +45,7 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
       <button
         type="button"
         aria-label={`Drag to reorder ${song.title}`}
-        className="cursor-grab active:cursor-grabbing text-brand-brown/50 hover:text-brand-brown/80 transition-colors duration-200 shrink-0"
+        className="cursor-grab active:cursor-grabbing text-brand-brown/50 dark:text-brand-tan/50 hover:text-brand-brown/80 dark:hover:text-brand-tan/80 transition-colors duration-200 shrink-0"
         {...attributes}
         {...listeners}
       >
@@ -54,14 +54,14 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
 
       {/* Song info */}
       <div className="flex-1 min-w-0">
-        <p className="text-brand-espresso font-medium text-sm truncate">{song.title}</p>
+        <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">{song.title}</p>
         {song.artist && (
-          <p className="text-brand-brown/70 text-xs truncate">{song.artist}</p>
+          <p className="text-brand-brown/70 dark:text-brand-tan/70 text-xs truncate">{song.artist}</p>
         )}
       </div>
 
       {/* Original key badge */}
-      <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso text-xs font-medium px-2 py-0.5 rounded shrink-0">
+      <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso dark:text-brand-cream text-xs font-medium px-2 py-0.5 rounded shrink-0">
         {song.originalKey}
       </span>
 
@@ -70,7 +70,7 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
         value={song.performanceKey}
         onChange={e => onKeyChange(song.songId, e.target.value)}
         aria-label={`Performance key for ${song.title}`}
-        className="text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream text-brand-espresso focus:outline-none focus:ring-1 focus:ring-brand-espresso shrink-0"
+        className="text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso shrink-0"
       >
         {NOTES.map(note => (
           <option key={note} value={note}>{note}</option>

@@ -5,6 +5,10 @@ All notable changes to the Saliw Music Portal are documented here.
 ---
 
 ## [Unreleased] — 2026-04-24
+### Changed
+- Dashboard promoted to root route `/`; `/dashboard` and `/dashboard/profile` now issue HTTP 308 permanent redirects (`TASK-025`)
+  - Affected files: `src/app/page.tsx`, `src/app/profile/page.tsx`, `src/components/client/navbar.tsx`, `src/middleware.ts`, `next.config.ts`
+
 ### Added
 - Dashboard landing page with Greeting, Next Up hero, Quick Actions (director-only), Recent Songs, and Upcoming Setlists widgets (`TASK-024`)
   - All authenticated widget data fetched in a single `Promise.all` (Next Up limit-1, Recent Songs, Upcoming Setlists limit-5) in the Server Component; widgets are pure display Server Components receiving data via props.
