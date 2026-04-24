@@ -77,8 +77,8 @@ export default function LoginForm() {
           onClick={() => setMode('password')}
           className={`flex-1 text-sm font-semibold font-sans py-2 rounded-xl border transition-colors duration-200 ${
             mode === 'password'
-              ? 'bg-brand-tan text-brand-espresso border-brand-tan'
-              : 'bg-transparent text-brand-brown border-brand-brown'
+              ? 'bg-brand-tan text-brand-espresso border-brand-tan dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
+              : 'bg-transparent text-brand-brown border-brand-brown dark:text-brand-tan dark:border-brand-tan'
           }`}
         >
           Password
@@ -88,8 +88,8 @@ export default function LoginForm() {
           onClick={() => setMode('magic-link')}
           className={`flex-1 text-sm font-semibold font-sans py-2 rounded-xl border transition-colors duration-200 ${
             mode === 'magic-link'
-              ? 'bg-brand-tan text-brand-espresso border-brand-tan'
-              : 'bg-transparent text-brand-brown border-brand-brown'
+              ? 'bg-brand-tan text-brand-espresso border-brand-tan dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
+              : 'bg-transparent text-brand-brown border-brand-brown dark:text-brand-tan dark:border-brand-tan'
           }`}
         >
           Magic Link
