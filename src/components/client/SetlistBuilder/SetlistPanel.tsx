@@ -66,7 +66,7 @@ export default function SetlistPanel({
           aria-live="polite"
           className="flex items-center justify-center rounded-xl border border-dashed border-brand-brown bg-brand-cream dark:bg-brand-espresso px-6 py-12 text-center"
         >
-          <p className="text-brand-brown text-sm">
+          <p className="text-brand-brown dark:text-brand-tan text-sm">
             No songs yet. Add songs from the library.
           </p>
         </div>
