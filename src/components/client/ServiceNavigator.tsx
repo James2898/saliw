@@ -24,8 +24,6 @@ interface ServiceNavigatorProps {
   setlistId: string
   isAuthenticated: boolean
   sync: ServiceNavigatorSync
-  chordsHidden: boolean
-  onChordsToggle: () => void
 }
 
 /**
@@ -37,8 +35,8 @@ interface ServiceNavigatorProps {
  * Uses IntersectionObserver to highlight the currently visible song section.
  * The observer is disconnected in the cleanup function to prevent memory leaks.
  *
- * Go Live and Follow Leader controls have been extracted to their own components
- * (GoLiveButton, FollowLeaderButton) and now render in the setlist header.
+ * Go Live, Follow Leader, and Hide Chords controls render in the setlist header
+ * (SetlistViewerClient), not here.
  *
  * No server-side data fetching is added here (RF-6).
  *
@@ -48,8 +46,6 @@ interface ServiceNavigatorProps {
 export default function ServiceNavigator({
   songs,
   sync,
-  chordsHidden,
-  onChordsToggle,
 }: ServiceNavigatorProps) {
   const [activeSongId, setActiveSongId] = useState<string | null>(
     songs.length > 0 ? songs[0].junctionId : null
@@ -175,25 +171,6 @@ export default function ServiceNavigator({
             })}
           </nav>
         )}
-
-        {/* Chords toggle button */}
-        <button
-          type="button"
-          onClick={onChordsToggle}
-          aria-pressed={chordsHidden}
-          aria-label={chordsHidden ? 'Show chords for all songs' : 'Hide chords for all songs'}
-          className={[
-            'shrink-0 px-3 py-1.5 rounded-lg',
-            'text-xs font-semibold whitespace-nowrap',
-            'border transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-tan focus-visible:ring-offset-1 focus-visible:ring-offset-brand-espresso',
-            chordsHidden
-              ? 'bg-brand-tan text-brand-espresso border-brand-tan'
-              : 'text-brand-cream border-brand-tan/30 hover:bg-brand-espresso/60',
-          ].join(' ')}
-        >
-          {chordsHidden ? 'Show Chords' : 'Hide Chords'}
-        </button>
       </div>
     </div>
   )

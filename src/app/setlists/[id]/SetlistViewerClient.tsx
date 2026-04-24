@@ -76,7 +76,7 @@ export default function SetlistViewerClient({
 
   return (
     <>
-      {/* ── Setlist header (name + date + Go Live button) ──────────────────── */}
+      {/* ── Setlist header (name + date + Go Live/Follow Leader + Hide Chords) ── */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
           {setlistName}
@@ -115,6 +115,23 @@ export default function SetlistViewerClient({
             }}
             isLeader={isLeader}
           />
+          <button
+            type="button"
+            onClick={toggleGlobalChords}
+            aria-pressed={globalChordsHidden}
+            aria-label={globalChordsHidden ? 'Show chords for all songs' : 'Hide chords for all songs'}
+            className={[
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg',
+              'text-xs font-semibold',
+              'border transition-colors duration-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
+              globalChordsHidden
+                ? 'bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
+                : 'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
+            ].join(' ')}
+          >
+            {globalChordsHidden ? 'Show Chords' : 'Hide Chords'}
+          </button>
         </div>
       </div>
 
@@ -128,8 +145,6 @@ export default function SetlistViewerClient({
           isLive: sync.isLive,
           onActiveSongChange: sync.onActiveSongChange,
         }}
-        chordsHidden={globalChordsHidden}
-        onChordsToggle={toggleGlobalChords}
       />
 
       {/* ── Song sections ──────────────────────────────────────────────────── */}
