@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Music } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +24,8 @@ interface ServiceNavigatorProps {
   setlistId: string
   isAuthenticated: boolean
   sync: ServiceNavigatorSync
+  chordsHidden: boolean
+  onChordsToggle: () => void
 }
 
 /**
@@ -47,6 +48,8 @@ interface ServiceNavigatorProps {
 export default function ServiceNavigator({
   songs,
   sync,
+  chordsHidden,
+  onChordsToggle,
 }: ServiceNavigatorProps) {
   const [activeSongId, setActiveSongId] = useState<string | null>(
     songs.length > 0 ? songs[0].junctionId : null
@@ -118,13 +121,20 @@ export default function ServiceNavigator({
     }
   }, [songs])
 
+  const navRef = useRef<HTMLDivElement>(null)
+
   const handleScrollToSong = (junctionId: string) => {
     const element = document.getElementById(`song-${junctionId}`)
-    element?.scrollIntoView({ behavior: 'smooth' })
+    if (!element) return
+    const navbarHeight = 64 // sticky top-16 = 4rem = 64px
+    const toolbarHeight = navRef.current ? navRef.current.getBoundingClientRect().height : 0
+    const top = element.getBoundingClientRect().top + window.scrollY - navbarHeight - toolbarHeight - 8
+    window.scrollTo({ top, behavior: 'smooth' })
   }
 
   return (
     <div
+      ref={navRef}
       className={[
         'sticky top-16 z-40 w-full',
         'bg-brand-espresso',
@@ -132,16 +142,13 @@ export default function ServiceNavigator({
       ].join(' ')}
       aria-label="Setlist song navigator"
     >
-      <div className="flex items-center gap-2 px-4 py-2 flex-wrap">
-        {/* Label icon */}
-        <Music size={14} className="text-brand-tan shrink-0" aria-hidden="true" />
-
+      <div className="flex items-center gap-2 px-4 py-2">
         {/* Horizontally scrollable song list */}
         {songs.length === 0 ? (
           <span className="text-xs text-brand-cream/50">No songs</span>
         ) : (
           <nav
-            className="flex items-center gap-1 overflow-x-auto"
+            className="flex items-center gap-1 overflow-x-auto flex-1 min-w-0"
             aria-label="Song list"
           >
             {songs.map((song) => {
@@ -168,6 +175,25 @@ export default function ServiceNavigator({
             })}
           </nav>
         )}
+
+        {/* Chords toggle button */}
+        <button
+          type="button"
+          onClick={onChordsToggle}
+          aria-pressed={chordsHidden}
+          aria-label={chordsHidden ? 'Show chords for all songs' : 'Hide chords for all songs'}
+          className={[
+            'shrink-0 px-3 py-1.5 rounded-lg',
+            'text-xs font-semibold whitespace-nowrap',
+            'border transition-colors duration-200',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-tan focus-visible:ring-offset-1 focus-visible:ring-offset-brand-espresso',
+            chordsHidden
+              ? 'bg-brand-tan text-brand-espresso border-brand-tan'
+              : 'text-brand-cream border-brand-tan/30 hover:bg-brand-espresso/60',
+          ].join(' ')}
+        >
+          {chordsHidden ? 'Show Chords' : 'Hide Chords'}
+        </button>
       </div>
     </div>
   )
