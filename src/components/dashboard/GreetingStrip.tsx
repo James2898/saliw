@@ -14,15 +14,15 @@ export default function GreetingStrip({
     : "Check what's coming up next."
 
   const rolePillClasses = isMusicDirector
-    ? 'bg-brand-espresso text-brand-cream'
+    ? 'bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso'
     : 'bg-brand-tan text-brand-espresso'
 
   const roleLabel = isMusicDirector ? 'Music Director' : 'Musician'
 
   return (
-    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
+    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-espresso">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream">
           Welcome back, {fullName}
         </h1>
         <span
@@ -31,7 +31,7 @@ export default function GreetingStrip({
           {roleLabel}
         </span>
       </div>
-      <p className="mt-2 text-sm text-brand-brown">{subtitle}</p>
+      <p className="mt-2 text-sm text-brand-brown dark:text-brand-tan">{subtitle}</p>
     </section>
   )
 }

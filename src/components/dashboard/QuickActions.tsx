@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import Link from 'next/link'
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
 
 const actionClasses = [
   'inline-flex items-center justify-center font-sans font-semibold',
@@ -15,8 +15,8 @@ const actionClasses = [
 
 export default function QuickActions(): ReactElement {
   return (
-    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream p-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown mb-3">
+    <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
+      <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-3">
         Quick Actions
       </p>
       <div className="flex flex-wrap gap-3">
