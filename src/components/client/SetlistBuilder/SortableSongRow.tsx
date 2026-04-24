@@ -45,7 +45,7 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
       <button
         type="button"
         aria-label={`Drag to reorder ${song.title}`}
-        className="cursor-grab active:cursor-grabbing text-brand-brown/50 hover:text-brand-brown/80 transition-colors duration-200 shrink-0"
+        className="cursor-grab active:cursor-grabbing text-brand-brown/50 dark:text-brand-tan/50 hover:text-brand-brown/80 dark:hover:text-brand-tan/80 transition-colors duration-200 shrink-0"
         {...attributes}
         {...listeners}
       >
@@ -54,14 +54,14 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
 
       {/* Song info */}
       <div className="flex-1 min-w-0">
-        <p className="text-brand-espresso font-medium text-sm truncate">{song.title}</p>
+        <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">{song.title}</p>
         {song.artist && (
-          <p className="text-brand-brown/70 text-xs truncate">{song.artist}</p>
+          <p className="text-brand-brown/70 dark:text-brand-tan/70 text-xs truncate">{song.artist}</p>
         )}
       </div>
 
       {/* Original key badge */}
-      <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso text-xs font-medium px-2 py-0.5 rounded shrink-0">
+      <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso dark:text-brand-cream text-xs font-medium px-2 py-0.5 rounded shrink-0">
         {song.originalKey}
       </span>
 
