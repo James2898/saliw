@@ -181,9 +181,9 @@ export default function NewSongFormClient() {
             disabled={isSaving}
             className={[
               "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl",
-              "bg-brand-tan text-brand-espresso",
+              "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso",
               "text-sm font-semibold font-sans",
-              "border border-brand-tan",
+              "border border-brand-tan dark:border-brand-tan",
               "hover:bg-brand-brown hover:text-brand-cream hover:border-brand-brown",
               "transition-colors duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",

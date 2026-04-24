@@ -40,14 +40,14 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
 
       {/* Email — read-only display, never submitted */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-semibold font-sans text-brand-espresso">
+        <label className="text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream">
           Email
         </label>
         <input
           type="email"
           value={profile.email}
           readOnly
-          className="font-sans text-brand-brown bg-transparent border border-brand-brown/40 rounded-xl px-3 py-2 cursor-not-allowed opacity-70"
+          className="font-sans text-brand-brown dark:text-brand-tan bg-transparent border border-brand-brown/40 rounded-xl px-3 py-2 cursor-not-allowed opacity-70"
         />
       </div>
 
@@ -55,7 +55,7 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
       <div className="flex flex-col gap-1">
         <label
           htmlFor="full_name"
-          className="text-sm font-semibold font-sans text-brand-espresso"
+          className="text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream"
         >
           Full Name
         </label>
@@ -64,16 +64,16 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
           type="text"
           value={fullName}
           onChange={handleChange}
-          className="font-sans text-brand-espresso bg-transparent border border-brand-brown rounded-xl px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2"
+          className="font-sans text-brand-espresso dark:text-brand-cream bg-transparent border border-brand-brown rounded-xl px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2"
         />
       </div>
 
       {/* Inline feedback */}
       {feedback && feedbackType === 'success' && (
-        <p className="text-sm font-sans text-brand-brown">{feedback}</p>
+        <p className="text-sm font-sans text-brand-brown dark:text-brand-tan">{feedback}</p>
       )}
       {feedback && feedbackType === 'error' && (
-        <p className="text-sm font-sans text-brand-espresso">{feedback}</p>
+        <p className="text-sm font-sans text-brand-espresso dark:text-brand-cream">{feedback}</p>
       )}
 
       <Button type="submit" variant="primary" size="md" disabled={isPending}>

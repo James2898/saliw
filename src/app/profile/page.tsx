@@ -18,11 +18,11 @@ export default async function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold font-sans text-brand-espresso">
+      <h1 className="text-2xl font-semibold font-sans text-brand-espresso dark:text-brand-cream">
         Profile Settings
       </h1>
       {!profile ? (
-        <p className="text-brand-espresso">
+        <p className="text-brand-espresso dark:text-brand-cream">
           Profile not found. Please contact your administrator.
         </p>
       ) : (
