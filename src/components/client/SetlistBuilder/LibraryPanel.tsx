@@ -72,8 +72,8 @@ export default function LibraryPanel({
         placeholder="Search by title or artist…"
         aria-label="Search song library"
         className={[
-          'w-full rounded-xl border border-brand-brown/20 bg-brand-cream',
-          'px-4 py-2 text-sm text-brand-espresso placeholder-brand-brown/40',
+          'w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso',
+          'px-4 py-2 text-sm text-brand-espresso dark:text-brand-cream placeholder-brand-brown/40 dark:placeholder-brand-tan/40',
           'focus:outline-none focus:ring-2 focus:ring-brand-brown/40',
           'transition-colors duration-200',
         ].join(' ')}
@@ -91,7 +91,7 @@ export default function LibraryPanel({
             return (
               <div
                 key={song.id}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream border border-brand-brown/10"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/10"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-brand-espresso font-medium text-sm truncate">{song.title}</p>
