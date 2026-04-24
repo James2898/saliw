@@ -100,7 +100,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     : 'No songs in the library yet.'
 
   return (
-    <main className="min-h-screen bg-brand-cream px-4 py-8 sm:px-8 font-sans">
+    <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
       {/* ── Page header ──────────────────────────────────────────────────────── */}
       <div className="max-w-3xl mx-auto">
         <div className="flex items-start justify-between gap-4 mb-1">
