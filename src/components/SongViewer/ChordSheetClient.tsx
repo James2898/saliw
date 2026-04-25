@@ -196,7 +196,7 @@ export default function ChordSheetClient({
         {/* Collapsible controls */}
         <div
           className={[
-            'overflow-hidden transition-all duration-200',
+            'overflow-hidden transition-all duration-200 chord-sheet-toolbar-panel',
             toolbarOpen ? 'max-h-40' : 'max-h-0',
           ].join(' ')}
           aria-label="Chord sheet controls"
