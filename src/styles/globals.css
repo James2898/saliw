@@ -83,6 +83,13 @@ body {
   transition-property: opacity;
 }
 
+/* Accordion toolbar panel: restore max-height transition suppressed by the * rule.
+   The unlayered * rule only includes background-color, border-color, fill, stroke —
+   which silently drops max-height transitions on any animated collapse/expand panel. */
+.chord-sheet-toolbar-panel {
+  transition-property: max-height;
+}
+
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
