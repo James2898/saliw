@@ -47,7 +47,7 @@ export default function DashboardLoading() {
                 aria-hidden="true"
               >
                 <div className="h-4 w-28 rounded animate-pulse bg-brand-brown/10 mb-4" />
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col gap-3" role="list" aria-label="Loading recent songs">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <li key={i} className="flex items-center justify-between gap-2">
                       <div className="flex flex-col gap-1 min-w-0">
@@ -66,7 +66,7 @@ export default function DashboardLoading() {
                 aria-hidden="true"
               >
                 <div className="h-4 w-36 rounded animate-pulse bg-brand-brown/10 mb-4" />
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col gap-3" role="list" aria-label="Loading upcoming setlists">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <li key={i} className="flex items-center justify-between gap-2">
                       <div className="h-4 w-40 rounded animate-pulse bg-brand-brown/10" />
