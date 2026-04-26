@@ -18,6 +18,19 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-25
 
+### Added
+
+- Forgot Password and Reset Password flows; Magic Link login removed (`TASK-029`)
+  - Removed mode toggle, all magic-link state/JSX/handlers, and `sendMagicLinkAction` from `LoginForm.tsx` and `authActions.ts`; email + password is now the sole login method.
+  - Added "Forgot password?" `<Link>` below Submit in `LoginForm.tsx`.
+  - New `/forgot-password` Server Component page with full layout shell; redirects authenticated users to `/`; renders `ForgotPasswordForm` Client Component.
+  - New `/reset-password` Server Component page with full layout shell; no session check (PKCE callback establishes session before user arrives); renders `ResetPasswordForm` Client Component.
+  - `ForgotPasswordForm`: submits via `sendPasswordResetAction`, shows success confirmation in place of the form, always-visible "Back to sign in" link, pending/error states.
+  - `ResetPasswordForm`: client-side password-match guard before calling `updatePasswordAction`; "Request a new link" link surfaces when error contains "expired or invalid"; pending/error states.
+  - `sendPasswordResetAction`: always returns `{ success: true }` for non-error (prevents user enumeration); uses `NEXT_PUBLIC_SITE_URL` for `redirectTo`.
+  - `updatePasswordAction`: `redirect('/login')` placed outside try/catch per documented Next.js NEXT_REDIRECT pattern.
+  - Affected files: `src/components/client/LoginForm.tsx`, `src/app/actions/authActions.ts`, `src/app/(auth)/forgot-password/page.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/components/client/ForgotPasswordForm.tsx`, `src/components/client/ResetPasswordForm.tsx`
+
 ### Changed
 
 - Moved the "Go Live" button out of the sticky setlist toolbar and into the setlist header row, next to the setlist name, date, and Edit Setlist link (`TASK-026`)
