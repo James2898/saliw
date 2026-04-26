@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Copy } from 'lucide-react'
 import {
   addSongToSetlist,
   removeSongFromSetlist,
@@ -9,10 +10,13 @@ import {
   updatePerformanceDetails,
   createSetlist,
   updateSetlist,
+  cloneSetlist,
 } from '@/app/actions/setlistActions'
+import Button from '@/components/client/button'
 import ErrorBanner from './ErrorBanner'
 import SetlistPanel from './SetlistPanel'
 import LibraryPanel from './LibraryPanel'
+import CloneSetlistDialog from './CloneSetlistDialog'
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
@@ -73,6 +77,8 @@ export default function SetlistBuilderClient({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [showCloneDialog, setShowCloneDialog] = useState(false)
+  const [isCloning, setIsCloning] = useState(false)
 
   // Dirty: compare local vs initial (name, date, songs)
   const isDirty =
@@ -260,6 +266,25 @@ export default function SetlistBuilderClient({
     }
   }
 
+  async function handleClone() {
+    if (!setlistId) return
+    setIsCloning(true)
+    setError(null)
+    try {
+      const { data, error: cloneError } = await cloneSetlist({ id: setlistId })
+      if (cloneError || !data) {
+        throw new Error(cloneError ?? 'Failed to clone setlist.')
+      }
+      setShowCloneDialog(false)
+      router.push(`/setlists/${data.id}/edit`)
+    } catch (e) {
+      setShowCloneDialog(false)
+      setError(e instanceof Error ? e.message : 'Unable to clone setlist. Please try again.')
+    } finally {
+      setIsCloning(false)
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   const inputClass = [
@@ -303,6 +328,23 @@ export default function SetlistBuilderClient({
         </div>
       )}
 
+      {/* Clone button — edit mode only */}
+      {setlistId !== null && (
+        <div className="flex justify-end mb-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowCloneDialog(true)}
+            disabled={isCloning}
+            aria-label="Clone this setlist"
+          >
+            <Copy size={14} aria-hidden="true" className="mr-1.5" />
+            Clone setlist
+          </Button>
+        </div>
+      )}
+
       {/* Two-column layout — stacked on mobile, side-by-side on md+ */}
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_360px] md:gap-8 md:items-start">
         {/* Setlist Panel — left / top */}
@@ -334,6 +376,15 @@ export default function SetlistBuilderClient({
           />
         </div>
       </div>
+
+      {/* Clone confirmation dialog */}
+      <CloneSetlistDialog
+        isOpen={showCloneDialog}
+        setlistName={name}
+        isCloning={isCloning}
+        onConfirm={handleClone}
+        onCancel={() => setShowCloneDialog(false)}
+      />
     </div>
   )
 }
