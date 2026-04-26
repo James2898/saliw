@@ -416,9 +416,7 @@ export async function updateSetlist(
     const payload: Record<string, unknown> = {}
     if (input.name !== undefined) payload.name = input.name
     if (input.date !== undefined) payload.date = input.date || null
-    if ('worship_leader_id' in input) {
-      payload.worship_leader_id = input.worship_leader_id ?? null
-    }
+    if (input.worship_leader_id !== undefined) payload.worship_leader_id = input.worship_leader_id
 
     const { error } = await supabase
       .from('setlists')
@@ -524,7 +522,13 @@ export async function cloneSetlist(
       .select('musician_id, instrument')
       .eq('setlist_id', input.id)
 
-    if (!lineupFetchError && sourceLineup && sourceLineup.length > 0) {
+    if (lineupFetchError) {
+      // Rollback: delete the cloned setlist header (cascade deletes cloned songs too)
+      await supabase.from('setlists').delete().eq('id', cloned.id)
+      return { data: null, error: 'Unable to clone setlist lineup. Please try again.' }
+    }
+
+    if (sourceLineup && sourceLineup.length > 0) {
       const lineupRows = sourceLineup.map((m) => ({
         setlist_id: cloned.id,
         musician_id: m.musician_id,
