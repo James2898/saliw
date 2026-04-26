@@ -30,7 +30,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("theme") === "dark"
+  );
   const [user, setUser] = useState<User | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -43,17 +45,6 @@ export default function Navbar() {
 
   // Track which trigger opened the modal so we can return focus on close
   const logoutTriggerRef = useRef<HTMLButtonElement | null>(null);
-
-  // Initialise theme from localStorage on mount (client-only).
-  useEffect(() => {
-    const stored =
-      typeof window !== "undefined" ? localStorage.getItem("theme") : null;
-    const dark = stored === "dark";
-    if (dark !== isDark) {
-      setIsDark(dark);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Keep document.documentElement in sync with isDark state
   useEffect(() => {
@@ -98,6 +89,15 @@ export default function Navbar() {
     };
   }, []);
 
+  function openSidebar() {
+    setIsOpen(true);
+  }
+
+  function closeSidebar() {
+    setIsOpen(false);
+    hamburgerButtonRef.current?.focus();
+  }
+
   // Escape key listener and body scroll lock when sidebar is open
   useEffect(() => {
     if (!isOpen) return;
@@ -118,15 +118,6 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
-
-  function openSidebar() {
-    setIsOpen(true);
-  }
-
-  function closeSidebar() {
-    setIsOpen(false);
-    hamburgerButtonRef.current?.focus();
-  }
 
   function toggleTheme() {
     const next = !isDark;
