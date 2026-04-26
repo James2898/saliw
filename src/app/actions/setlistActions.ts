@@ -389,14 +389,15 @@ export async function getSetlistWithSongs(
 }
 
 /**
- * Updates the name and/or date of an existing setlist.
+ * Updates the name, date, and/or worship_leader_id of an existing setlist.
+ * All fields are optional; at least one must be supplied.
  * Only the setlist's leader may update it (enforced via RLS on setlists).
  *
- * @param input - The setlist id, new name, and new date
+ * @param input - The setlist id plus any combination of name, date, and worship_leader_id
  * @returns The updated setlist id, or an error message
  */
 export async function updateSetlist(
-  input: { id: string; name: string; date: string; worship_leader_id?: string | null }
+  input: { id: string; name?: string; date?: string; worship_leader_id?: string | null }
 ): Promise<{ data: { id: string } | null; error: string | null }> {
   try {
     const supabase = await createClient()
@@ -406,11 +407,15 @@ export async function updateSetlist(
       return { data: null, error: 'Unauthorized' }
     }
 
-    // Build payload: always include name and date; conditionally include worship_leader_id
-    const payload: Record<string, unknown> = {
-      name: input.name,
-      date: input.date || null,
+    // Guard: at least one field must be provided
+    if (input.name === undefined && input.date === undefined && input.worship_leader_id === undefined) {
+      return { data: null, error: 'No fields to update.' }
     }
+
+    // Build payload conditionally — only include fields that are explicitly present
+    const payload: Record<string, unknown> = {}
+    if (input.name !== undefined) payload.name = input.name
+    if (input.date !== undefined) payload.date = input.date || null
     if ('worship_leader_id' in input) {
       payload.worship_leader_id = input.worship_leader_id ?? null
     }
@@ -581,6 +586,7 @@ export async function deleteSetlist(
 
 /**
  * Sets or clears the worship_leader_id for a setlist.
+ * Delegates to updateSetlist to keep all setlist mutation logic in one place.
  * Only the setlist's leader may update it (enforced via RLS on setlists).
  *
  * @param input - The setlist id and the new worship_leader_id (pass null to clear)
@@ -589,30 +595,7 @@ export async function deleteSetlist(
 export async function setSetlistWorshipLeader(
   input: { setlist_id: string; worship_leader_id: string | null }
 ): Promise<{ data: { id: string } | null; error: string | null }> {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return { data: null, error: 'Unauthorized' }
-    }
-
-    const { error } = await supabase
-      .from('setlists')
-      .update({ worship_leader_id: input.worship_leader_id })
-      .eq('id', input.setlist_id)
-
-    if (error) {
-      if (error.code === '42501') {
-        return { data: null, error: 'You do not have permission to perform this action.' }
-      }
-      return { data: null, error: 'Unable to update worship leader. Please try again.' }
-    }
-
-    return { data: { id: input.setlist_id }, error: null }
-  } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
-  }
+  return updateSetlist({ id: input.setlist_id, worship_leader_id: input.worship_leader_id })
 }
 
 /**
@@ -714,6 +697,7 @@ export async function getSetlistLineup(
       .select('id, musician_id, instrument, musicians(id, name)')
       .eq('setlist_id', input.setlist_id)
       .order('instrument', { ascending: true })
+      .order('name', { referencedTable: 'musicians', ascending: true })
 
     if (error) {
       return { data: null, error: 'Unable to load setlist lineup. Please try again.' }
