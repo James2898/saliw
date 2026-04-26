@@ -36,7 +36,13 @@ export default function SetlistPanel({
   onSave,
   isSaving,
 }: SetlistPanelProps) {
-  const sensors = useSensors(useSensor(PointerSensor))
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  )
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
