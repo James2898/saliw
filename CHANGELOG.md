@@ -8,6 +8,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- Phase 2 DB schema wiring: TypeScript types and Server Actions for musicians and worship-leader management (`TASK-031`)
+  - `DbSetlist` extended with `worship_leader_id: string | null`; `DbSetlistSong.singer` removed; `DbMusician` and `DbSetlistMusician` added to `src/types/supabase.ts`.
+  - New `src/types/Musician.ts` exports `Musician` and `SetlistLineupEntry` frontend types.
+  - New `src/app/actions/musicianActions.ts` with `listMusicians`, `getMusicianById`, `createMusician`, `updateMusician`, `deleteMusician` (all returning `{ data: T | null; error: string | null }`).
+  - `updateSetlist` extended with optional `worship_leader_id?: string | null` (omit preserves, `null` clears, string sets).
+  - `setSetlistWorshipLeader` added as a one-line wrapper around `updateSetlist`.
+  - `addSetlistMusician`, `removeSetlistMusician`, `getSetlistLineup` (ordered by instrument then musician name) added to `setlistActions.ts`.
+  - `cloneSetlist` updated to copy `worship_leader_id`, drop `singer` mapping, and bulk-copy `setlist_musicians` with rollback on lineup-insert failure.
+  - `npx tsc --noEmit` exits with code 0; zero `setlist_songs.singer` references remain in `src/`.
+  - Affected files: `src/types/supabase.ts`, `src/types/Setlist.ts`, `src/types/Musician.ts`, `src/app/actions/musicianActions.ts`, `src/app/actions/setlistActions.ts`
+
 - Clone setlist feature in the setlist editor page (`TASK-029`)
   - Ghost "Clone setlist" button with Copy icon renders in edit mode only (hidden in create mode); positioned top-right above the two-column builder layout.
   - Clicking opens `CloneSetlistDialog` — an accessible confirmation modal with role="dialog", aria-modal, focus trap (Tab/Shift+Tab cycles between Cancel and Confirm), and Escape key dismiss.
