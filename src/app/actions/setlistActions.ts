@@ -2,7 +2,8 @@
 
 import { createClient } from '@/services/supabase/server'
 import { NOTES } from '@/utils/musicLogic'
-import type { DbSetlist, DbSetlistSong } from '@/types/supabase'
+import type { DbSetlist, DbSetlistSong, DbSetlistMusician } from '@/types/supabase'
+import type { SetlistLineupEntry } from '@/types/Musician'
 
 /**
  * Fetches the header fields of a single setlist by its ID.
@@ -13,13 +14,13 @@ import type { DbSetlist, DbSetlistSong } from '@/types/supabase'
  */
 export async function getSetlistById(
   input: { id: string }
-): Promise<{ data: { id: string; name: string; date: string; leader_id: string; is_public: boolean } | null; error: string | null }> {
+): Promise<{ data: { id: string; name: string; date: string; leader_id: string; worship_leader_id: string | null; is_public: boolean } | null; error: string | null }> {
   try {
     const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('setlists')
-      .select('id, name, date, leader_id, is_public')
+      .select('id, name, date, leader_id, worship_leader_id, is_public')
       .eq('id', input.id)
       .single()
 
@@ -30,7 +31,7 @@ export async function getSetlistById(
       return { data: null, error: 'Unable to load setlist. Please try again.' }
     }
 
-    return { data: data as { id: string; name: string; date: string; leader_id: string; is_public: boolean }, error: null }
+    return { data: data as { id: string; name: string; date: string; leader_id: string; worship_leader_id: string | null; is_public: boolean }, error: null }
   } catch {
     return { data: null, error: 'An unexpected error occurred. Please try again.' }
   }
@@ -133,7 +134,6 @@ export async function addSongToSetlist(
         song_id: input.song_id,
         order_index: nextIndex,
         performance_key: song.original_key,
-        singer: null,
       })
       .select()
       .single()
@@ -272,15 +272,15 @@ export async function updateSetlistSongOrder(
 }
 
 /**
- * Updates the performance_key and/or singer for a specific setlist_songs entry.
+ * Updates the performance_key for a specific setlist_songs entry.
  * Only the setlist's leader may update performance details (enforced via RLS).
  *
  * @param input - The setlist_songs PK (id), the setlist_id for RLS scoping,
- *                and optional performance_key / singer fields
+ *                and optional performance_key
  * @returns The full updated setlist_songs row, or an error message
  */
 export async function updatePerformanceDetails(
-  input: { id: string; setlist_id: string; performance_key?: string; singer?: string | null }
+  input: { id: string; setlist_id: string; performance_key?: string }
 ): Promise<{ data: DbSetlistSong | null; error: string | null }> {
   try {
     const supabase = await createClient()
@@ -291,22 +291,18 @@ export async function updatePerformanceDetails(
     }
 
     // Guard: at least one field must be supplied
-    if (input.performance_key === undefined && !('singer' in input)) {
+    if (input.performance_key === undefined) {
       return { data: null, error: 'No fields to update.' }
     }
 
     // Validate performance_key against NOTES if provided
-    if (input.performance_key !== undefined) {
-      if (!(NOTES as readonly string[]).includes(input.performance_key)) {
-        return { data: null, error: 'Invalid performance key. Must be one of: ' + NOTES.join(', ') }
-      }
+    if (!(NOTES as readonly string[]).includes(input.performance_key)) {
+      return { data: null, error: 'Invalid performance key. Must be one of: ' + NOTES.join(', ') }
     }
 
     // Build payload conditionally: only include fields that are explicitly present
-    // Use 'singer' in input to distinguish omitted (preserve existing) from null (clear it)
     const payload: Record<string, unknown> = {}
     if (input.performance_key !== undefined) payload.performance_key = input.performance_key
-    if ('singer' in input) payload.singer = input.singer
 
     const { data, error } = await supabase
       .from('setlist_songs')
@@ -348,7 +344,6 @@ export async function getSetlistWithSongs(
     song_id: string
     order_index: number
     performance_key: string
-    singer: string | null
     songs: {
       id: string
       title: string
@@ -364,7 +359,7 @@ export async function getSetlistWithSongs(
 
     const { data, error } = await supabase
       .from('setlist_songs')
-      .select('id, song_id, order_index, performance_key, singer, songs(id, title, artist, original_key, content)')
+      .select('id, song_id, order_index, performance_key, songs(id, title, artist, original_key, content)')
       .eq('setlist_id', input.setlist_id)
       .order('order_index', { ascending: true })
 
@@ -380,7 +375,6 @@ export async function getSetlistWithSongs(
       song_id: string
       order_index: number
       performance_key: string
-      singer: string | null
       songs: {
         id: string
         title: string
@@ -395,14 +389,15 @@ export async function getSetlistWithSongs(
 }
 
 /**
- * Updates the name and/or date of an existing setlist.
+ * Updates the name, date, and/or worship_leader_id of an existing setlist.
+ * All fields are optional; at least one must be supplied.
  * Only the setlist's leader may update it (enforced via RLS on setlists).
  *
- * @param input - The setlist id, new name, and new date
+ * @param input - The setlist id plus any combination of name, date, and worship_leader_id
  * @returns The updated setlist id, or an error message
  */
 export async function updateSetlist(
-  input: { id: string; name: string; date: string }
+  input: { id: string; name?: string; date?: string; worship_leader_id?: string | null }
 ): Promise<{ data: { id: string } | null; error: string | null }> {
   try {
     const supabase = await createClient()
@@ -412,9 +407,20 @@ export async function updateSetlist(
       return { data: null, error: 'Unauthorized' }
     }
 
+    // Guard: at least one field must be provided
+    if (input.name === undefined && input.date === undefined && input.worship_leader_id === undefined) {
+      return { data: null, error: 'No fields to update.' }
+    }
+
+    // Build payload conditionally — only include fields that are explicitly present
+    const payload: Record<string, unknown> = {}
+    if (input.name !== undefined) payload.name = input.name
+    if (input.date !== undefined) payload.date = input.date || null
+    if (input.worship_leader_id !== undefined) payload.worship_leader_id = input.worship_leader_id
+
     const { error } = await supabase
       .from('setlists')
-      .update({ name: input.name, date: input.date || null })
+      .update(payload)
       .eq('id', input.id)
 
     if (error) {
@@ -452,7 +458,7 @@ export async function cloneSetlist(
     // Fetch the source setlist header
     const { data: source, error: sourceError } = await supabase
       .from('setlists')
-      .select('id, name, date, is_public')
+      .select('id, name, date, is_public, worship_leader_id')
       .eq('id', input.id)
       .single()
 
@@ -460,7 +466,7 @@ export async function cloneSetlist(
       return { data: null, error: 'Unable to load source setlist. Please try again.' }
     }
 
-    // Create the new setlist with " copy" appended to the name
+    // Create the new setlist with " copy" appended to the name; copy worship_leader_id
     const { data: cloned, error: createError } = await supabase
       .from('setlists')
       .insert({
@@ -468,6 +474,7 @@ export async function cloneSetlist(
         date: source.date,
         leader_id: user.id,
         is_public: source.is_public,
+        worship_leader_id: source.worship_leader_id,
       })
       .select('id')
       .single()
@@ -479,7 +486,7 @@ export async function cloneSetlist(
     // Fetch all songs from the source setlist ordered by order_index
     const { data: sourceSongs, error: songsError } = await supabase
       .from('setlist_songs')
-      .select('song_id, order_index, performance_key, singer')
+      .select('song_id, order_index, performance_key')
       .eq('setlist_id', input.id)
       .order('order_index', { ascending: true })
 
@@ -496,7 +503,6 @@ export async function cloneSetlist(
         song_id: s.song_id,
         order_index: s.order_index,
         performance_key: s.performance_key,
-        singer: s.singer,
       }))
 
       const { error: insertError } = await supabase
@@ -507,6 +513,36 @@ export async function cloneSetlist(
         // Rollback: delete the cloned setlist header
         await supabase.from('setlists').delete().eq('id', cloned.id)
         return { data: null, error: 'Unable to clone setlist songs. Please try again.' }
+      }
+    }
+
+    // Copy the lineup (setlist_musicians) from the source setlist to the clone
+    const { data: sourceLineup, error: lineupFetchError } = await supabase
+      .from('setlist_musicians')
+      .select('musician_id, instrument')
+      .eq('setlist_id', input.id)
+
+    if (lineupFetchError) {
+      // Rollback: delete the cloned setlist header (cascade deletes cloned songs too)
+      await supabase.from('setlists').delete().eq('id', cloned.id)
+      return { data: null, error: 'Unable to clone setlist lineup. Please try again.' }
+    }
+
+    if (sourceLineup && sourceLineup.length > 0) {
+      const lineupRows = sourceLineup.map((m) => ({
+        setlist_id: cloned.id,
+        musician_id: m.musician_id,
+        instrument: m.instrument,
+      }))
+
+      const { error: lineupInsertError } = await supabase
+        .from('setlist_musicians')
+        .insert(lineupRows)
+
+      if (lineupInsertError) {
+        // Rollback: delete the cloned setlist header (cascade deletes cloned songs too)
+        await supabase.from('setlists').delete().eq('id', cloned.id)
+        return { data: null, error: 'Unable to clone setlist lineup. Please try again.' }
       }
     }
 
@@ -547,6 +583,131 @@ export async function deleteSetlist(
     }
 
     return { data: { id: input.id }, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
+ * Sets or clears the worship_leader_id for a setlist.
+ * Delegates to updateSetlist to keep all setlist mutation logic in one place.
+ * Only the setlist's leader may update it (enforced via RLS on setlists).
+ *
+ * @param input - The setlist id and the new worship_leader_id (pass null to clear)
+ * @returns The updated setlist id, or an error message
+ */
+export async function setSetlistWorshipLeader(
+  input: { setlist_id: string; worship_leader_id: string | null }
+): Promise<{ data: { id: string } | null; error: string | null }> {
+  return updateSetlist({ id: input.setlist_id, worship_leader_id: input.worship_leader_id })
+}
+
+/**
+ * Adds a musician to a setlist lineup with a specified instrument.
+ * Only the setlist's leader may manage the lineup (enforced via RLS on setlist_musicians).
+ *
+ * @param input - The setlist id, musician id, and instrument name
+ * @returns The created setlist_musicians row, or an error message
+ */
+export async function addSetlistMusician(
+  input: { setlist_id: string; musician_id: string; instrument: string }
+): Promise<{ data: DbSetlistMusician | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('setlist_musicians')
+      .insert({
+        setlist_id: input.setlist_id,
+        musician_id: input.musician_id,
+        instrument: input.instrument.trim(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === '23505') {
+        return { data: null, error: 'That musician is already assigned to that instrument.' }
+      }
+      if (error.code === '42501') {
+        return { data: null, error: 'You do not have permission to perform this action.' }
+      }
+      return { data: null, error: 'Unable to add musician to setlist. Please try again.' }
+    }
+
+    return { data: data as DbSetlistMusician, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
+ * Removes a musician entry from a setlist lineup.
+ * Only the setlist's leader may manage the lineup (enforced via RLS on setlist_musicians).
+ *
+ * @param input - The setlist_musicians PK (id) and the setlist_id for RLS scoping
+ * @returns The deleted row id, or an error message
+ */
+export async function removeSetlistMusician(
+  input: { id: string; setlist_id: string }
+): Promise<{ data: { id: string } | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+      .from('setlist_musicians')
+      .delete()
+      .eq('id', input.id)
+      .eq('setlist_id', input.setlist_id)
+
+    if (error) {
+      if (error.code === '42501') {
+        return { data: null, error: 'You do not have permission to perform this action.' }
+      }
+      return { data: null, error: 'Unable to remove musician from setlist. Please try again.' }
+    }
+
+    return { data: { id: input.id }, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
+ * Fetches the full lineup for a setlist, with musician details resolved.
+ * Any authenticated user may read the lineup (read is open to authenticated users via RLS).
+ *
+ * @param input - The setlist id
+ * @returns An array of SetlistLineupEntry rows, or an error message
+ */
+export async function getSetlistLineup(
+  input: { setlist_id: string }
+): Promise<{ data: SetlistLineupEntry[] | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .from('setlist_musicians')
+      .select('id, musician_id, instrument, musicians(id, name)')
+      .eq('setlist_id', input.setlist_id)
+      .order('instrument', { ascending: true })
+      .order('name', { referencedTable: 'musicians', ascending: true })
+
+    if (error) {
+      return { data: null, error: 'Unable to load setlist lineup. Please try again.' }
+    }
+
+    return { data: (data ?? []) as unknown as SetlistLineupEntry[], error: null }
   } catch {
     return { data: null, error: 'An unexpected error occurred. Please try again.' }
   }
