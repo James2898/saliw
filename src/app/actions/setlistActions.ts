@@ -431,6 +431,92 @@ export async function updateSetlist(
 }
 
 /**
+ * Clones a setlist and all its songs, creating a new setlist owned by the current user.
+ * The cloned setlist's name will have " copy" appended to it.
+ * Performance keys and order_index values from the source are preserved.
+ *
+ * @param input - The id of the source setlist to clone
+ * @returns The newly created setlist id, or an error message
+ */
+export async function cloneSetlist(
+  input: { id: string }
+): Promise<{ data: { id: string } | null; error: string | null }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { data: null, error: 'Unauthorized' }
+    }
+
+    // Fetch the source setlist header
+    const { data: source, error: sourceError } = await supabase
+      .from('setlists')
+      .select('id, name, date, is_public')
+      .eq('id', input.id)
+      .single()
+
+    if (sourceError || !source) {
+      return { data: null, error: 'Unable to load source setlist. Please try again.' }
+    }
+
+    // Create the new setlist with " copy" appended to the name
+    const { data: cloned, error: createError } = await supabase
+      .from('setlists')
+      .insert({
+        name: `${source.name} copy`,
+        date: source.date,
+        leader_id: user.id,
+        is_public: source.is_public,
+      })
+      .select('id')
+      .single()
+
+    if (createError || !cloned) {
+      return { data: null, error: 'Unable to clone setlist. Please try again.' }
+    }
+
+    // Fetch all songs from the source setlist ordered by order_index
+    const { data: sourceSongs, error: songsError } = await supabase
+      .from('setlist_songs')
+      .select('song_id, order_index, performance_key, singer')
+      .eq('setlist_id', input.id)
+      .order('order_index', { ascending: true })
+
+    if (songsError) {
+      // Rollback: delete the cloned setlist header (songs cascade won't trigger since none were added)
+      await supabase.from('setlists').delete().eq('id', cloned.id)
+      return { data: null, error: 'Unable to clone setlist songs. Please try again.' }
+    }
+
+    // Insert all songs into the cloned setlist preserving order and performance keys
+    if (sourceSongs && sourceSongs.length > 0) {
+      const rows = sourceSongs.map((s) => ({
+        setlist_id: cloned.id,
+        song_id: s.song_id,
+        order_index: s.order_index,
+        performance_key: s.performance_key,
+        singer: s.singer,
+      }))
+
+      const { error: insertError } = await supabase
+        .from('setlist_songs')
+        .insert(rows)
+
+      if (insertError) {
+        // Rollback: delete the cloned setlist header
+        await supabase.from('setlists').delete().eq('id', cloned.id)
+        return { data: null, error: 'Unable to clone setlist songs. Please try again.' }
+      }
+    }
+
+    return { data: { id: cloned.id }, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+/**
  * Deletes a setlist and all its associated setlist_songs entries (via CASCADE).
  * Only the setlist's leader may delete it (enforced via RLS on setlists).
  *

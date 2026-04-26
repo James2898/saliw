@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Copy } from 'lucide-react'
 import {
   addSongToSetlist,
   removeSongFromSetlist,
@@ -9,10 +10,13 @@ import {
   updatePerformanceDetails,
   createSetlist,
   updateSetlist,
+  cloneSetlist,
 } from '@/app/actions/setlistActions'
+import Button from '@/components/client/button'
 import ErrorBanner from './ErrorBanner'
 import SetlistPanel from './SetlistPanel'
 import LibraryPanel from './LibraryPanel'
+import CloneSetlistDialog from './CloneSetlistDialog'
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
@@ -73,6 +77,8 @@ export default function SetlistBuilderClient({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [showCloneDialog, setShowCloneDialog] = useState(false)
+  const [isCloning, setIsCloning] = useState(false)
 
   // Dirty: compare local vs initial (name, date, songs)
   const isDirty =
@@ -257,6 +263,25 @@ export default function SetlistBuilderClient({
       setError(e instanceof Error ? e.message : 'Unable to save. Please try again.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function handleClone() {
+    if (!setlistId) return
+    setIsCloning(true)
+    setError(null)
+    try {
+      const { data, error: cloneError } = await cloneSetlist({ id: setlistId })
+      if (cloneError || !data) {
+        throw new Error(cloneError ?? 'Failed to clone setlist.')
+      }
+      setShowCloneDialog(false)
+      router.push(`/setlists/${data.id}/edit`)
+    } catch (e) {
+      setShowCloneDialog(false)
+      setError(e instanceof Error ? e.message : 'Unable to clone setlist. Please try again.')
+    } finally {
+      setIsCloning(false)
     }
   }
 
