@@ -45,7 +45,7 @@ export default function SortableSongRow({ song, onRemove, onKeyChange }: Sortabl
       <button
         type="button"
         aria-label={`Drag to reorder ${song.title}`}
-        className="cursor-grab active:cursor-grabbing text-brand-brown/50 dark:text-brand-tan/50 hover:text-brand-brown/80 dark:hover:text-brand-tan/80 transition-colors duration-200 shrink-0"
+        className="touch-none cursor-grab active:cursor-grabbing text-brand-brown/50 dark:text-brand-tan/50 hover:text-brand-brown/80 dark:hover:text-brand-tan/80 transition-colors duration-200 shrink-0"
         {...attributes}
         {...listeners}
       >
