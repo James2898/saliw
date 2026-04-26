@@ -44,11 +44,21 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   const [originalKey, setOriginalKey] = useState(() => song.original_key ?? 'C')
   const [savedOriginalKey, setSavedOriginalKey] = useState(() => song.original_key ?? 'C')
 
-  // isDirty: true if content, singer, or original key diverge from last saved state
+  // ── Title state ──────────────────────────────────────────────────────────────
+  const [title, setTitle] = useState(() => song.title)
+  const [savedTitle, setSavedTitle] = useState(() => song.title)
+
+  // ── Artist state ─────────────────────────────────────────────────────────────
+  const [artist, setArtist] = useState(() => song.artist)
+  const [savedArtist, setSavedArtist] = useState(() => song.artist)
+
+  // isDirty: true if content, singer, original key, title, or artist diverge from last saved state
   const isDirty =
     currentContent !== savedBaseline ||
     singer !== savedSinger ||
-    originalKey !== savedOriginalKey
+    originalKey !== savedOriginalKey ||
+    title !== savedTitle ||
+    artist !== savedArtist
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>('edit')
@@ -135,8 +145,8 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
 
     const result = await updateSong({
       id: song.id,
-      title: song.title,
-      artist: song.artist,
+      title,
+      artist,
       original_key: originalKey,
       content: currentContent,
       singer: singer || undefined,
@@ -150,6 +160,8 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       setSavedBaseline(currentContent)
       setSavedSinger(singer)
       setSavedOriginalKey(originalKey)
+      setSavedTitle(title)
+      setSavedArtist(artist)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     }
@@ -205,10 +217,40 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
 
   return (
     <>
-      {/* ── Metadata fields — Singer + Original Key ─────────────────────────── */}
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:gap-6">
+      {/* ── Metadata fields — Title, Artist, Singer, Original Key ─────────── */}
+      <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
+        {/* Title */}
+        <div>
+          <label htmlFor="editor-title" className={labelClass}>
+            Title
+          </label>
+          <input
+            id="editor-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Song title"
+            className={inputBaseClass}
+          />
+        </div>
+
+        {/* Artist */}
+        <div>
+          <label htmlFor="editor-artist" className={labelClass}>
+            Artist
+          </label>
+          <input
+            id="editor-artist"
+            type="text"
+            value={artist}
+            onChange={(e) => setArtist(e.target.value)}
+            placeholder="Artist or band name"
+            className={inputBaseClass}
+          />
+        </div>
+
         {/* Singer */}
-        <div className="flex-1">
+        <div>
           <label htmlFor="editor-singer" className={labelClass}>
             Singer
           </label>
