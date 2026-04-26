@@ -30,6 +30,7 @@ export type DbSetlist = {
   name: string
   date: string
   leader_id: string
+  worship_leader_id: string | null
   is_public: boolean
   created_at: string
   updated_at: string
@@ -44,5 +45,28 @@ export type DbSetlistSong = {
   song_id: string
   order_index: number
   performance_key: string
-  singer: string | null   // Added by migration 20260418000001_add_singer_to_setlist_songs.sql
+}
+
+/**
+ * Mirrors the public.musicians table.
+ */
+export type DbMusician = {
+  id: string
+  name: string
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Mirrors the public.setlist_musicians junction table.
+ */
+export type DbSetlistMusician = {
+  id: string
+  setlist_id: string
+  musician_id: string
+  instrument: string
+  created_at: string
+  updated_at: string
 }
