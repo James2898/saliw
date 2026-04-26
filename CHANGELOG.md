@@ -5,7 +5,9 @@ All notable changes to the Saliw Music Portal are documented here.
 ---
 
 ## [Unreleased] — 2026-04-26
+
 ### Added
+
 - Clone setlist feature in the setlist editor page (`TASK-029`)
   - Ghost "Clone setlist" button with Copy icon renders in edit mode only (hidden in create mode); positioned top-right above the two-column builder layout.
   - Clicking opens `CloneSetlistDialog` — an accessible confirmation modal with role="dialog", aria-modal, focus trap (Tab/Shift+Tab cycles between Cancel and Confirm), and Escape key dismiss.
@@ -14,12 +16,38 @@ All notable changes to the Saliw Music Portal are documented here.
   - Errors surface via the existing inline `ErrorBanner` component; dialog closes before error is shown.
   - Affected files: `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`
 
-## [Unreleased] — 2026-04-24
+## [Unreleased] — 2026-04-25
+
+### Added
+
+- Forgot Password and Reset Password flows; Magic Link login removed (`TASK-029`)
+  - Removed mode toggle, all magic-link state/JSX/handlers, and `sendMagicLinkAction` from `LoginForm.tsx` and `authActions.ts`; email + password is now the sole login method.
+  - Added "Forgot password?" `<Link>` below Submit in `LoginForm.tsx`.
+  - New `/forgot-password` Server Component page with full layout shell; redirects authenticated users to `/`; renders `ForgotPasswordForm` Client Component.
+  - New `/reset-password` Server Component page with full layout shell; no session check (PKCE callback establishes session before user arrives); renders `ResetPasswordForm` Client Component.
+  - `ForgotPasswordForm`: submits via `sendPasswordResetAction`, shows success confirmation in place of the form, always-visible "Back to sign in" link, pending/error states.
+  - `ResetPasswordForm`: client-side password-match guard before calling `updatePasswordAction`; "Request a new link" link surfaces when error contains "expired or invalid"; pending/error states.
+  - `sendPasswordResetAction`: always returns `{ success: true }` for non-error (prevents user enumeration); uses `NEXT_PUBLIC_SITE_URL` for `redirectTo`.
+  - `updatePasswordAction`: `redirect('/login')` placed outside try/catch per documented Next.js NEXT_REDIRECT pattern.
+  - Affected files: `src/components/client/LoginForm.tsx`, `src/app/actions/authActions.ts`, `src/app/(auth)/forgot-password/page.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/components/client/ForgotPasswordForm.tsx`, `src/components/client/ResetPasswordForm.tsx`
+
 ### Changed
+
+- Moved the "Go Live" button out of the sticky setlist toolbar and into the setlist header row, next to the setlist name, date, and Edit Setlist link (`TASK-026`)
+  - Extracted the Go Live button, its confirmation dialog, focus-restoration ref, and inline `liveError` alert into a new `GoLiveButton` client component; the button remains gated on `isLeader` and consumes the same `sync` slice from `useSetlistSync`.
+  - `ServiceNavigator` no longer renders Go Live state/UI; it continues to own the Follow Leader control for non-leader viewers.
+  - Setlist header and page structure moved into the `SetlistViewerClient` client boundary so the header row can render the new client-side button alongside the server-rendered title and date.
+  - Affected files: `src/components/client/GoLiveButton.tsx`, `src/components/client/ServiceNavigator.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/app/setlists/[id]/page.tsx`
+
+## [Unreleased] — 2026-04-24
+
+### Changed
+
 - Dashboard promoted to root route `/`; `/dashboard` and `/dashboard/profile` now issue HTTP 308 permanent redirects (`TASK-025`)
   - Affected files: `src/app/page.tsx`, `src/app/profile/page.tsx`, `src/components/client/navbar.tsx`, `src/middleware.ts`, `next.config.ts`
 
 ### Added
+
 - Dashboard landing page with Greeting, Next Up hero, Quick Actions (director-only), Recent Songs, and Upcoming Setlists widgets (`TASK-024`)
   - All authenticated widget data fetched in a single `Promise.all` (Next Up limit-1, Recent Songs, Upcoming Setlists limit-5) in the Server Component; widgets are pure display Server Components receiving data via props.
   - Next Up hero falls back to the most recent past setlist when no upcoming exists; director-only empty-state CTA to `/setlists/new`.
@@ -31,7 +59,9 @@ All notable changes to the Saliw Music Portal are documented here.
   - Affected files: `src/components/client/ServiceNavigator.tsx`
 
 ## [Unreleased] — 2026-04-23
+
 ### Added
+
 - SetlistBuilder: drag-and-drop setlist composition interface for Music Directors (`TASK-022`)
   - Affected files: `src/app/setlists/[id]/edit/page.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/components/client/SetlistBuilder/SetlistPanel.tsx`, `src/components/client/SetlistBuilder/SortableSongRow.tsx`, `src/components/client/SetlistBuilder/LibraryPanel.tsx`, `src/components/client/SetlistBuilder/ErrorBanner.tsx`, `src/app/actions/songActions.ts`, `package.json`, `package-lock.json`
 - `getAllSongs` Server Action: pre-fetch full song library ordered by title (`TASK-022`)

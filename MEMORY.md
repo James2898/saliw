@@ -22,6 +22,11 @@
 
 ## Architecture
 
+- **BUG-007** | 2026-04-25 | Feature: `Navbar Sidebar`
+  - **Root Cause:** The React Compiler enforces strict declaration order — `closeSidebar` and `openSidebar` were declared after the `useEffect` that called `closeSidebar()` inside its Escape key handler. JavaScript hoisting permits this at runtime, but the React Compiler rejects forward references at build time with "Cannot access variable before it is declared."
+  - **Resolution:** Moved `openSidebar` and `closeSidebar` function declarations above the `useEffect` block that references them in `src/components/client/navbar.tsx`. No logic changed — declaration order only.
+  - **Prevention:** In any React Client Component using the React Compiler, always declare helper functions before the hook (`useEffect`, `useCallback`, `useMemo`) that references them. Do not rely on JavaScript hoisting — the React Compiler treats forward references as hard build errors.
+
 - **BUG-002** | 2026-04-24 | Feature: `Toggle Confirmation Dialogs (TASK-023)`
   - **Root Cause:** The project runs the **React Compiler** (Next.js 15). `useCallback` dependency arrays in `src/components/client/ServiceNavigator.tsx` referenced object property paths (e.g. `sync.toggleLive`, `sync.isLiveConnecting`). The React Compiler infers the whole parent object (`sync`) as the true dependency, not the individual property, and bails out with a hard compile error: `Compilation Skipped: Existing memoization could not be preserved. The inferred dependency was 'sync', but the source dependencies were [sync.toggleLive].`
   - **Resolution:** Changed all four `useCallback` dep arrays in `src/components/client/ServiceNavigator.tsx` to reference the whole `sync` object instead of its properties: `[sync.toggleLive]` → `[sync]`, `[sync.toggleFollow]` → `[sync]`, `[sync.isLiveConnecting, showGoLiveDialog]` → `[sync, showGoLiveDialog]`, `[sync.isStateChecking, showFollowDialog]` → `[sync, showFollowDialog]`.
