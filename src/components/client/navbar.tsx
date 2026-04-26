@@ -89,6 +89,15 @@ export default function Navbar() {
     };
   }, []);
 
+  function openSidebar() {
+    setIsOpen(true);
+  }
+
+  function closeSidebar() {
+    setIsOpen(false);
+    hamburgerButtonRef.current?.focus();
+  }
+
   // Escape key listener and body scroll lock when sidebar is open
   useEffect(() => {
     if (!isOpen) return;
@@ -109,15 +118,6 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
-
-  function openSidebar() {
-    setIsOpen(true);
-  }
-
-  function closeSidebar() {
-    setIsOpen(false);
-    hamburgerButtonRef.current?.focus();
-  }
 
   function toggleTheme() {
     const next = !isDark;
