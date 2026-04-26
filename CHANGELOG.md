@@ -4,6 +4,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-26
+### Added
+- Clone setlist feature in the setlist editor page (`TASK-029`)
+  - Ghost "Clone setlist" button with Copy icon renders in edit mode only (hidden in create mode); positioned top-right above the two-column builder layout.
+  - Clicking opens `CloneSetlistDialog` — an accessible confirmation modal with role="dialog", aria-modal, focus trap (Tab/Shift+Tab cycles between Cancel and Confirm), and Escape key dismiss.
+  - On confirm, calls `cloneSetlist` Server Action which duplicates the setlist header (name + " copy", same date and is_public) and all `setlist_songs` rows (preserving performance_key, singer, order_index) in a single transaction with rollback on failure.
+  - On success, navigates to the cloned setlist's edit page (`/setlists/{newId}/edit`).
+  - Errors surface via the existing inline `ErrorBanner` component; dialog closes before error is shown.
+  - Affected files: `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`
+
 ## [Unreleased] — 2026-04-24
 ### Changed
 - Dashboard promoted to root route `/`; `/dashboard` and `/dashboard/profile` now issue HTTP 308 permanent redirects (`TASK-025`)

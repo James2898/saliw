@@ -328,6 +328,23 @@ export default function SetlistBuilderClient({
         </div>
       )}
 
+      {/* Clone button — edit mode only */}
+      {setlistId !== null && (
+        <div className="flex justify-end mb-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowCloneDialog(true)}
+            disabled={isCloning}
+            aria-label="Clone this setlist"
+          >
+            <Copy size={14} aria-hidden="true" className="mr-1.5" />
+            Clone setlist
+          </Button>
+        </div>
+      )}
+
       {/* Two-column layout — stacked on mobile, side-by-side on md+ */}
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_360px] md:gap-8 md:items-start">
         {/* Setlist Panel — left / top */}
@@ -359,6 +376,15 @@ export default function SetlistBuilderClient({
           />
         </div>
       </div>
+
+      {/* Clone confirmation dialog */}
+      <CloneSetlistDialog
+        isOpen={showCloneDialog}
+        setlistName={name}
+        isCloning={isCloning}
+        onConfirm={handleClone}
+        onCancel={() => setShowCloneDialog(false)}
+      />
     </div>
   )
 }
