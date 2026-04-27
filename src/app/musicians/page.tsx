@@ -24,20 +24,18 @@ export default async function MusiciansPage() {
     redirect('/login')
   }
 
-  // ── Fetch user role for RBAC (only when authenticated) ──────────────────
+  // ── Fetch user role for RBAC ─────────────────────────────────────────────
   let isMusicDirector = false
-  if (user) {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-      isMusicDirector = profile?.role === 'music_director'
-    } catch {
-      isMusicDirector = false
-    }
+    isMusicDirector = profile?.role === 'music_director'
+  } catch {
+    isMusicDirector = false
   }
 
   // ── Fetch musicians ───────────────────────────────────────────────────────
@@ -123,8 +121,8 @@ export default async function MusiciansPage() {
                   <div
                     className={[
                       'flex flex-col md:flex-row md:items-center md:justify-between gap-2',
-                      'bg-[--brand-cream] dark:bg-brand-espresso',
-                      'rounded-xl border-l-4 border-[--brand-tan] p-4',
+                      'bg-brand-cream dark:bg-brand-espresso',
+                      'rounded-xl border-l-4 border-brand-tan p-4',
                       isMusicDirector ? 'pr-10' : '',
                     ].join(' ')}
                   >

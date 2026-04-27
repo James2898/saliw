@@ -2,7 +2,7 @@
  * loading.tsx — Musicians page skeleton
  *
  * 4 skeleton rows matching the musician list layout, plus a header skeleton.
- * Uses animate-pulse with bg-brand-brown/10 per spec.
+ * Uses animate-pulse with bg-brand-brown/10 dark:bg-brand-tan/10 per spec.
  */
 export default function MusiciansLoading() {
   return (
@@ -13,12 +13,12 @@ export default function MusiciansLoading() {
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 mb-3">
             {/* Title block */}
-            <div className="h-9 w-40 rounded-lg animate-pulse bg-brand-brown/10" />
+            <div className="h-9 w-40 rounded-lg animate-pulse bg-brand-brown/10 dark:bg-brand-tan/10" />
             {/* Button placeholder */}
-            <div className="hidden md:block h-9 w-36 rounded-xl animate-pulse bg-brand-brown/10" />
+            <div className="hidden md:block h-9 w-36 rounded-xl animate-pulse bg-brand-brown/10 dark:bg-brand-tan/10" />
           </div>
           {/* Subtitle / count line */}
-          <div className="h-3 w-20 rounded animate-pulse bg-brand-brown/10" />
+          <div className="h-3 w-20 rounded animate-pulse bg-brand-brown/10 dark:bg-brand-tan/10" />
         </div>
 
         {/* ── Skeleton rows ─────────────────────────────────────────────────── */}
@@ -29,15 +29,15 @@ export default function MusiciansLoading() {
                 className={[
                   'flex flex-col md:flex-row md:items-center md:justify-between gap-2',
                   'rounded-xl border-l-4 border-brand-brown/10 p-4',
-                  'animate-pulse bg-brand-brown/10',
+                  'animate-pulse bg-brand-brown/10 dark:bg-brand-tan/10',
                 ].join(' ')}
                 aria-hidden="true"
               >
                 {/* Name placeholder */}
-                <div className="h-5 w-44 rounded bg-brand-brown/10" />
+                <div className="h-5 w-44 rounded bg-brand-brown/10 dark:bg-brand-tan/10" />
 
                 {/* Notes preview placeholder */}
-                <div className="h-3 w-64 rounded bg-brand-brown/10" />
+                <div className="h-3 w-64 rounded bg-brand-brown/10 dark:bg-brand-tan/10" />
               </div>
             </li>
           ))}
