@@ -5,7 +5,9 @@ import { preProcessChords } from "@/utils/musicLogic";
 import {
   getSetlistById,
   getSetlistWithSongs,
+  getSetlistLineup,
 } from "@/app/actions/setlistActions";
+import { listMusicians } from "@/app/actions/musicianActions";
 import Card from "@/components/server/card";
 import SetlistViewerClient from "./SetlistViewerClient";
 
@@ -71,10 +73,16 @@ export default async function SetlistViewerPage({
     );
   }
 
-  // ── Fetch songs ─────────────────────────────────────────────────────────────
-  const { data: songsRaw, error: songsError } = await getSetlistWithSongs({
-    setlist_id: id,
-  });
+  // ── Parallel fetch: songs + musicians + lineup ──────────────────────────────
+  const [
+    { data: songsRaw, error: songsError },
+    { data: musiciansRaw },
+    { data: lineupRaw },
+  ] = await Promise.all([
+    getSetlistWithSongs({ setlist_id: id }),
+    listMusicians(),
+    getSetlistLineup({ setlist_id: id }),
+  ]);
 
   if (songsError) {
     return (
@@ -106,6 +114,18 @@ export default async function SetlistViewerPage({
   // ── Compute leader status ───────────────────────────────────────────────────
   const isLeader = isMusicDirector;
   const isAuthenticated = user != null;
+
+  // ── Resolve worship leader name server-side (AC-29) ────────────────────────
+  const worshipLeaderName =
+    musiciansRaw?.find((m) => m.id === setlist.worship_leader_id)?.name ?? null;
+
+  // ── Build simplified lineup for viewer (AC-30) ─────────────────────────────
+  const lineup: Array<{ name: string; instrument: string }> = (lineupRaw ?? []).map(
+    (entry) => ({
+      name: entry.musicians.name,
+      instrument: entry.instrument,
+    })
+  );
 
   // ── Sort songs by order_index ascending ────────────────────────────────────
   const songs = (songsRaw ?? [])
@@ -170,6 +190,8 @@ export default async function SetlistViewerPage({
                 isAuthenticated={isAuthenticated}
                 setlistName={setlist.name}
                 formattedDate={formattedDate}
+                worshipLeaderName={worshipLeaderName}
+                lineup={lineup}
               />
               <Card>
                 <p className="text-sm font-semibold text-brand-brown dark:text-brand-tan text-center py-6">
@@ -187,6 +209,8 @@ export default async function SetlistViewerPage({
               isAuthenticated={isAuthenticated}
               setlistName={setlist.name}
               formattedDate={formattedDate}
+              worshipLeaderName={worshipLeaderName}
+              lineup={lineup}
             />
           )}
         </div>
