@@ -10,7 +10,7 @@ import type { SongLibraryItem } from '@/components/client/SetlistBuilder/Setlist
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'New Setlist — Saliw',
+  title: 'New Setlist',
 }
 
 export default async function NewSetlistPage() {

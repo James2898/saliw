@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
@@ -5,8 +6,8 @@ import SearchBar from '@/components/client/SearchBar'
 import NewSongButton from '@/components/library/NewSongButton'
 import PaginationControls from '@/components/client/PaginationControls'
 
-export const metadata = {
-  title: 'Song Library — Saliw',
+export const metadata: Metadata = {
+  title: 'Song Library',
   description: 'Browse and search the full worship song library.',
 }
 
