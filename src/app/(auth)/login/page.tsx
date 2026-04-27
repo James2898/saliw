@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/services/supabase/server'
 import LoginForm from '@/components/client/LoginForm'
 import Card from '@/components/server/card'
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+}
 
 /**
  * Login page — Server Component.
