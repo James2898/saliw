@@ -36,3 +36,12 @@
   - **Root Cause:** `MEMORY.md` sits at the project root and Tailwind v4 auto-scans all files under the project root for class names. A prevention note contained a wildcard arbitrary-value class pattern (bg + bracket + var + --brand- + asterisk); Tailwind parsed it as a real utility and emitted invalid CSS. Turbopack aborted the build with: `Parsing CSS source code failed — Unexpected token Delim('*')`.
   - **Resolution:** Replaced all wildcard class pattern strings with concrete specific examples (e.g. `bg-[var(--brand-tan-alpha)]`) so Tailwind no longer generates invalid classes from documentation text.
   - **Prevention:** Never write Tailwind arbitrary-value class patterns with a wildcard asterisk as literal strings in any file at or below the project root — including `.md` docs and inline code comments. Tailwind v4 will treat them as real classes and attempt to emit CSS. Use a concrete specific value or describe the pattern in prose.
+
+---
+
+## Auth & Permissions
+
+- **BUG-011** | 2026-04-27 | Feature: `Setlist Lineup UI (TASK-033)`
+  - **Root Cause:** When the `musicians` table SELECT policy was widened from `auth.role() = 'authenticated'` to `USING (true)` (migration `supabase/migrations/20260427000001_widen_lineup_select_to_public.sql`), only `listMusicians()` was narrowed to `'id, name'`. `getMusicianById()` in `src/app/actions/musicianActions.ts` was not audited and continues to select all columns including `notes` (free-text) and `created_by` (raw `auth.users` UUID). Because the table is now publicly readable, any future public-facing code path that calls this action will leak internal fields to unauthenticated callers.
+  - **Resolution:** Not yet applied (no active data leak — `getMusicianById` is currently only called from the auth-gated `/musicians/[id]/edit` page). Required fix before any public musician profile feature: either add an early auth check to `getMusicianById` that returns `{ data: null, error: 'Unauthorized' }` for unauthenticated callers, or introduce a separate public-safe variant that selects only `'id, name'`.
+  - **Prevention:** When widening any RLS SELECT policy from authenticated-only to public (`USING (true)`), audit every Server Action that queries that table — not just the action that triggered the migration. Actions previously safe under auth-gating become latent risks the moment the underlying policy is opened. Narrow column selection or add explicit auth guards to all affected actions before the migration is merged.
