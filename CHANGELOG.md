@@ -4,6 +4,11 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-04-27
+### Added
+- Musicians Roster CRUD UI at `/musicians` (`TASK-032`)
+  - Affected files: `src/app/musicians/page.tsx`, `src/app/musicians/new/page.tsx`, `src/app/musicians/[id]/edit/page.tsx`, `src/app/musicians/loading.tsx`, `src/components/client/MusicianForm.tsx`, `src/components/client/navbar.tsx`
+
 ## [Unreleased] — 2026-04-26
 
 ### Added
