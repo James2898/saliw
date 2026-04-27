@@ -18,7 +18,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Saliw — Worship Music Portal",
+  title: {
+    default: "Saliw",
+    template: "%s | Saliw",
+  },
   description:
     "Professional web portal for worship leaders and musicians. Dynamic chord transposition, song library, and setlist management.",
 };

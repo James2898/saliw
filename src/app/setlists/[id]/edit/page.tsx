@@ -19,8 +19,8 @@ interface EditSetlistPageProps {
 export async function generateMetadata({ params }: EditSetlistPageProps) {
   const { id } = await params
   const { data: setlist } = await getSetlistById({ id })
-  const name = setlist?.name ?? 'Setlist'
-  return { title: `Edit Setlist — ${name} — Saliw` }
+  if (!setlist) return { title: 'Edit Setlist' }
+  return { title: `Edit ${setlist.name}` }
 }
 
 export default async function EditSetlistPage({ params }: EditSetlistPageProps) {

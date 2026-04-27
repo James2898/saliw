@@ -9,7 +9,7 @@ import { getMusicianById } from '@/app/actions/musicianActions'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Edit Musician — Saliw',
+  title: 'Edit Musician',
 }
 
 interface EditMusicianPageProps {
