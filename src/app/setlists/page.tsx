@@ -9,7 +9,7 @@ import NewSetlistButton from '@/components/setlists/NewSetlistButton'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Setlists — Saliw',
+  title: 'Setlists',
   description: 'Browse and manage worship setlists.',
 }
 

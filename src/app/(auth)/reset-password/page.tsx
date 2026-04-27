@@ -1,5 +1,10 @@
+import type { Metadata } from 'next'
 import ResetPasswordForm from '@/components/client/ResetPasswordForm'
 import Card from '@/components/server/card'
+
+export const metadata: Metadata = {
+  title: 'Reset Password',
+}
 
 /**
  * Reset Password page — Server Component.
