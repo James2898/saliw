@@ -8,7 +8,7 @@ import NewSongFormClient from '@/components/client/NewSongFormClient'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'New Song — Saliw',
+  title: 'New Song',
 }
 
 export default async function NewSongPage() {

@@ -8,7 +8,7 @@ import MusicianForm from '@/components/client/MusicianForm'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'New Musician — Saliw',
+  title: 'New Musician',
 }
 
 export default async function NewMusicianPage() {
