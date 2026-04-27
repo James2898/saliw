@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import { createClient } from '@/services/supabase/server'
 import Card from '@/components/server/card'
 import GreetingStrip from '@/components/dashboard/GreetingStrip'
@@ -9,10 +8,6 @@ import UpcomingSetlists, {
   type UpcomingSetlist,
 } from '@/components/dashboard/UpcomingSetlists'
 import PublicDashboardView from '@/components/dashboard/PublicDashboardView'
-
-export const metadata: Metadata = {
-  title: 'Dashboard — Saliw',
-}
 
 type UpcomingRow = {
   id: string

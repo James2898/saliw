@@ -25,11 +25,11 @@ export async function generateMetadata({ params }: SongViewerPageProps) {
     .single()
 
   if (!data) {
-    return { title: 'Song — Saliw' }
+    return { title: 'Song' }
   }
 
   return {
-    title: `${data.title} — Saliw`,
+    title: data.title,
     description: `Chord sheet for ${data.title} by ${data.artist}.`,
   }
 }
