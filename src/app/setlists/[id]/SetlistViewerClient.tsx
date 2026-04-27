@@ -147,7 +147,7 @@ export default function SetlistViewerClient({
               <span className="font-semibold text-brand-brown dark:text-brand-tan">
                 Worship Leader:{' '}
               </span>
-              <span className="text-brand-espresso dark:text-brand-cream">
+              <span className="font-bold text-brand-espresso dark:text-brand-cream">
                 {worshipLeaderName}
               </span>
             </p>
@@ -157,7 +157,7 @@ export default function SetlistViewerClient({
               <span className="font-semibold text-brand-brown dark:text-brand-tan">
                 Lineup:{' '}
               </span>
-              <span className="text-brand-espresso dark:text-brand-cream">
+              <span className="font-bold text-brand-espresso dark:text-brand-cream">
                 {lineup.map((e) => `${e.name} — ${e.instrument}`).join(', ')}
               </span>
             </p>
