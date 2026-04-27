@@ -6,6 +6,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-04-27
 ### Added
+- feat(metadata): add per-page browser-tab titles via `metadata.title.template`; homepage reads `Saliw` via `title.default`, all 17 other pages supply plain strings or `generateMetadata` without suffix
+  - Affected files: `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/library/page.tsx`, `src/app/library/new/page.tsx`, `src/app/library/[id]/page.tsx`, `src/app/library/[id]/edit/page.tsx`, `src/app/setlists/page.tsx`, `src/app/setlists/new/page.tsx`, `src/app/setlists/[id]/page.tsx`, `src/app/setlists/[id]/edit/page.tsx`, `src/app/musicians/page.tsx`, `src/app/musicians/new/page.tsx`, `src/app/musicians/[id]/edit/page.tsx`, `src/app/profile/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/(auth)/forgot-password/page.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/app/auth/auth-code-error/page.tsx`
+
+## [Unreleased] — 2026-04-27
+### Added
+- Setlist People Section: worship leader assignment and instrumentalist lineup management on the setlist edit page; read-only people block on the setlist viewer page (`TASK-033`)
+  - Affected files: `src/components/client/SetlistBuilder/SetlistPeopleSection.tsx`, `src/app/setlists/[id]/edit/page.tsx`, `src/app/setlists/[id]/page.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`
+
+## [Unreleased] — 2026-04-27
+### Added
 - Musicians Roster CRUD UI at `/musicians` (`TASK-032`)
   - Affected files: `src/app/musicians/page.tsx`, `src/app/musicians/new/page.tsx`, `src/app/musicians/[id]/edit/page.tsx`, `src/app/musicians/loading.tsx`, `src/components/client/MusicianForm.tsx`, `src/components/client/navbar.tsx`
 

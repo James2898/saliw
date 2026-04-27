@@ -8,7 +8,7 @@ import { listMusicians } from '@/app/actions/musicianActions'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Musicians — Saliw',
+  title: 'Musicians',
   description: 'Browse and manage the musicians roster.',
 }
 

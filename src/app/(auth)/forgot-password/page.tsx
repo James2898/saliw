@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/services/supabase/server'
 import ForgotPasswordForm from '@/components/client/ForgotPasswordForm'
 import Card from '@/components/server/card'
+
+export const metadata: Metadata = {
+  title: 'Forgot Password',
+}
 
 /**
  * Forgot Password page — Server Component.

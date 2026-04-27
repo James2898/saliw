@@ -1,5 +1,10 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Card from '@/components/server/card'
+
+export const metadata: Metadata = {
+  title: 'Sign-in Failed',
+}
 
 /**
  * Auth code error page — Server Component.

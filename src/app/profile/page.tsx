@@ -1,6 +1,11 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/services/supabase/server'
 import EditProfileForm from '@/components/client/EditProfileForm'
+
+export const metadata: Metadata = {
+  title: 'Profile',
+}
 
 export default async function ProfilePage() {
   const supabase = await createClient()

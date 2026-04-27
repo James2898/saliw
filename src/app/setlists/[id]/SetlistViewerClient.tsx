@@ -35,6 +35,8 @@ interface SetlistViewerClientProps {
   isAuthenticated: boolean
   setlistName: string
   formattedDate: string | null
+  worshipLeaderName: string | null
+  lineup: Array<{ name: string; instrument: string }>
 }
 
 /**
@@ -56,6 +58,8 @@ export default function SetlistViewerClient({
   isAuthenticated,
   setlistName,
   formattedDate,
+  worshipLeaderName,
+  lineup,
 }: SetlistViewerClientProps) {
   // Prepare the songs array expected by useSetlistSync.
   // Wrapped in useMemo so syncSongs keeps a stable reference between renders,
@@ -134,6 +138,32 @@ export default function SetlistViewerClient({
           </button>
         </div>
       </div>
+
+      {/* ── People block (worship leader + lineup) — read-only (AC-32) ──────── */}
+      {(worshipLeaderName || lineup.length > 0) && (
+        <div className="mb-6 flex flex-col gap-1">
+          {worshipLeaderName && (
+            <p className="text-sm">
+              <span className="font-semibold text-brand-brown dark:text-brand-tan">
+                Worship Leader:{' '}
+              </span>
+              <span className="font-bold text-brand-espresso dark:text-brand-cream">
+                {worshipLeaderName}
+              </span>
+            </p>
+          )}
+          {lineup.length > 0 && (
+            <p className="text-sm">
+              <span className="font-semibold text-brand-brown dark:text-brand-tan">
+                Lineup:{' '}
+              </span>
+              <span className="font-bold text-brand-espresso dark:text-brand-cream">
+                {lineup.map((e) => `${e.name} — ${e.instrument}`).join(', ')}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Service Navigator ──────────────────────────────────────────────── */}
       <ServiceNavigator

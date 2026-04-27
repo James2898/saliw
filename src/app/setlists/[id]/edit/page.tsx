@@ -2,10 +2,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { createClient } from '@/services/supabase/server'
-import { getSetlistById, getSetlistWithSongs } from '@/app/actions/setlistActions'
+import { getSetlistById, getSetlistWithSongs, getSetlistLineup } from '@/app/actions/setlistActions'
 import { getAllSongs } from '@/app/actions/songActions'
+import { listMusicians } from '@/app/actions/musicianActions'
 import Card from '@/components/server/card'
 import SetlistBuilderClient from '@/components/client/SetlistBuilder/SetlistBuilderClient'
+import SetlistPeopleSection from '@/components/client/SetlistBuilder/SetlistPeopleSection'
 import type { SortableSong, SongLibraryItem } from '@/components/client/SetlistBuilder/SetlistBuilderClient'
 
 export const dynamic = 'force-dynamic'
@@ -17,8 +19,8 @@ interface EditSetlistPageProps {
 export async function generateMetadata({ params }: EditSetlistPageProps) {
   const { id } = await params
   const { data: setlist } = await getSetlistById({ id })
-  const name = setlist?.name ?? 'Setlist'
-  return { title: `Edit Setlist — ${name} — Saliw` }
+  if (!setlist) return { title: 'Edit Setlist' }
+  return { title: `Edit ${setlist.name}` }
 }
 
 export default async function EditSetlistPage({ params }: EditSetlistPageProps) {
@@ -81,12 +83,18 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
     )
   }
 
-  // ── Parallel fetch: setlist songs + all songs ───────────────────────────────
-  const [{ data: songsRaw, error: songsError }, { data: allSongsRaw, error: libraryError }] =
-    await Promise.all([
-      getSetlistWithSongs({ setlist_id: id }),
-      getAllSongs(),
-    ])
+  // ── Parallel fetch: setlist songs + all songs + musicians + lineup ──────────
+  const [
+    { data: songsRaw, error: songsError },
+    { data: allSongsRaw, error: libraryError },
+    { data: musiciansRaw },
+    { data: initialLineupRaw },
+  ] = await Promise.all([
+    getSetlistWithSongs({ setlist_id: id }),
+    getAllSongs(),
+    listMusicians(),
+    getSetlistLineup({ setlist_id: id }),
+  ])
 
   if (songsError) {
     return (
@@ -138,6 +146,23 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
             <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
             Back to Setlist
           </Link>
+
+          {/* People section — worship leader + lineup */}
+          <div className="mb-6">
+            <Card>
+              <SetlistPeopleSection
+                setlistId={id}
+                initialWorshipLeaderId={setlist.worship_leader_id}
+                allMusicians={(musiciansRaw ?? []).map((m) => ({
+                  id: m.id,
+                  name: m.name,
+                  notes: m.notes,
+                }))}
+                initialLineup={initialLineupRaw ?? []}
+                isMusicDirector={true}
+              />
+            </Card>
+          </div>
 
           <SetlistBuilderClient
             setlistId={id}
