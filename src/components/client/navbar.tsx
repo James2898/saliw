@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import { createClient } from "@/services/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -24,6 +25,7 @@ const navLinks = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/library", label: "Library", Icon: Library },
   { href: "/setlists", label: "Setlists", Icon: List },
+  { href: "/musicians", label: "Musicians", Icon: UsersRound },
 ] as const;
 
 export default function Navbar() {
@@ -206,6 +208,7 @@ export default function Navbar() {
           {/* Desktop navigation links — hidden on mobile */}
           <div className="hidden md:flex items-center gap-1 ml-4">
             {navLinks.map(({ href, label, Icon }) => {
+              if (href === "/musicians" && !user) return null;
               const isActive =
                 pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
               return (
@@ -380,6 +383,7 @@ export default function Navbar() {
         <nav aria-label="Mobile navigation" className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="flex flex-col gap-1 list-none m-0 p-0">
             {navLinks.map(({ href, label, Icon }) => {
+              if (href === "/musicians" && !user) return null;
               const isActive =
                 pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
               return (
