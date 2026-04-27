@@ -15,7 +15,7 @@ export async function listMusicians(): Promise<{ data: DbMusician[] | null; erro
 
     const { data, error } = await supabase
       .from('musicians')
-      .select('id, name, notes, created_by, created_at, updated_at')
+      .select('id, name')
       .order('name', { ascending: true })
 
     if (error) {
