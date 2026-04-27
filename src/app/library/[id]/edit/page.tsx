@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: SongEditPageProps) {
     .single()
 
   if (!data) {
-    return { title: 'Edit Song — Saliw' }
+    return { title: 'Edit Song' }
   }
 
   return {
-    title: `Edit: ${data.title} — Saliw`,
+    title: `Edit ${data.title}`,
   }
 }
 
