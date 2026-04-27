@@ -258,7 +258,7 @@ export default function GoLiveButton({ sync, isLeader }: GoLiveButtonProps) {
 
         {/* AC-5: inline error message on connection failure */}
         {sync.liveError && (
-          <p role="alert" className="text-xs text-red-500 dark:text-red-400">
+          <p role="alert" className="text-xs text-red-700 dark:text-red-400">
             {sync.liveError}
           </p>
         )}

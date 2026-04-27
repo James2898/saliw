@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import Button from "@/components/client/button";
 
 interface LogoutModalProps {
   isOpen: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  isSigningOut?: boolean;
+  error?: string | null;
 }
 
 /**
@@ -17,11 +20,19 @@ interface LogoutModalProps {
  * - Focus moves to Cancel button on open; returns to trigger on close.
  * - Escape key dismisses without signing out.
  * - Tab cycles within the two buttons (focus trap).
+ *
+ * Loading / error feedback (TASK-034):
+ * - When `isSigningOut` is true the Sign out button shows a Loader2 spinner
+ *   and both action buttons are disabled to prevent double submission.
+ * - When `error` is non-null an inline `role="alert"` message renders below
+ *   the action row so screen readers announce the failure.
  */
 export default function LogoutModal({
   isOpen,
   onConfirm,
   onCancel,
+  isSigningOut = false,
+  error = null,
 }: LogoutModalProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -115,6 +126,7 @@ export default function LogoutModal({
             variant="ghost"
             size="sm"
             onClick={onCancel}
+            disabled={isSigningOut}
           >
             Cancel
           </Button>
@@ -124,10 +136,33 @@ export default function LogoutModal({
             variant="primary"
             size="sm"
             onClick={onConfirm}
+            disabled={isSigningOut}
+            aria-label={isSigningOut ? "Signing out" : "Sign out"}
           >
-            Sign out
+            {isSigningOut ? (
+              <>
+                <Loader2
+                  size={14}
+                  className="animate-spin mr-2"
+                  aria-hidden="true"
+                />
+                Signing out&hellip;
+              </>
+            ) : (
+              "Sign out"
+            )}
           </Button>
         </div>
+
+        {/* Error message — sign-out failure feedback (TASK-034 AC-14) */}
+        {error && (
+          <p
+            role="alert"
+            className="text-sm font-medium text-red-700 dark:text-red-400"
+          >
+            {error}
+          </p>
+        )}
       </div>
     </>
   );

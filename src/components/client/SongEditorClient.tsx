@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { preProcessChords, NOTES } from '@/utils/musicLogic'
 import { updateSong } from '@/app/actions/songActions'
 import ChordSheetClient from '@/components/SongViewer/ChordSheetClient'
@@ -290,16 +291,23 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           type="button"
           onClick={handleSave}
           disabled={!isDirty || isSaving}
-          aria-label="Save changes"
+          aria-label={isSaving ? 'Saving changes' : 'Save changes'}
           className={[
-            'px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200',
+            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
             isDirty && !isSaving
               ? 'bg-brand-espresso text-brand-cream hover:bg-brand-brown cursor-pointer'
               : 'bg-brand-espresso/30 text-brand-cream/50 opacity-50 cursor-not-allowed',
           ].join(' ')}
         >
-          {isSaving ? 'Saving…' : 'Save Changes'}
+          {isSaving ? (
+            <>
+              <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+              Saving…
+            </>
+          ) : (
+            'Save Changes'
+          )}
         </button>
 
         <button
