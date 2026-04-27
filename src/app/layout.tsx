@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import Navbar from "@/components/client/navbar";
+import { Analytics } from "@vercel/analytics/next";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body style={{ backgroundColor: "#fdf8f3" }}>
         <Navbar />
         {children}
+        <Analytics />
       </body>
     </html>
   );
