@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { sendPasswordResetAction } from '@/app/actions/authActions'
 import Button from '@/components/client/button'
 
@@ -60,7 +61,10 @@ export default function ForgotPasswordForm() {
           </div>
 
           {error && (
-            <p className="text-sm font-sans text-brand-espresso dark:text-brand-cream">
+            <p
+              role="alert"
+              className="text-sm font-sans text-red-700 dark:text-red-400"
+            >
               {error}
             </p>
           )}
@@ -70,8 +74,20 @@ export default function ForgotPasswordForm() {
             variant="primary"
             size="md"
             disabled={isPending}
+            aria-label={isPending ? 'Sending reset link' : 'Send reset link'}
           >
-            {isPending ? 'Sending…' : 'Send Reset Link'}
+            {isPending ? (
+              <>
+                <Loader2
+                  size={16}
+                  className="animate-spin mr-2"
+                  aria-hidden="true"
+                />
+                Sending…
+              </>
+            ) : (
+              'Send Reset Link'
+            )}
           </Button>
         </form>
       )}

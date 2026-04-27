@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { Loader2 } from 'lucide-react'
 import { updateProfileAction } from '@/app/actions/profileActions'
 import Button from '@/components/client/button'
 import type { Profile } from '@/types/Profile'
@@ -70,14 +71,41 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
 
       {/* Inline feedback */}
       {feedback && feedbackType === 'success' && (
-        <p className="text-sm font-sans text-brand-brown dark:text-brand-tan">{feedback}</p>
+        <p
+          aria-live="polite"
+          className="text-sm font-sans text-brand-brown dark:text-brand-tan"
+        >
+          {feedback}
+        </p>
       )}
       {feedback && feedbackType === 'error' && (
-        <p className="text-sm font-sans text-brand-espresso dark:text-brand-cream">{feedback}</p>
+        <p
+          role="alert"
+          className="text-sm font-sans text-red-700 dark:text-red-400"
+        >
+          {feedback}
+        </p>
       )}
 
-      <Button type="submit" variant="primary" size="md" disabled={isPending}>
-        {isPending ? 'Saving\u2026' : 'Save Changes'}
+      <Button
+        type="submit"
+        variant="primary"
+        size="md"
+        disabled={isPending}
+        aria-label={isPending ? 'Saving changes' : 'Save changes'}
+      >
+        {isPending ? (
+          <>
+            <Loader2
+              size={16}
+              className="animate-spin mr-2"
+              aria-hidden="true"
+            />
+            Saving&hellip;
+          </>
+        ) : (
+          'Save Changes'
+        )}
       </Button>
     </form>
   )
