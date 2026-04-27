@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import { createClient } from "@/services/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -24,6 +25,7 @@ const navLinks = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/library", label: "Library", Icon: Library },
   { href: "/setlists", label: "Setlists", Icon: List },
+  { href: "/musicians", label: "Musicians", Icon: UsersRound },
 ] as const;
 
 export default function Navbar() {
