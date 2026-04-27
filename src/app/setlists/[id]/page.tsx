@@ -13,6 +13,13 @@ import SetlistViewerClient from "./SetlistViewerClient";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: SetlistViewerPageProps) {
+  const { id } = await params;
+  const { data: setlist } = await getSetlistById({ id });
+  if (!setlist) return { title: "Setlist" };
+  return { title: setlist.name };
+}
+
 interface SetlistViewerPageProps {
   params: Promise<{ id: string }>;
 }
