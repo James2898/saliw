@@ -13,6 +13,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable'
+import { Loader2 } from 'lucide-react'
 import Button from '@/components/client/button'
 import SortableSongRow from './SortableSongRow'
 import type { SortableSong } from './SetlistBuilderClient'
@@ -108,12 +109,14 @@ export default function SetlistPanel({
             size="sm"
             onClick={onSave}
             disabled={isSaving}
+            aria-label={isSaving ? 'Saving setlist' : 'Save setlist'}
             className="w-full sm:w-auto"
           >
             {isSaving ? (
               <>
-                <span
-                  className="inline-block w-3 h-3 border-2 border-brand-espresso/40 border-t-brand-espresso rounded-full animate-spin mr-2"
+                <Loader2
+                  size={14}
+                  className="animate-spin mr-2"
                   aria-hidden="true"
                 />
                 Saving…

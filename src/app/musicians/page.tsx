@@ -116,41 +116,55 @@ export default async function MusiciansPage() {
           ) : (
             /* ── Musician rows ───────────────────────────────────────────────── */
             <ul className="flex flex-col gap-2" role="list">
-              {musicianList.map((musician) => (
-                <li key={musician.id} className="relative">
-                  <div
-                    className={[
-                      'flex flex-col md:flex-row md:items-center md:justify-between gap-2',
-                      'bg-brand-cream dark:bg-brand-espresso',
-                      'rounded-xl border-l-4 border-brand-tan p-4',
-                      isMusicDirector ? 'pr-10' : '',
-                    ].join(' ')}
-                  >
-                    {/* Musician name */}
-                    <p className="font-extrabold text-brand-espresso dark:text-brand-cream truncate min-w-0 md:flex-1 md:mr-4">
-                      {musician.name}
-                    </p>
+              {musicianList.map((musician) => {
+                const parts = musician.name.trim().split(/\s+/)
+                const initials =
+                  parts.length === 1
+                    ? parts[0][0].toUpperCase()
+                    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 
-                    {/* Notes preview */}
-                    {musician.notes && (
-                      <p className="text-xs text-brand-espresso/60 dark:text-brand-cream/50 truncate md:max-w-xs md:shrink-0">
-                        {musician.notes}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Edit link — music directors only */}
-                  {isMusicDirector && (
-                    <Link
-                      href={`/musicians/${musician.id}/edit`}
-                      aria-label={`Edit musician: ${musician.name}`}
-                      className="absolute top-3 right-3 p-1.5 rounded-lg text-brand-brown/50 dark:text-brand-tan/50 hover:text-brand-brown dark:hover:text-brand-tan hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1"
+                return (
+                  <li key={musician.id} className="relative">
+                    <div
+                      className={[
+                        'bg-brand-cream dark:bg-brand-espresso',
+                        'rounded-xl border-l-4 border-brand-tan p-4',
+                        isMusicDirector ? 'pr-10' : '',
+                      ].join(' ')}
                     >
-                      <Pencil size={13} strokeWidth={2} aria-hidden="true" />
-                    </Link>
-                  )}
-                </li>
-              ))}
+                      <div className="flex items-center gap-3">
+                        {/* Avatar circle */}
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold bg-brand-tan text-brand-espresso dark:bg-brand-brown dark:text-brand-cream">
+                          {initials}
+                        </div>
+
+                        {/* Name + notes column */}
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-brand-espresso dark:text-brand-cream">
+                            {musician.name}
+                          </span>
+                          {musician.notes && (
+                            <p className="text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5 line-clamp-2">
+                              {musician.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Edit link — music directors only */}
+                    {isMusicDirector && (
+                      <Link
+                        href={`/musicians/${musician.id}/edit`}
+                        aria-label={`Edit musician: ${musician.name}`}
+                        className="absolute top-3 right-3 p-1.5 rounded-lg text-brand-brown/50 dark:text-brand-tan/50 hover:text-brand-brown dark:hover:text-brand-tan hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1"
+                      >
+                        <Pencil size={13} strokeWidth={2} aria-hidden="true" />
+                      </Link>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

@@ -266,7 +266,7 @@ export default function FollowLeaderButton({ sync, isLeader }: FollowLeaderButto
 
         {/* AC-25 / F-6: State Check failure hint */}
         {sync.followError && (
-          <p role="alert" className="text-xs text-red-500 dark:text-red-400">
+          <p role="alert" className="text-xs text-red-700 dark:text-red-400">
             {sync.followError}
           </p>
         )}
