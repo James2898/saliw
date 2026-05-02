@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { updatePasswordAction } from '@/app/actions/authActions'
 import Button from '@/components/client/button'
 
@@ -84,8 +85,8 @@ export default function ResetPasswordForm() {
         </div>
 
         {error && (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-sans text-brand-espresso dark:text-brand-cream">
+          <div role="alert" className="flex flex-col gap-2">
+            <p className="text-sm font-sans text-red-700 dark:text-red-400">
               {error}
             </p>
             {error.includes('expired or invalid') && (
@@ -104,8 +105,20 @@ export default function ResetPasswordForm() {
           variant="primary"
           size="md"
           disabled={isPending}
+          aria-label={isPending ? 'Updating password' : 'Set new password'}
         >
-          {isPending ? 'Updating…' : 'Set New Password'}
+          {isPending ? (
+            <>
+              <Loader2
+                size={16}
+                className="animate-spin mr-2"
+                aria-hidden="true"
+              />
+              Updating…
+            </>
+          ) : (
+            'Set New Password'
+          )}
         </Button>
       </form>
     </div>
