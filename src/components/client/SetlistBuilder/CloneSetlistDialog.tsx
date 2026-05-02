@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { Loader2 } from 'lucide-react'
 import Button from '@/components/client/button'
 
 interface CloneSetlistDialogProps {
@@ -135,11 +136,13 @@ export default function CloneSetlistDialog({
             size="sm"
             onClick={onConfirm}
             disabled={isCloning}
+            aria-label={isCloning ? 'Cloning setlist' : 'Clone setlist'}
           >
             {isCloning ? (
               <>
-                <span
-                  className="inline-block w-3 h-3 border-2 border-brand-espresso/40 border-t-brand-espresso rounded-full animate-spin mr-2"
+                <Loader2
+                  size={14}
+                  className="animate-spin mr-2"
                   aria-hidden="true"
                 />
                 Cloning&hellip;

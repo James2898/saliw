@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { NOTES } from "@/utils/musicLogic";
 import { createSong } from "@/app/actions/songActions";
 
@@ -79,7 +80,10 @@ export default function NewSongFormClient() {
             id="song-title"
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="Song title"
             required
             className={inputBaseClass}
@@ -95,7 +99,10 @@ export default function NewSongFormClient() {
             id="song-artist"
             type="text"
             value={artist}
-            onChange={(e) => setArtist(e.target.value)}
+            onChange={(e) => {
+              setArtist(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="Artist or band name"
             required
             className={inputBaseClass}
@@ -111,7 +118,10 @@ export default function NewSongFormClient() {
             id="song-singer"
             type="text"
             value={singer}
-            onChange={(e) => setSinger(e.target.value)}
+            onChange={(e) => {
+              setSinger(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="Vocalist name"
             className={inputBaseClass}
           />
@@ -125,7 +135,10 @@ export default function NewSongFormClient() {
           <select
             id="song-key"
             value={originalKey}
-            onChange={(e) => setOriginalKey(e.target.value)}
+            onChange={(e) => {
+              setOriginalKey(e.target.value);
+              if (error) setError(null);
+            }}
             className={[
               inputBaseClass,
               "cursor-pointer",
@@ -179,6 +192,7 @@ export default function NewSongFormClient() {
           <button
             type="submit"
             disabled={isSaving}
+            aria-label={isSaving ? "Creating song" : "Create song"}
             className={[
               "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl",
               "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso",
@@ -190,7 +204,14 @@ export default function NewSongFormClient() {
               isSaving ? "opacity-50 cursor-not-allowed" : "",
             ].join(" ")}
           >
-            {isSaving ? "Creating..." : "Create Song"}
+            {isSaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                Creating…
+              </>
+            ) : (
+              "Create Song"
+            )}
           </button>
         </div>
       </div>
