@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { createMusician, updateMusician, deleteMusician } from "@/app/actions/musicianActions";
 
 const inputBaseClass = [
@@ -162,6 +163,7 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
               type="button"
               onClick={handleDelete}
               disabled={isAnyPending}
+              aria-label={isDeleting ? "Deleting musician" : "Delete musician"}
               className={[
                 "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl",
                 "text-sm font-semibold font-sans",
@@ -173,7 +175,14 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
                 isAnyPending ? "opacity-50 cursor-not-allowed" : "",
               ].join(" ")}
             >
-              {isDeleting ? "Deleting…" : "Delete Musician"}
+              {isDeleting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete Musician"
+              )}
             </button>
           )}
 
@@ -184,6 +193,7 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
           <button
             type="submit"
             disabled={isAnyPending}
+            aria-label={isSaving ? "Saving musician" : "Save musician"}
             className={[
               "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl",
               "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso",
@@ -195,7 +205,14 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
               isAnyPending ? "opacity-50 cursor-not-allowed" : "",
             ].join(" ")}
           >
-            {isSaving ? "Saving…" : "Save"}
+            {isSaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                Saving…
+              </>
+            ) : (
+              "Save"
+            )}
           </button>
         </div>
       </div>
