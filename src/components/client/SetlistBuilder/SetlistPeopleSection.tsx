@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import Button from '@/components/client/button'
 import {
   setSetlistWorshipLeader,
@@ -208,31 +209,42 @@ export default function SetlistPeopleSection({
         {isMusicDirector ? (
           <div>
             <label className={labelClass}>Assign Worship Leader</label>
-            <select
-              value={worshipLeaderId ?? ''}
-              onChange={handleWorshipLeaderChange}
-              disabled={wlLoading}
-              className={selectClass}
-              aria-label="Select worship leader"
-            >
-              <option value="">— None —</option>
-              {hasNoMusicians ? (
-                <option value="" disabled>
-                  No musicians in roster
-                </option>
-              ) : (
-                allMusicians.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
+            <div className="flex items-center gap-2">
+              <select
+                value={worshipLeaderId ?? ''}
+                onChange={handleWorshipLeaderChange}
+                disabled={wlLoading}
+                className={selectClass}
+                aria-label={
+                  wlLoading ? 'Saving worship leader' : 'Select worship leader'
+                }
+              >
+                <option value="">— None —</option>
+                {hasNoMusicians ? (
+                  <option value="" disabled>
+                    No musicians in roster
                   </option>
-                ))
+                ) : (
+                  allMusicians.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))
+                )}
+              </select>
+              {wlLoading && (
+                <Loader2
+                  size={14}
+                  className="animate-spin text-brand-brown dark:text-brand-tan"
+                  aria-hidden="true"
+                />
               )}
-            </select>
+            </div>
 
             {wlError && (
               <span
                 role="alert"
-                className="block mt-1.5 text-xs text-red-600 dark:text-red-400"
+                className="block mt-1.5 text-xs text-red-700 dark:text-red-400"
               >
                 {wlError}
               </span>
@@ -280,15 +292,30 @@ export default function SetlistPeopleSection({
                       size="sm"
                       onClick={() => handleRemove(entry)}
                       disabled={rowLoading[entry.id] ?? false}
-                      aria-label={`Remove ${entry.musicians.name} from lineup`}
+                      aria-label={
+                        rowLoading[entry.id]
+                          ? `Removing ${entry.musicians.name} from lineup`
+                          : `Remove ${entry.musicians.name} from lineup`
+                      }
                     >
-                      {rowLoading[entry.id] ? 'Removing…' : 'Remove'}
+                      {rowLoading[entry.id] ? (
+                        <>
+                          <Loader2
+                            size={12}
+                            className="animate-spin mr-1.5"
+                            aria-hidden="true"
+                          />
+                          Removing…
+                        </>
+                      ) : (
+                        'Remove'
+                      )}
                     </Button>
 
                     {rowError[entry.id] && (
                       <span
                         role="alert"
-                        className="text-xs text-red-600 dark:text-red-400"
+                        className="text-xs text-red-700 dark:text-red-400"
                       >
                         {rowError[entry.id]}
                       </span>
@@ -351,9 +378,24 @@ export default function SetlistPeopleSection({
                   size="sm"
                   onClick={handleAdd}
                   disabled={addButtonDisabled}
-                  aria-label="Add musician to lineup"
+                  aria-label={
+                    addLoading
+                      ? 'Adding musician to lineup'
+                      : 'Add musician to lineup'
+                  }
                 >
-                  {addLoading ? 'Adding…' : 'Add'}
+                  {addLoading ? (
+                    <>
+                      <Loader2
+                        size={12}
+                        className="animate-spin mr-1.5"
+                        aria-hidden="true"
+                      />
+                      Adding…
+                    </>
+                  ) : (
+                    'Add'
+                  )}
                 </Button>
               </div>
             </div>
@@ -362,7 +404,7 @@ export default function SetlistPeopleSection({
             {addError && (
               <span
                 role="alert"
-                className="text-xs text-red-600 dark:text-red-400"
+                className="text-xs text-red-700 dark:text-red-400"
               >
                 {addError}
               </span>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { signInWithPasswordAction } from '@/app/actions/authActions'
 import Button from '@/components/client/button'
 
@@ -77,7 +78,10 @@ export default function LoginForm() {
         </div>
 
         {passwordError && (
-          <p className="text-sm font-sans text-brand-espresso dark:text-brand-cream">
+          <p
+            role="alert"
+            className="text-sm font-sans text-red-700 dark:text-red-400"
+          >
             {passwordError}
           </p>
         )}
@@ -87,8 +91,20 @@ export default function LoginForm() {
           variant="primary"
           size="md"
           disabled={isPasswordPending}
+          aria-label={isPasswordPending ? 'Signing in' : 'Sign in'}
         >
-          {isPasswordPending ? 'Signing in…' : 'Sign In'}
+          {isPasswordPending ? (
+            <>
+              <Loader2
+                size={16}
+                className="animate-spin mr-2"
+                aria-hidden="true"
+              />
+              Signing in…
+            </>
+          ) : (
+            'Sign In'
+          )}
         </Button>
 
         <Link

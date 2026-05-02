@@ -39,6 +39,8 @@ export default function Navbar() {
   const [fullName, setFullName] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const hamburgerButtonRef = useRef<HTMLButtonElement>(null);
@@ -135,27 +137,40 @@ export default function Navbar() {
 
   function openLogoutModal(triggerRef: React.RefObject<HTMLButtonElement | null>) {
     logoutTriggerRef.current = triggerRef.current;
+    setSignOutError(null);
     setShowLogoutModal(true);
   }
 
   function handleLogoutCancel() {
+    if (isSigningOut) return;
     setShowLogoutModal(false);
+    setSignOutError(null);
     logoutTriggerRef.current?.focus();
     logoutTriggerRef.current = null;
   }
 
   async function handleLogoutConfirm() {
-    setShowLogoutModal(false);
+    if (isSigningOut) return;
+    setSignOutError(null);
+    setIsSigningOut(true);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Sign out failed:", error.message);
+        setSignOutError("Sign out failed. Please try again.");
+        setIsSigningOut(false);
         return;
       }
+      // Success — close modal and refresh; clear error/loading state
+      setIsSigningOut(false);
+      setShowLogoutModal(false);
+      logoutTriggerRef.current = null;
       router.refresh();
     } catch (err) {
       console.error("Unexpected sign out error:", err);
+      setSignOutError("Sign out failed. Please try again.");
+      setIsSigningOut(false);
     }
   }
 
@@ -322,6 +337,8 @@ export default function Navbar() {
         isOpen={showLogoutModal}
         onConfirm={handleLogoutConfirm}
         onCancel={handleLogoutCancel}
+        isSigningOut={isSigningOut}
+        error={signOutError}
       />
 
       {/* ── Mobile sidebar drawer ─────────────────────────────────────────── */}
