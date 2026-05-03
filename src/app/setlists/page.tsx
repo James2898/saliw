@@ -72,10 +72,13 @@ export default async function SetlistsPage({
   try {
     let query = supabase
       .from("setlists")
-      .select("id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))", {
-        count: "exact",
-        head: false,
-      })
+      .select(
+        "id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))",
+        {
+          count: "exact",
+          head: false,
+        }
+      )
       .order("date", { ascending: false });
 
     if (q) {
