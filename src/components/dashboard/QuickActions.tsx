@@ -1,17 +1,17 @@
-import type { ReactElement } from 'react'
-import Link from 'next/link'
+import type { ReactElement } from "react";
+import Link from "next/link";
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan";
 
 const actionClasses = [
-  'inline-flex items-center justify-center font-sans font-semibold',
-  'bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream',
-  'border border-brand-tan hover:border-brand-brown',
-  'transition-colors duration-200',
-  'text-base px-4 py-2 rounded-xl',
+  "inline-flex items-center justify-center font-sans font-semibold",
+  "bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream",
+  "border border-brand-tan hover:border-brand-brown",
+  "transition-colors duration-200",
+  "text-base px-4 py-2 rounded-xl",
   focusRing,
-].join(' ')
+].join(" ");
 
 export default function QuickActions(): ReactElement {
   return (
@@ -28,5 +28,5 @@ export default function QuickActions(): ReactElement {
         </Link>
       </div>
     </section>
-  )
+  );
 }

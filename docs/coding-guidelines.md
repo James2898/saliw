@@ -81,6 +81,7 @@
 
 - **Base branch:** Always target `main`.
 - **Branching:** `feature/task-title` or `bug/task-title`.
+- **Formatting:** Run `npm run format` before every commit. Prettier (v3, config in `.prettierrc`) is the formatter. Never commit unformatted files.
 - **Validation:** Every task must be verified by `@validator-agent` for UI contrast and RLS security before being considered complete.
 
 ---

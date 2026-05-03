@@ -1,7 +1,7 @@
-'use server'
+"use server";
 
-import { redirect } from 'next/navigation'
-import { createClient } from '@/services/supabase/server'
+import { redirect } from "next/navigation";
+import { createClient } from "@/services/supabase/server";
 
 /**
  * Signs in a user with email and password.
@@ -13,23 +13,24 @@ import { createClient } from '@/services/supabase/server'
  * Next.js redirect() throws NEXT_REDIRECT internally — catching it without
  * re-throwing silently breaks the redirect and leaves the user on the login page.
  */
-export async function signInWithPasswordAction(
-  input: { email: string; password: string }
-): Promise<{ error: string }> {
-  const supabase = await createClient()
+export async function signInWithPasswordAction(input: {
+  email: string;
+  password: string;
+}): Promise<{ error: string }> {
+  const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email: input.email,
     password: input.password,
-  })
+  });
 
   if (error) {
     // Return the same message for both wrong email and wrong password
     // to prevent user enumeration attacks.
-    return { error: 'Invalid email or password. Please try again.' }
+    return { error: "Invalid email or password. Please try again." };
   }
 
-  redirect('/')
+  redirect("/");
 }
 
 /**
@@ -43,24 +44,24 @@ export async function signInWithPasswordAction(
  * The redirectTo points to the existing PKCE callback route at /auth/callback,
  * which exchanges the code for a session and redirects to /reset-password.
  */
-export async function sendPasswordResetAction(
-  input: { email: string }
-): Promise<{ success: true } | { error: string }> {
+export async function sendPasswordResetAction(input: {
+  email: string;
+}): Promise<{ success: true } | { error: string }> {
   try {
-    const supabase = await createClient()
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const supabase = await createClient();
+    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
     const { error } = await supabase.auth.resetPasswordForEmail(input.email, {
       redirectTo: `${origin}/auth/callback?next=/reset-password`,
-    })
+    });
 
     if (error) {
-      return { error: 'Unable to send reset link. Please try again.' }
+      return { error: "Unable to send reset link. Please try again." };
     }
 
-    return { success: true }
+    return { success: true };
   } catch {
-    return { error: 'Unable to send reset link. Please try again.' }
+    return { error: "Unable to send reset link. Please try again." };
   }
 }
 
@@ -74,18 +75,21 @@ export async function sendPasswordResetAction(
  * Next.js redirect() throws NEXT_REDIRECT internally — catching it without
  * re-throwing silently breaks the redirect.
  */
-export async function updatePasswordAction(
-  input: { password: string }
-): Promise<{ error: string }> {
-  const supabase = await createClient()
+export async function updatePasswordAction(input: {
+  password: string;
+}): Promise<{ error: string }> {
+  const supabase = await createClient();
 
   const { error } = await supabase.auth.updateUser({
     password: input.password,
-  })
+  });
 
   if (error) {
-    return { error: 'This reset link has expired or is invalid. Please request a new one.' }
+    return {
+      error:
+        "This reset link has expired or is invalid. Please request a new one.",
+    };
   }
 
-  redirect('/login')
+  redirect("/login");
 }

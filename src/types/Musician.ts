@@ -10,21 +10,21 @@
  * Derived from DbMusician; optional/nullable fields are preserved.
  */
 export type Musician = {
-  id: string
-  name: string
-  notes: string | null
-}
+  id: string;
+  name: string;
+  notes: string | null;
+};
 
 /**
  * Represents a single entry in a setlist lineup —
  * i.e. a setlist_musicians row with its related musician resolved.
  */
 export type SetlistLineupEntry = {
-  id: string
-  musician_id: string
-  instrument: string
+  id: string;
+  musician_id: string;
+  instrument: string;
   musicians: {
-    id: string
-    name: string
-  }
-}
+    id: string;
+    name: string;
+  };
+};

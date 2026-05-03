@@ -1,29 +1,31 @@
-'use server'
+"use server";
 
-import { createClient } from '@/services/supabase/server'
+import { createClient } from "@/services/supabase/server";
 
-export async function updateProfileAction(
-  input: { full_name: string }
-): Promise<{ success: true } | { error: string }> {
+export async function updateProfileAction(input: {
+  full_name: string;
+}): Promise<{ success: true } | { error: string }> {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return { error: 'Unauthorized' }
+      return { error: "Unauthorized" };
     }
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({ full_name: input.full_name })
-      .eq('id', user.id)
+      .eq("id", user.id);
 
     if (error) {
-      return { error: 'Unable to update profile. Please try again.' }
+      return { error: "Unable to update profile. Please try again." };
     }
 
-    return { success: true }
+    return { success: true };
   } catch {
-    return { error: 'An unexpected error occurred. Please try again.' }
+    return { error: "An unexpected error occurred. Please try again." };
   }
 }

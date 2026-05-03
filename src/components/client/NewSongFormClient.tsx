@@ -206,7 +206,11 @@ export default function NewSongFormClient() {
           >
             {isSaving ? (
               <>
-                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
                 Creating…
               </>
             ) : (

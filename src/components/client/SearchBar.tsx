@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { useRef, useCallback } from 'react'
-import { Search } from 'lucide-react'
+import { useRouter } from "next/navigation";
+import { useRef, useCallback } from "react";
+import { Search } from "lucide-react";
 
 interface SearchBarProps {
-  defaultValue: string
-  basePath?: string
+  defaultValue: string;
+  basePath?: string;
 }
 
 /**
@@ -19,28 +19,31 @@ interface SearchBarProps {
  * Uses `router.replace` to avoid polluting browser history on every keypress.
  * Does NOT call Supabase or any Server Action.
  */
-export default function SearchBar({ defaultValue, basePath = '/library' }: SearchBarProps) {
-  const router = useRouter()
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+export default function SearchBar({
+  defaultValue,
+  basePath = "/library",
+}: SearchBarProps) {
+  const router = useRouter();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const term = e.target.value.trim()
+      const term = e.target.value.trim();
 
       if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
+        clearTimeout(debounceRef.current);
       }
 
       debounceRef.current = setTimeout(() => {
         if (term) {
-          router.replace(`${basePath}?q=${encodeURIComponent(term)}`)
+          router.replace(`${basePath}?q=${encodeURIComponent(term)}`);
         } else {
-          router.replace(basePath)
+          router.replace(basePath);
         }
-      }, 300)
+      }, 300);
     },
     [router, basePath]
-  )
+  );
 
   return (
     <div className="relative w-full max-w-md">
@@ -49,11 +52,7 @@ export default function SearchBar({ defaultValue, basePath = '/library' }: Searc
         className="pointer-events-none absolute inset-y-0 left-3 flex items-center"
         aria-hidden="true"
       >
-        <Search
-          size={16}
-          strokeWidth={2}
-          className="text-brand-tan"
-        />
+        <Search size={16} strokeWidth={2} className="text-brand-tan" />
       </span>
 
       <input
@@ -63,15 +62,15 @@ export default function SearchBar({ defaultValue, basePath = '/library' }: Searc
         placeholder="Search by title or artist…"
         aria-label="Search songs by title or artist"
         className={[
-          'w-full pl-9 pr-4 py-2 rounded-xl',
-          'bg-brand-cream dark:bg-brand-espresso',
-          'border border-brand-tan',
-          'font-sans text-sm text-brand-espresso dark:text-brand-cream',
-          'placeholder:text-brand-tan',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2',
-          'transition-colors duration-200',
-        ].join(' ')}
+          "w-full pl-9 pr-4 py-2 rounded-xl",
+          "bg-brand-cream dark:bg-brand-espresso",
+          "border border-brand-tan",
+          "font-sans text-sm text-brand-espresso dark:text-brand-cream",
+          "placeholder:text-brand-tan",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
+          "transition-colors duration-200",
+        ].join(" ")}
       />
     </div>
-  )
+  );
 }

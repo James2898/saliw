@@ -1,22 +1,27 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react'
-import Button from '@/components/client/button'
+import { useRouter } from "next/navigation";
+import {
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+} from "lucide-react";
+import Button from "@/components/client/button";
 
 interface PaginationControlsProps {
-  currentPage: number
-  totalCount: number
-  pageSize: number
-  q?: string
-  basePath?: string
+  currentPage: number;
+  totalCount: number;
+  pageSize: number;
+  q?: string;
+  basePath?: string;
 }
 
 function buildUrl(page: number, basePath: string, q?: string): string {
-  const params = new URLSearchParams()
-  if (q) params.set('q', q)
-  params.set('page', String(page))
-  return `${basePath}?${params.toString()}`
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  params.set("page", String(page));
+  return `${basePath}?${params.toString()}`;
 }
 
 export default function PaginationControls({
@@ -24,16 +29,19 @@ export default function PaginationControls({
   totalCount,
   pageSize,
   q,
-  basePath = '/library',
+  basePath = "/library",
 }: PaginationControlsProps) {
-  const router = useRouter()
-  const totalPages = Math.ceil(totalCount / pageSize)
+  const router = useRouter();
+  const totalPages = Math.ceil(totalCount / pageSize);
 
-  const isFirst = currentPage === 1
-  const isLast = totalPages === 0 || currentPage === totalPages
+  const isFirst = currentPage === 1;
+  const isLast = totalPages === 0 || currentPage === totalPages;
 
   return (
-    <nav aria-label="Pagination" className="flex items-center justify-center gap-1">
+    <nav
+      aria-label="Pagination"
+      className="flex items-center justify-center gap-1"
+    >
       {/* First */}
       <Button
         variant="ghost"
@@ -90,5 +98,5 @@ export default function PaginationControls({
         <ChevronsRight size={16} strokeWidth={2} aria-hidden="true" />
       </Button>
     </nav>
-  )
+  );
 }
