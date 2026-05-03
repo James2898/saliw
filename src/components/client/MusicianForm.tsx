@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { createMusician, updateMusician, deleteMusician } from "@/app/actions/musicianActions";
+import {
+  createMusician,
+  updateMusician,
+  deleteMusician,
+} from "@/app/actions/musicianActions";
 
 const inputBaseClass = [
   "w-full px-3 py-2 rounded-xl",
@@ -150,7 +154,10 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
 
         {/* ── Error message ─────────────────────────────────────────────────────── */}
         {error && (
-          <p role="alert" className="text-sm font-medium text-red-700 dark:text-red-400">
+          <p
+            role="alert"
+            className="text-sm font-medium text-red-700 dark:text-red-400"
+          >
             {error}
           </p>
         )}
@@ -177,7 +184,11 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  <Loader2
+                    size={16}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
                   Deleting…
                 </>
               ) : (
@@ -207,7 +218,11 @@ export default function MusicianForm({ mode, musician }: MusicianFormProps) {
           >
             {isSaving ? (
               <>
-                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
                 Saving…
               </>
             ) : (

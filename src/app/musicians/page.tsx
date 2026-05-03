@@ -1,45 +1,45 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { Pencil } from 'lucide-react'
-import { createClient } from '@/services/supabase/server'
-import { listMusicians } from '@/app/actions/musicianActions'
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Pencil } from "lucide-react";
+import { createClient } from "@/services/supabase/server";
+import { listMusicians } from "@/app/actions/musicianActions";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: 'Musicians',
-  description: 'Browse and manage the musicians roster.',
-}
+  title: "Musicians",
+  description: "Browse and manage the musicians roster.",
+};
 
 export default async function MusiciansPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
   // ── Auth check ────────────────────────────────────────────────────────────
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login')
+    redirect("/login");
   }
 
   // ── Fetch user role for RBAC ─────────────────────────────────────────────
-  let isMusicDirector = false
+  let isMusicDirector = false;
   try {
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
 
-    isMusicDirector = profile?.role === 'music_director'
+    isMusicDirector = profile?.role === "music_director";
   } catch {
-    isMusicDirector = false
+    isMusicDirector = false;
   }
 
   // ── Fetch musicians ───────────────────────────────────────────────────────
-  const { data: musicians, error: musiciansError } = await listMusicians()
+  const { data: musicians, error: musiciansError } = await listMusicians();
 
   // ── Error branch — BUG-003: full layout shell required ───────────────────
   if (musiciansError) {
@@ -59,15 +59,14 @@ export default async function MusiciansPage() {
           </div>
         </div>
       </main>
-    )
+    );
   }
 
-  const musicianList = musicians ?? []
+  const musicianList = musicians ?? [];
 
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
       <div className="max-w-3xl mx-auto">
-
         {/* ── Page header ───────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-4 mb-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream">
@@ -77,14 +76,14 @@ export default async function MusiciansPage() {
             <Link
               href="/musicians/new"
               className={[
-                'inline-flex items-center gap-2 px-4 py-2 rounded-xl',
-                'bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso',
-                'text-sm font-semibold font-sans',
-                'border border-brand-tan dark:border-brand-tan',
-                'hover:bg-brand-brown hover:text-brand-cream hover:border-brand-brown',
-                'transition-colors duration-200',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
-              ].join(' ')}
+                "inline-flex items-center gap-2 px-4 py-2 rounded-xl",
+                "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso",
+                "text-sm font-semibold font-sans",
+                "border border-brand-tan dark:border-brand-tan",
+                "hover:bg-brand-brown hover:text-brand-cream hover:border-brand-brown",
+                "transition-colors duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2",
+              ].join(" ")}
             >
               New Musician
             </Link>
@@ -92,7 +91,8 @@ export default async function MusiciansPage() {
         </div>
 
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-6">
-          {musicianList.length} {musicianList.length === 1 ? 'musician' : 'musicians'}
+          {musicianList.length}{" "}
+          {musicianList.length === 1 ? "musician" : "musicians"}
         </p>
 
         {/* ── Musician list ─────────────────────────────────────────────────── */}
@@ -117,20 +117,20 @@ export default async function MusiciansPage() {
             /* ── Musician rows ───────────────────────────────────────────────── */
             <ul className="flex flex-col gap-2" role="list">
               {musicianList.map((musician) => {
-                const parts = musician.name.trim().split(/\s+/)
+                const parts = musician.name.trim().split(/\s+/);
                 const initials =
                   parts.length === 1
                     ? parts[0][0].toUpperCase()
-                    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+                    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 
                 return (
                   <li key={musician.id} className="relative">
                     <div
                       className={[
-                        'bg-brand-cream dark:bg-brand-espresso',
-                        'rounded-xl border-l-4 border-brand-tan p-4',
-                        isMusicDirector ? 'pr-10' : '',
-                      ].join(' ')}
+                        "bg-brand-cream dark:bg-brand-espresso",
+                        "rounded-xl border-l-4 border-brand-tan p-4",
+                        isMusicDirector ? "pr-10" : "",
+                      ].join(" ")}
                     >
                       <div className="flex items-center gap-3">
                         {/* Avatar circle */}
@@ -163,12 +163,12 @@ export default async function MusiciansPage() {
                       </Link>
                     )}
                   </li>
-                )
+                );
               })}
             </ul>
           )}
         </div>
       </div>
     </main>
-  )
+  );
 }
