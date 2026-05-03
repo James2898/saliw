@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import type { UseAutoScrollReturn } from '@/hooks/useAutoScroll'
+import type { UseAutoScrollReturn } from "@/hooks/useAutoScroll";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface AutoScrollToolbarProps {
   /** The full return value of useAutoScroll, passed from the parent viewer. */
-  scroll: UseAutoScrollReturn
+  scroll: UseAutoScrollReturn;
 }
 
 // ── Module-level CSS class constants (avoids per-render string allocations) ────
@@ -16,68 +16,70 @@ export interface AutoScrollToolbarProps {
  * z-50 keeps it above content; exceeds ServiceNavigator z-40.
  */
 const containerClass = [
-  'fixed bottom-6 right-6 z-50',
-  'flex flex-col items-end gap-2',
-  'font-sans',
-].join(' ')
+  "fixed bottom-6 right-6 z-50",
+  "flex flex-col items-end gap-2",
+  "font-sans",
+].join(" ");
 
 /**
  * The panel that wraps both the toggle button and expanded controls.
  * CSS-variable arbitrary values auto-switch in dark mode; no dark: pair needed (AC 21).
  */
 const panelClass = [
-  'rounded-2xl shadow-lg',
-  'bg-[var(--brand-espresso)]',
-  'text-[var(--brand-cream)]',
-  'border border-[var(--brand-tan)]/30',
-  'overflow-hidden',
-].join(' ')
+  "rounded-2xl shadow-lg",
+  "bg-[var(--brand-espresso)]",
+  "text-[var(--brand-cream)]",
+  "border border-[var(--brand-tan)]/30",
+  "overflow-hidden",
+].join(" ");
 
 /**
  * The main toggle button — always clickable (AC 1–4).
  */
 const mainToggleBtnClass = [
-  'flex items-center gap-2 px-4 py-2.5',
-  'text-xs font-semibold uppercase tracking-widest',
-  'text-[var(--brand-cream)]',
-  'hover:bg-[var(--brand-tan)]/20',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset',
-  'focus-visible:ring-[var(--brand-tan)]',
-  'transition-colors duration-200',
-  'disabled:opacity-40 disabled:cursor-not-allowed',
-].join(' ')
+  "flex items-center gap-2 px-4 py-2.5",
+  "text-xs font-semibold uppercase tracking-widest",
+  "text-[var(--brand-cream)]",
+  "hover:bg-[var(--brand-tan)]/20",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset",
+  "focus-visible:ring-[var(--brand-tan)]",
+  "transition-colors duration-200",
+  "disabled:opacity-40 disabled:cursor-not-allowed",
+].join(" ");
 
-const activeDotClass = 'w-2 h-2 rounded-full bg-[var(--brand-tan)] animate-pulse shrink-0'
-const inactiveDotClass = 'w-2 h-2 rounded-full bg-[var(--brand-cream)]/40 shrink-0'
+const activeDotClass =
+  "w-2 h-2 rounded-full bg-[var(--brand-tan)] animate-pulse shrink-0";
+const inactiveDotClass =
+  "w-2 h-2 rounded-full bg-[var(--brand-cream)]/40 shrink-0";
 
-const dividerClass = 'w-full h-px bg-[var(--brand-tan)]/20'
+const dividerClass = "w-full h-px bg-[var(--brand-tan)]/20";
 
-const controlPanelClass = 'flex flex-col gap-3 px-4 pb-4 pt-3 min-w-[180px]'
+const controlPanelClass = "flex flex-col gap-3 px-4 pb-4 pt-3 min-w-[180px]";
 
 /**
  * Scroll state button (Pause / Resume) — brand-tan background (AC 21).
  * text-[var(--brand-espresso)] on bg-[var(--brand-tan)] meets WCAG AA (AC 22).
  */
 const scrollStateBtnClass = [
-  'w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg',
-  'text-xs font-semibold',
-  'bg-[var(--brand-tan)] text-[var(--brand-espresso)]',
-  'hover:opacity-90',
-  'focus-visible:outline-none focus-visible:ring-2',
-  'focus-visible:ring-[var(--brand-cream)]',
-  'transition-opacity duration-200',
-].join(' ')
+  "w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg",
+  "text-xs font-semibold",
+  "bg-[var(--brand-tan)] text-[var(--brand-espresso)]",
+  "hover:opacity-90",
+  "focus-visible:outline-none focus-visible:ring-2",
+  "focus-visible:ring-[var(--brand-cream)]",
+  "transition-opacity duration-200",
+].join(" ");
 
 const speedLabelClass = [
-  'flex items-center justify-between',
-  'text-xs font-semibold uppercase tracking-widest',
-  'text-[var(--brand-cream)]/70',
-].join(' ')
+  "flex items-center justify-between",
+  "text-xs font-semibold uppercase tracking-widest",
+  "text-[var(--brand-cream)]/70",
+].join(" ");
 
 const sliderClass = [
-  'w-full h-1 rounded-full appearance-none cursor-pointer',
-  'accent-[var(--brand-tan)]',
-].join(' ')
+  "w-full h-1 rounded-full appearance-none cursor-pointer",
+  "accent-[var(--brand-tan)]",
+].join(" ");
 
 // ── AutoScrollToolbar ─────────────────────────────────────────────────────────
 
@@ -95,11 +97,24 @@ const sliderClass = [
  * AC 25: Client Component only — no Supabase calls.
  */
 export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
-  const { isActive, isScrolling, isPaused, cannotScroll, speed, toggle, pause, resume, setSpeed } =
-    scroll
+  const {
+    isActive,
+    isScrolling,
+    isPaused,
+    cannotScroll,
+    speed,
+    toggle,
+    pause,
+    resume,
+    setSpeed,
+  } = scroll;
 
   return (
-    <div className={containerClass} role="region" aria-label="Auto-scroll controls">
+    <div
+      className={containerClass}
+      role="region"
+      aria-label="Auto-scroll controls"
+    >
       <div className={panelClass}>
         {/* ── Expanded control panel — visible only while active (AC 5) ─────── */}
         {isActive && (
@@ -109,22 +124,28 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
               <div className="flex flex-col gap-1.5">
                 <div className={speedLabelClass}>
                   <label htmlFor="autoscroll-speed-slider">Speed</label>
-                  <span className="font-mono text-[var(--brand-cream)]">{speed}</span>
+                  <span className="font-mono text-[var(--brand-cream)]">
+                    {speed}
+                  </span>
                 </div>
                 <input
                   id="autoscroll-speed-slider"
                   type="range"
                   min={1}
-                  max={10}
+                  max={5}
                   step={1}
                   value={speed}
                   onChange={(e) => setSpeed(Number(e.target.value))}
-                  aria-label={`Scroll speed ${speed} of 10`}
+                  aria-label={`Scroll speed ${speed} of 5`}
                   className={sliderClass}
                 />
                 <div
                   className="flex justify-between select-none"
-                  style={{ fontSize: '10px', color: 'color-mix(in srgb, var(--brand-cream) 40%, transparent)' }}
+                  style={{
+                    fontSize: "10px",
+                    color:
+                      "color-mix(in srgb, var(--brand-cream) 40%, transparent)",
+                  }}
                   aria-hidden="true"
                 >
                   <span>Slow</span>
@@ -137,7 +158,9 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
                 type="button"
                 onClick={isScrolling ? pause : resume}
                 aria-pressed={isPaused}
-                aria-label={isScrolling ? 'Pause auto-scroll' : 'Resume auto-scroll'}
+                aria-label={
+                  isScrolling ? "Pause auto-scroll" : "Resume auto-scroll"
+                }
                 className={scrollStateBtnClass}
               >
                 {isScrolling ? (
@@ -186,24 +209,27 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
           aria-pressed={isActive}
           aria-label={
             cannotScroll
-              ? 'Auto-scroll disabled — nothing to scroll'
+              ? "Auto-scroll disabled — nothing to scroll"
               : isActive
-              ? 'Auto-scroll on — click to stop'
-              : 'Auto-scroll off — click to start'
+                ? "Auto-scroll on — click to stop"
+                : "Auto-scroll off — click to start"
           }
-          title={cannotScroll ? 'Nothing to scroll' : undefined}
+          title={cannotScroll ? "Nothing to scroll" : undefined}
           className={mainToggleBtnClass}
         >
           {/* Status dot */}
-          <span className={isActive ? activeDotClass : inactiveDotClass} aria-hidden="true" />
+          <span
+            className={isActive ? activeDotClass : inactiveDotClass}
+            aria-hidden="true"
+          />
 
           {/* Label (AC 1: "Auto-scroll off" / "Auto-scroll on") */}
           <span>
             {cannotScroll
-              ? 'Nothing to scroll'
+              ? "Nothing to scroll"
               : isActive
-              ? 'Auto-scroll on'
-              : 'Auto-scroll off'}
+                ? "Auto-scroll on"
+                : "Auto-scroll off"}
           </span>
 
           {/* Downward scroll arrow icon */}
@@ -217,12 +243,12 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
-            className={isActive && isScrolling ? 'animate-bounce' : ''}
+            className={isActive && isScrolling ? "animate-bounce" : ""}
           >
             <path d="M6 2v8M3 7l3 3 3-3" />
           </svg>
         </button>
       </div>
     </div>
-  )
+  );
 }
