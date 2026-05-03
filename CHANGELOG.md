@@ -6,6 +6,12 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-05-03
 
+### Added
+
+- Bulk-import script for 173 English Hymnal hymns (`TASK-036`)
+  - Affected files: `scripts/parsers/hymnsMarkdownParser.ts`, `scripts/import-hymns.ts`, `supabase/migrations/20260503000001_songs_title_artist_unique_index.sql`
+  - Note: AC9/AC10 (real DB execution + idempotent re-run verification) deferred — pending user-supplied SUPABASE_SERVICE_ROLE_KEY
+
 ### Changed
 
 - TASK-035 extension: removed manual-scroll auto-pause; reduced speed range to 5 steps × 5 px/s (1→5 px/s … 5→25 px/s); default speed changed from 3 to 1 (`TASK-035`)
