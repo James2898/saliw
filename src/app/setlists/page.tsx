@@ -21,7 +21,7 @@ type SetlistRow = {
   date: string | null;
   leader_id: string | null;
   is_public: boolean | null;
-  setlist_songs: { count: number }[];
+  setlist_songs: { order_index: number; songs: { title: string }[] }[];
 };
 
 interface SetlistsPageProps {
@@ -72,7 +72,7 @@ export default async function SetlistsPage({
   try {
     let query = supabase
       .from("setlists")
-      .select("id, name, date, leader_id, is_public, setlist_songs(count)", {
+      .select("id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))", {
         count: "exact",
         head: false,
       })
@@ -151,7 +151,10 @@ export default async function SetlistsPage({
             /* ── Setlist cards ─────────────────────────────────────────────── */
             <ul className="flex flex-col gap-2" role="list">
               {setlists.map((setlist) => {
-                const songCount = setlist.setlist_songs[0]?.count ?? 0;
+                const songTitles = [...setlist.setlist_songs]
+                  .sort((a, b) => a.order_index - b.order_index)
+                  .map((ss) => ss.songs[0]?.title)
+                  .filter(Boolean) as string[];
                 const formattedDate = setlist.date
                   ? new Date(setlist.date).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -172,12 +175,19 @@ export default async function SetlistsPage({
                         "hover:shadow-md transition-shadow duration-200",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
                       ].join(" ")}
-                      aria-label={`View setlist: ${setlist.name}${formattedDate ? `, ${formattedDate}` : ""}`}
+                      aria-label={`View setlist: ${setlist.name}${formattedDate ? `, ${formattedDate}` : ""}${songTitles.length > 0 ? `, songs: ${songTitles.join(", ")}` : ""}`}
                     >
-                      {/* ── Setlist name ──────────────────────────────────── */}
-                      <p className="font-extrabold text-brand-espresso dark:text-brand-cream truncate whitespace-nowrap min-w-0 md:flex-1 md:mr-4">
-                        {setlist.name}
-                      </p>
+                      {/* ── Setlist name + song titles ────────────────────── */}
+                      <div className="min-w-0 md:flex-1 md:mr-4">
+                        <p className="font-extrabold text-brand-espresso dark:text-brand-cream truncate whitespace-nowrap">
+                          {setlist.name}
+                        </p>
+                        {songTitles.length > 0 && (
+                          <p className="text-[10px] text-brand-espresso/55 dark:text-brand-cream/45 truncate mt-0.5">
+                            {songTitles.join(" · ")}
+                          </p>
+                        )}
+                      </div>
 
                       {/* ── Metadata row ─────────────────────────────────── */}
                       <div className="flex flex-row items-center gap-3 md:shrink-0">
@@ -187,19 +197,6 @@ export default async function SetlistsPage({
                             {formattedDate}
                           </span>
                         )}
-
-                        {/* Song count badge */}
-                        <span
-                          className={[
-                            "inline-flex items-center px-2 py-0.5 rounded-lg",
-                            "text-xs font-semibold",
-                            "bg-brand-cream dark:bg-brand-darker border border-brand-brown/20",
-                            "text-brand-brown dark:text-brand-tan",
-                          ].join(" ")}
-                          aria-label={`${songCount} ${songCount === 1 ? "song" : "songs"}`}
-                        >
-                          {songCount} {songCount === 1 ? "song" : "songs"}
-                        </span>
                       </div>
                     </Link>
                     {isMusicDirector && (
