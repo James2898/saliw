@@ -1,8 +1,8 @@
-import type { ReactElement } from 'react'
+import type { ReactElement } from "react";
 
 interface GreetingStripProps {
-  fullName: string
-  isMusicDirector: boolean
+  fullName: string;
+  isMusicDirector: boolean;
 }
 
 export default function GreetingStrip({
@@ -10,14 +10,14 @@ export default function GreetingStrip({
   isMusicDirector,
 }: GreetingStripProps): ReactElement {
   const subtitle = isMusicDirector
-    ? 'You have everything ready for your next service.'
-    : "Check what's coming up next."
+    ? "You have everything ready for your next service."
+    : "Check what's coming up next.";
 
   const rolePillClasses = isMusicDirector
-    ? 'bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso'
-    : 'bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso'
+    ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso"
+    : "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso";
 
-  const roleLabel = isMusicDirector ? 'Music Director' : 'Musician'
+  const roleLabel = isMusicDirector ? "Music Director" : "Musician";
 
   return (
     <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
@@ -31,7 +31,9 @@ export default function GreetingStrip({
           {roleLabel}
         </span>
       </div>
-      <p className="mt-2 text-sm text-brand-brown dark:text-brand-tan">{subtitle}</p>
+      <p className="mt-2 text-sm text-brand-brown dark:text-brand-tan">
+        {subtitle}
+      </p>
     </section>
-  )
+  );
 }

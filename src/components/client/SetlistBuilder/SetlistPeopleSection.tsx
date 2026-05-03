@@ -1,44 +1,44 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
-import Button from '@/components/client/button'
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import Button from "@/components/client/button";
 import {
   setSetlistWorshipLeader,
   addSetlistMusician,
   removeSetlistMusician,
-} from '@/app/actions/setlistActions'
-import type { Musician, SetlistLineupEntry } from '@/types/Musician'
+} from "@/app/actions/setlistActions";
+import type { Musician, SetlistLineupEntry } from "@/types/Musician";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface SetlistPeopleSectionProps {
-  setlistId: string
-  initialWorshipLeaderId: string | null
-  allMusicians: Musician[]
-  initialLineup: SetlistLineupEntry[]
-  isMusicDirector: boolean
+  setlistId: string;
+  initialWorshipLeaderId: string | null;
+  allMusicians: Musician[];
+  initialLineup: SetlistLineupEntry[];
+  isMusicDirector: boolean;
 }
 
 // ── Class constants ───────────────────────────────────────────────────────────
 
 const selectClass =
-  'text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso'
+  "text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso";
 
 const inputClass = [
-  'w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso',
-  'px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream placeholder:text-brand-brown/40 dark:placeholder:text-brand-tan/40',
-  'focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1',
-].join(' ')
+  "w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso",
+  "px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream placeholder:text-brand-brown/40 dark:placeholder:text-brand-tan/40",
+  "focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1",
+].join(" ");
 
 const labelClass =
-  'block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5'
+  "block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5";
 
 const sectionHeadingClass =
-  'text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest mb-4'
+  "text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest mb-4";
 
 const rowClass =
-  'flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/10 dark:border-brand-tan/10'
+  "flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/10 dark:border-brand-tan/10";
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -52,112 +52,118 @@ export default function SetlistPeopleSection({
   // ── State — all lazy initializers (BUG-001) ──────────────────────────────────
   const [worshipLeaderId, setWorshipLeaderId] = useState<string | null>(
     () => initialWorshipLeaderId
-  )
-  const [wlLoading, setWlLoading] = useState(() => false)
-  const [wlError, setWlError] = useState<string | null>(() => null)
+  );
+  const [wlLoading, setWlLoading] = useState(() => false);
+  const [wlError, setWlError] = useState<string | null>(() => null);
 
   const [localLineup, setLocalLineup] = useState<SetlistLineupEntry[]>(
     () => initialLineup
-  )
+  );
 
   // Per-row remove loading/error keyed by entry.id
-  const [rowLoading, setRowLoading] = useState<Record<string, boolean>>(() => ({}))
-  const [rowError, setRowError] = useState<Record<string, string | null>>(() => ({}))
+  const [rowLoading, setRowLoading] = useState<Record<string, boolean>>(
+    () => ({})
+  );
+  const [rowError, setRowError] = useState<Record<string, string | null>>(
+    () => ({})
+  );
 
   // Add-row state
-  const [addMusicianId, setAddMusicianId] = useState(() => '')
-  const [addInstrument, setAddInstrument] = useState(() => '')
-  const [addLoading, setAddLoading] = useState(() => false)
-  const [addError, setAddError] = useState<string | null>(() => null)
+  const [addMusicianId, setAddMusicianId] = useState(() => "");
+  const [addInstrument, setAddInstrument] = useState(() => "");
+  const [addLoading, setAddLoading] = useState(() => false);
+  const [addError, setAddError] = useState<string | null>(() => null);
 
   // ── Handlers — declared before any useEffect/useCallback (BUG-007) ──────────
 
-  async function handleWorshipLeaderChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const selectedId = e.target.value
-    setWlLoading(true)
-    setWlError(null)
+  async function handleWorshipLeaderChange(
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) {
+    const selectedId = e.target.value;
+    setWlLoading(true);
+    setWlError(null);
 
     const result = await setSetlistWorshipLeader({
       setlist_id: setlistId,
       worship_leader_id: selectedId || null,
-    })
+    });
 
     // Split error check and data check (BUG-008)
     if (result.error) {
-      setWlError(result.error)
-      setWlLoading(false)
-      return
+      setWlError(result.error);
+      setWlLoading(false);
+      return;
     }
 
     // Server confirm — update local state only after success
-    setWorshipLeaderId(selectedId || null)
-    setWlLoading(false)
+    setWorshipLeaderId(selectedId || null);
+    setWlLoading(false);
   }
 
   async function handleRemove(entry: SetlistLineupEntry) {
-    setRowLoading((prev) => ({ ...prev, [entry.id]: true }))
-    setRowError((prev) => ({ ...prev, [entry.id]: null }))
+    setRowLoading((prev) => ({ ...prev, [entry.id]: true }));
+    setRowError((prev) => ({ ...prev, [entry.id]: null }));
 
     const result = await removeSetlistMusician({
       id: entry.id,
       setlist_id: setlistId,
-    })
+    });
 
     // Split error check (BUG-008)
     if (result.error) {
-      setRowError((prev) => ({ ...prev, [entry.id]: result.error }))
-      setRowLoading((prev) => ({ ...prev, [entry.id]: false }))
-      return
+      setRowError((prev) => ({ ...prev, [entry.id]: result.error }));
+      setRowLoading((prev) => ({ ...prev, [entry.id]: false }));
+      return;
     }
 
     // Server confirm — remove from local state only after success
-    setLocalLineup((prev) => prev.filter((e) => e.id !== entry.id))
+    setLocalLineup((prev) => prev.filter((e) => e.id !== entry.id));
     setRowLoading((prev) => {
-      const next = { ...prev }
-      delete next[entry.id]
-      return next
-    })
+      const next = { ...prev };
+      delete next[entry.id];
+      return next;
+    });
     setRowError((prev) => {
-      const next = { ...prev }
-      delete next[entry.id]
-      return next
-    })
+      const next = { ...prev };
+      delete next[entry.id];
+      return next;
+    });
   }
 
   async function handleAdd() {
-    if (!addMusicianId || !addInstrument.trim()) return
+    if (!addMusicianId || !addInstrument.trim()) return;
 
-    setAddLoading(true)
-    setAddError(null)
+    setAddLoading(true);
+    setAddError(null);
 
     const result = await addSetlistMusician({
       setlist_id: setlistId,
       musician_id: addMusicianId,
       instrument: addInstrument.trim(),
-    })
+    });
 
     // Split error check (BUG-008)
     if (result.error) {
-      setAddError(result.error)
-      setAddLoading(false)
-      return
+      setAddError(result.error);
+      setAddLoading(false);
+      return;
     }
 
     // Separate data presence check (BUG-008)
     if (!result.data) {
-      setAddError('Unable to add musician. Please try again.')
-      setAddLoading(false)
-      return
+      setAddError("Unable to add musician. Please try again.");
+      setAddLoading(false);
+      return;
     }
 
     // Construct SetlistLineupEntry from returned DbSetlistMusician
-    const returned = result.data
-    const musician = allMusicians.find((m) => m.id === returned.musician_id)
+    const returned = result.data;
+    const musician = allMusicians.find((m) => m.id === returned.musician_id);
 
     if (!musician) {
-      setAddError('Unable to resolve musician details. Please refresh.')
-      setAddLoading(false)
-      return
+      setAddError("Unable to resolve musician details. Please refresh.");
+      setAddLoading(false);
+      return;
     }
 
     const newEntry: SetlistLineupEntry = {
@@ -168,35 +174,37 @@ export default function SetlistPeopleSection({
         id: musician.id,
         name: musician.name,
       },
-    }
+    };
 
     // Server confirm — append to local state after success
-    setLocalLineup((prev) => [...prev, newEntry])
-    setAddMusicianId('')
-    setAddInstrument('')
-    setAddLoading(false)
+    setLocalLineup((prev) => [...prev, newEntry]);
+    setAddMusicianId("");
+    setAddInstrument("");
+    setAddLoading(false);
   }
 
-  function handleAddMusicianSelectChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setAddMusicianId(e.target.value)
+  function handleAddMusicianSelectChange(
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) {
+    setAddMusicianId(e.target.value);
     // Clear add-row error when user modifies inputs (AC-19)
-    if (addError) setAddError(null)
+    if (addError) setAddError(null);
   }
 
   function handleAddInstrumentChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setAddInstrument(e.target.value)
+    setAddInstrument(e.target.value);
     // Clear add-row error when user modifies inputs (AC-19)
-    if (addError) setAddError(null)
+    if (addError) setAddError(null);
   }
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
   const worshipLeaderName =
-    allMusicians.find((m) => m.id === worshipLeaderId)?.name ?? null
+    allMusicians.find((m) => m.id === worshipLeaderId)?.name ?? null;
 
-  const hasNoMusicians = allMusicians.length === 0
+  const hasNoMusicians = allMusicians.length === 0;
   const addButtonDisabled =
-    addLoading || !addMusicianId || !addInstrument.trim() || hasNoMusicians
+    addLoading || !addMusicianId || !addInstrument.trim() || hasNoMusicians;
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -211,12 +219,12 @@ export default function SetlistPeopleSection({
             <label className={labelClass}>Assign Worship Leader</label>
             <div className="flex items-center gap-2">
               <select
-                value={worshipLeaderId ?? ''}
+                value={worshipLeaderId ?? ""}
                 onChange={handleWorshipLeaderChange}
                 disabled={wlLoading}
                 className={selectClass}
                 aria-label={
-                  wlLoading ? 'Saving worship leader' : 'Select worship leader'
+                  wlLoading ? "Saving worship leader" : "Select worship leader"
                 }
               >
                 <option value="">— None —</option>
@@ -252,7 +260,7 @@ export default function SetlistPeopleSection({
           </div>
         ) : (
           <span className="text-sm text-brand-espresso dark:text-brand-cream">
-            {worshipLeaderName ?? 'Unassigned'}
+            {worshipLeaderName ?? "Unassigned"}
           </span>
         )}
       </div>
@@ -260,8 +268,8 @@ export default function SetlistPeopleSection({
       {/* ── Lineup subsection ─────────────────────────────────────────────── */}
       <div>
         <p className={sectionHeadingClass}>
-          Lineup ({localLineup.length}{' '}
-          {localLineup.length === 1 ? 'musician' : 'musicians'})
+          Lineup ({localLineup.length}{" "}
+          {localLineup.length === 1 ? "musician" : "musicians"})
         </p>
 
         {/* Lineup entries */}
@@ -279,7 +287,8 @@ export default function SetlistPeopleSection({
                 <p className="flex-1 text-sm text-brand-espresso dark:text-brand-cream">
                   <span className="font-medium">{entry.musicians.name}</span>
                   <span className="text-brand-brown/60 dark:text-brand-tan/60">
-                    {' '}— {entry.instrument}
+                    {" "}
+                    — {entry.instrument}
                   </span>
                 </p>
 
@@ -308,7 +317,7 @@ export default function SetlistPeopleSection({
                           Removing…
                         </>
                       ) : (
-                        'Remove'
+                        "Remove"
                       )}
                     </Button>
 
@@ -380,8 +389,8 @@ export default function SetlistPeopleSection({
                   disabled={addButtonDisabled}
                   aria-label={
                     addLoading
-                      ? 'Adding musician to lineup'
-                      : 'Add musician to lineup'
+                      ? "Adding musician to lineup"
+                      : "Add musician to lineup"
                   }
                 >
                   {addLoading ? (
@@ -394,7 +403,7 @@ export default function SetlistPeopleSection({
                       Adding…
                     </>
                   ) : (
-                    'Add'
+                    "Add"
                   )}
                 </Button>
               </div>
@@ -413,5 +422,5 @@ export default function SetlistPeopleSection({
         )}
       </div>
     </div>
-  )
+  );
 }

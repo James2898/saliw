@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import type { SongLibraryItem } from './SetlistBuilderClient'
+import type { SongLibraryItem } from "./SetlistBuilderClient";
 
 interface LibraryPanelProps {
-  songs: SongLibraryItem[]
-  addedIds: Set<string>
-  onAdd: (song: SongLibraryItem) => void
-  addingId: string | null
-  query: string
-  onQueryChange: (q: string) => void
-  libraryError?: string | null
+  songs: SongLibraryItem[];
+  addedIds: Set<string>;
+  onAdd: (song: SongLibraryItem) => void;
+  addingId: string | null;
+  query: string;
+  onQueryChange: (q: string) => void;
+  libraryError?: string | null;
 }
 
 export default function LibraryPanel({
@@ -32,7 +32,7 @@ export default function LibraryPanel({
           Unable to load song library. Please try again.
         </p>
       </div>
-    )
+    );
   }
 
   // ── Library is empty ───────────────────────────────────────────────────────
@@ -42,21 +42,23 @@ export default function LibraryPanel({
         <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest">
           Song Library
         </p>
-        <p className="text-brand-brown dark:text-brand-tan text-sm">No songs in the library yet.</p>
+        <p className="text-brand-brown dark:text-brand-tan text-sm">
+          No songs in the library yet.
+        </p>
       </div>
-    )
+    );
   }
 
   // ── Client-side filtered list ──────────────────────────────────────────────
-  const lowerQuery = query.toLowerCase()
+  const lowerQuery = query.toLowerCase();
   const filtered =
-    query.trim() === ''
+    query.trim() === ""
       ? songs
       : songs.filter(
           (s) =>
             s.title.toLowerCase().includes(lowerQuery) ||
             s.artist.toLowerCase().includes(lowerQuery)
-        )
+        );
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,21 +74,23 @@ export default function LibraryPanel({
         placeholder="Search by title or artist…"
         aria-label="Search song library"
         className={[
-          'w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso',
-          'px-4 py-2 text-sm text-brand-espresso dark:text-brand-cream placeholder-brand-brown/40 dark:placeholder-brand-tan/40',
-          'focus:outline-none focus:ring-2 focus:ring-brand-brown/40',
-          'transition-colors duration-200',
-        ].join(' ')}
+          "w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso",
+          "px-4 py-2 text-sm text-brand-espresso dark:text-brand-cream placeholder-brand-brown/40 dark:placeholder-brand-tan/40",
+          "focus:outline-none focus:ring-2 focus:ring-brand-brown/40",
+          "transition-colors duration-200",
+        ].join(" ")}
       />
 
       {/* Results */}
       {filtered.length === 0 ? (
-        <p className="text-brand-brown dark:text-brand-tan text-sm">No songs match your search.</p>
+        <p className="text-brand-brown dark:text-brand-tan text-sm">
+          No songs match your search.
+        </p>
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map((song) => {
-            const isAdded = addedIds.has(song.id)
-            const isAdding = addingId === song.id
+            const isAdded = addedIds.has(song.id);
+            const isAdding = addingId === song.id;
 
             return (
               <div
@@ -94,9 +98,13 @@ export default function LibraryPanel({
                 className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/10"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">{song.title}</p>
+                  <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">
+                    {song.title}
+                  </p>
                   {song.artist && (
-                    <p className="text-brand-brown/70 dark:text-brand-tan/70 text-xs truncate">{song.artist}</p>
+                    <p className="text-brand-brown/70 dark:text-brand-tan/70 text-xs truncate">
+                      {song.artist}
+                    </p>
                   )}
                 </div>
 
@@ -109,15 +117,19 @@ export default function LibraryPanel({
                   onClick={() => !isAdded && !isAdding && onAdd(song)}
                   disabled={isAdded || isAdding}
                   aria-disabled={isAdded || isAdding}
-                  aria-label={isAdded ? `${song.title} already added` : `Add ${song.title}`}
-                  className={[
-                    'shrink-0 text-sm font-medium px-3 py-1 rounded-lg border transition-colors duration-200',
+                  aria-label={
                     isAdded
-                      ? 'border-brand-brown/20 text-brand-brown/40 cursor-not-allowed bg-transparent'
+                      ? `${song.title} already added`
+                      : `Add ${song.title}`
+                  }
+                  className={[
+                    "shrink-0 text-sm font-medium px-3 py-1 rounded-lg border transition-colors duration-200",
+                    isAdded
+                      ? "border-brand-brown/20 text-brand-brown/40 cursor-not-allowed bg-transparent"
                       : isAdding
-                      ? 'border-brand-brown/20 text-brand-brown/40 cursor-not-allowed bg-transparent'
-                      : 'border-brand-brown text-brand-brown hover:bg-[var(--brand-tan-alpha)]',
-                  ].join(' ')}
+                        ? "border-brand-brown/20 text-brand-brown/40 cursor-not-allowed bg-transparent"
+                        : "border-brand-brown text-brand-brown hover:bg-[var(--brand-tan-alpha)]",
+                  ].join(" ")}
                 >
                   {isAdding ? (
                     <span
@@ -125,16 +137,16 @@ export default function LibraryPanel({
                       aria-hidden="true"
                     />
                   ) : isAdded ? (
-                    'Added'
+                    "Added"
                   ) : (
-                    'Add'
+                    "Add"
                   )}
                 </button>
               </div>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }

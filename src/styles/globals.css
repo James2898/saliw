@@ -27,7 +27,8 @@
   --brand-tan-alpha: #bc8e5c26;
 
   /* Typography */
-  --font-sans: var(--font-plus-jakarta-sans), system-ui, -apple-system, sans-serif;
+  --font-sans:
+    var(--font-plus-jakarta-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "Courier New", monospace;
 }
 

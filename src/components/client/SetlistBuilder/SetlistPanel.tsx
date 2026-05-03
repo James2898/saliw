@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   DndContext,
@@ -7,25 +7,25 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core'
+} from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
   arrayMove,
-} from '@dnd-kit/sortable'
-import { Loader2 } from 'lucide-react'
-import Button from '@/components/client/button'
-import SortableSongRow from './SortableSongRow'
-import type { SortableSong } from './SetlistBuilderClient'
+} from "@dnd-kit/sortable";
+import { Loader2 } from "lucide-react";
+import Button from "@/components/client/button";
+import SortableSongRow from "./SortableSongRow";
+import type { SortableSong } from "./SetlistBuilderClient";
 
 interface SetlistPanelProps {
-  songs: SortableSong[]
-  onReorder: (newSongs: SortableSong[]) => void
-  onRemove: (songId: string) => void
-  onKeyChange: (songId: string, key: string) => void
-  isDirty: boolean
-  onSave: () => void
-  isSaving: boolean
+  songs: SortableSong[];
+  onReorder: (newSongs: SortableSong[]) => void;
+  onRemove: (songId: string) => void;
+  onKeyChange: (songId: string, key: string) => void;
+  isDirty: boolean;
+  onSave: () => void;
+  isSaving: boolean;
 }
 
 export default function SetlistPanel({
@@ -43,26 +43,26 @@ export default function SetlistPanel({
         distance: 8,
       },
     })
-  )
+  );
 
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
     // Match by junctionId (persisted) or songId (newly added, junctionId is null)
     const oldIndex = songs.findIndex(
       (s) => (s.junctionId ?? s.songId) === active.id
-    )
+    );
     const newIndex = songs.findIndex(
       (s) => (s.junctionId ?? s.songId) === over.id
-    )
-    if (oldIndex === newIndex) return
+    );
+    if (oldIndex === newIndex) return;
 
     const reordered = arrayMove(songs, oldIndex, newIndex).map((s, i) => ({
       ...s,
       orderIndex: i,
-    }))
-    onReorder(reordered)
+    }));
+    onReorder(reordered);
   }
 
   return (
@@ -109,7 +109,7 @@ export default function SetlistPanel({
             size="sm"
             onClick={onSave}
             disabled={isSaving}
-            aria-label={isSaving ? 'Saving setlist' : 'Save setlist'}
+            aria-label={isSaving ? "Saving setlist" : "Save setlist"}
             className="w-full sm:w-auto"
           >
             {isSaving ? (
@@ -122,11 +122,11 @@ export default function SetlistPanel({
                 Saving…
               </>
             ) : (
-              'Save'
+              "Save"
             )}
           </Button>
         </div>
       )}
     </div>
-  )
+  );
 }

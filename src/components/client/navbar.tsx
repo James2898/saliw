@@ -33,7 +33,8 @@ export default function Navbar() {
   const router = useRouter();
 
   const [isDark, setIsDark] = useState(
-    () => typeof window !== "undefined" && localStorage.getItem("theme") === "dark"
+    () =>
+      typeof window !== "undefined" && localStorage.getItem("theme") === "dark"
   );
   const [user, setUser] = useState<User | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
@@ -135,7 +136,9 @@ export default function Navbar() {
     }
   }
 
-  function openLogoutModal(triggerRef: React.RefObject<HTMLButtonElement | null>) {
+  function openLogoutModal(
+    triggerRef: React.RefObject<HTMLButtonElement | null>
+  ) {
     logoutTriggerRef.current = triggerRef.current;
     setSignOutError(null);
     setShowLogoutModal(true);
@@ -179,9 +182,7 @@ export default function Navbar() {
   }
 
   // Greeting text — "Hi, {name}!" or fallback "Hi there!"
-  const greetingText = user
-    ? `Hi, ${fullName?.trim() || "there"}!`
-    : null;
+  const greetingText = user ? `Hi, ${fullName?.trim() || "there"}!` : null;
 
   // Shared icon button class string to avoid repetition
   const iconBtnClass = [
@@ -225,7 +226,8 @@ export default function Navbar() {
             {navLinks.map(({ href, label, Icon }) => {
               if (href === "/musicians" && !user) return null;
               const isActive =
-                pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
+                pathname === href ||
+                (href !== "/" && pathname.startsWith(href + "/"));
               return (
                 <Link
                   key={href}
@@ -256,7 +258,9 @@ export default function Navbar() {
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={
+                isDark ? "Switch to light mode" : "Switch to dark mode"
+              }
               className={iconBtnClass}
             >
               {isDark ? (
@@ -322,10 +326,7 @@ export default function Navbar() {
             aria-label="Open navigation menu"
             aria-expanded={isOpen}
             aria-controls="mobile-sidebar"
-            className={[
-              "md:hidden",
-              iconBtnClass,
-            ].join(" ")}
+            className={["md:hidden", iconBtnClass].join(" ")}
           >
             <Menu size={20} strokeWidth={2} aria-hidden="true" />
           </button>
@@ -351,7 +352,9 @@ export default function Navbar() {
         className={[
           "fixed inset-0 z-[60] bg-brand-espresso/40",
           "transition-opacity duration-300",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         ].join(" ")}
       />
 
@@ -397,12 +400,16 @@ export default function Navbar() {
         </div>
 
         {/* Sidebar nav links */}
-        <nav aria-label="Mobile navigation" className="flex-1 overflow-y-auto px-3 py-4">
+        <nav
+          aria-label="Mobile navigation"
+          className="flex-1 overflow-y-auto px-3 py-4"
+        >
           <ul className="flex flex-col gap-1 list-none m-0 p-0">
             {navLinks.map(({ href, label, Icon }) => {
               if (href === "/musicians" && !user) return null;
               const isActive =
-                pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
+                pathname === href ||
+                (href !== "/" && pathname.startsWith(href + "/"));
               return (
                 <li key={href}>
                   <Link
@@ -441,8 +448,13 @@ export default function Navbar() {
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              className={[iconBtnClass, "flex-1 justify-start gap-3 px-3 text-sm font-semibold font-sans w-auto h-auto py-2.5"].join(" ")}
+              aria-label={
+                isDark ? "Switch to light mode" : "Switch to dark mode"
+              }
+              className={[
+                iconBtnClass,
+                "flex-1 justify-start gap-3 px-3 text-sm font-semibold font-sans w-auto h-auto py-2.5",
+              ].join(" ")}
             >
               {isDark ? (
                 <Sun size={18} strokeWidth={2} aria-hidden="true" />

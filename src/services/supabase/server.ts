@@ -1,5 +1,5 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 /**
  * Creates a Supabase client for use in Server Components, Server Actions,
@@ -9,7 +9,7 @@ import { cookies } from 'next/headers'
  * Row Level Security enforces access control at the database layer.
  */
 export async function createClient() {
-  const cookieStore = await cookies()
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,13 +17,13 @@ export async function createClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
-            )
+            );
           } catch {
             // Server Components cannot write cookies directly.
             // The middleware's cookie refresh pass handles session persistence.
@@ -31,5 +31,5 @@ export async function createClient() {
         },
       },
     }
-  )
+  );
 }

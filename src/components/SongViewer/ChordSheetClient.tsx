@@ -1,57 +1,68 @@
-'use client'
+"use client";
 
-import { useRef, useEffect, useState } from 'react'
-import type { ProcessedLine } from '@/utils/musicLogic'
-import { NOTES, shiftChord } from '@/utils/musicLogic'
-import { useTranspose } from '@/hooks/useTranspose'
-import { useFontSize } from '@/hooks/useFontSize'
+import { useRef, useEffect, useState } from "react";
+import type { ProcessedLine } from "@/utils/musicLogic";
+import { NOTES, shiftChord } from "@/utils/musicLogic";
+import { useTranspose } from "@/hooks/useTranspose";
+import { useFontSize } from "@/hooks/useFontSize";
+import { useAutoScroll, type UseAutoScrollReturn } from "@/hooks/useAutoScroll";
+import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 
 // ── Module-level constants — stable class strings extracted to avoid per-render allocations ──
 
 const ctrlBtnClass = [
-  'flex items-center justify-center rounded-lg shrink-0',
-  'font-mono font-bold text-sm',
-  'text-brand-espresso dark:text-brand-cream',
-  'bg-brand-cream dark:bg-brand-espresso',
-  'border border-brand-brown/30 dark:border-brand-tan/30',
-  'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-  'transition-colors duration-200',
-].join(' ')
+  "flex items-center justify-center rounded-lg shrink-0",
+  "font-mono font-bold text-sm",
+  "text-brand-espresso dark:text-brand-cream",
+  "bg-brand-cream dark:bg-brand-espresso",
+  "border border-brand-brown/30 dark:border-brand-tan/30",
+  "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+  "transition-colors duration-200",
+].join(" ");
 
 const toggleBtnClass = [
-  'px-2.5 py-1 rounded-lg shrink-0',
-  'text-xs font-semibold font-sans',
-  'border',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-  'transition-colors duration-200',
-].join(' ')
+  "px-2.5 py-1 rounded-lg shrink-0",
+  "text-xs font-semibold font-sans",
+  "border",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+  "transition-colors duration-200",
+].join(" ");
 
 const toggleActiveClass =
-  'bg-brand-brown text-brand-cream border-brand-brown dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
+  "bg-brand-brown text-brand-cream border-brand-brown dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan";
 
 const toggleInactiveClass =
-  'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10'
+  "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10";
 
 interface ChordSheetClientProps {
-  processedLines: ProcessedLine[]
-  originalKey: string
+  processedLines: ProcessedLine[];
+  originalKey: string;
   /** If provided, the sheet opens at this key instead of originalKey (e.g. setlist performanceKey). */
-  initialKey?: string
+  initialKey?: string;
   /** Optional callback fired whenever the displayed (transposed) key changes. */
-  onKeyChange?: (key: string) => void
+  onKeyChange?: (key: string) => void;
   /**
    * Optional key injected by Follow Leader mode.
    * RF-2 guard: effect must NOT call setTargetKey when externalKey === displayKey.
    */
-  externalKey?: string
+  externalKey?: string;
   /**
    * Optional callback for Go Live auto-persist.
    * Fired alongside onKeyChange in the same useEffect. Only when provided.
    */
-  onKeyChangeLive?: (key: string) => void
+  onKeyChangeLive?: (key: string) => void;
   /** Global chords visibility override from the setlist toolbar toggle. */
-  externalChordsHidden?: boolean
+  externalChordsHidden?: boolean;
+  /**
+   * Auto-scroll instance injected by a parent that owns the toolbar
+   * (e.g. SetlistViewerClient renders one toolbar for the whole page).
+   * When provided, this component skips creating its own useAutoScroll
+   * instance and skips rendering its own AutoScrollToolbar — preventing the
+   * "N+1 instances on the setlist page" bug where each song spawned a
+   * parallel rAF loop and the parent's pause() couldn't stop them.
+   */
+  injectedAutoScroll?: UseAutoScrollReturn;
 }
 
 /**
@@ -76,330 +87,382 @@ export default function ChordSheetClient({
   externalKey,
   onKeyChangeLive,
   externalChordsHidden,
+  injectedAutoScroll,
 }: ChordSheetClientProps) {
-  const { semitoneOffset, displayKey, increment, decrement, setTargetKey, reset } =
-    useTranspose(originalKey, initialKey)
+  const {
+    semitoneOffset,
+    displayKey,
+    increment,
+    decrement,
+    setTargetKey,
+    reset,
+  } = useTranspose(originalKey, initialKey);
 
-  const { fontSize, increase: increaseFont, decrease: decreaseFont, reset: resetFont } =
-    useFontSize()
+  const {
+    fontSize,
+    increase: increaseFont,
+    decrease: decreaseFont,
+    reset: resetFont,
+  } = useFontSize();
 
-  const [chordsHidden, setChordsHidden] = useState(false)
-  const [toolbarOpen, setToolbarOpen] = useState(false)
+  // Always call the hook (rules of hooks), but prefer the injected instance
+  // when a parent owns auto-scroll. The internal instance stays inert in that
+  // case because the internal AutoScrollToolbar is not rendered (no toggle
+  // button means the rAF never starts).
+  const internalAutoScroll = useAutoScroll();
+  const autoScroll = injectedAutoScroll ?? internalAutoScroll;
 
-  const sheetRef = useRef<HTMLDivElement>(null)
+  const [chordsHidden, setChordsHidden] = useState(false);
+  const [toolbarOpen, setToolbarOpen] = useState(false);
+
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   // Apply transposition to all .chord-item spans after mount and on offset changes.
   // Also runs when chordsHidden flips to false so re-rendered spans get the correct transposed text.
   useEffect(() => {
-    if (chordsHidden) return
-    const container = sheetRef.current
-    if (!container) return
+    if (chordsHidden) return;
+    const container = sheetRef.current;
+    if (!container) return;
 
-    const spans = container.querySelectorAll<HTMLSpanElement>('.chord-item[data-original-chord]')
+    const spans = container.querySelectorAll<HTMLSpanElement>(
+      ".chord-item[data-original-chord]"
+    );
     spans.forEach((span) => {
-      const original = span.getAttribute('data-original-chord')
+      const original = span.getAttribute("data-original-chord");
       if (original) {
-        span.innerText = shiftChord(original, semitoneOffset)
+        span.innerText = shiftChord(original, semitoneOffset);
       }
-    })
-  }, [semitoneOffset, chordsHidden])
+    });
+  }, [semitoneOffset, chordsHidden]);
 
   // Notify parent whenever the displayed key changes (e.g. for Sync button in SetlistSongSection).
   // Also fires onKeyChangeLive for Go Live auto-persist debounce (AC-18).
   useEffect(() => {
-    onKeyChange?.(displayKey)
-    onKeyChangeLive?.(displayKey)
-  }, [displayKey, onKeyChange, onKeyChangeLive])
+    onKeyChange?.(displayKey);
+    onKeyChangeLive?.(displayKey);
+  }, [displayKey, onKeyChange, onKeyChangeLive]);
 
   // RF-2 guard: react to externally injected key changes from Follow Leader mode.
   // Must NOT fire on initial mount when externalKey === originalKey to avoid
   // a redundant DOM chord mutation for every song in the setlist.
   useEffect(() => {
     if (externalKey !== undefined && externalKey !== displayKey) {
-      setTargetKey(externalKey)
+      setTargetKey(externalKey);
     }
     // Intentionally omit displayKey from deps — we only want to react when externalKey changes.
     // Including displayKey would cause a feedback loop: setTargetKey → displayKey changes → effect re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalKey])
+  }, [externalKey]);
 
   // Sync local chordsHidden state when the global toolbar toggle changes.
   useEffect(() => {
     if (externalChordsHidden !== undefined) {
-      setChordsHidden(externalChordsHidden)
+      setChordsHidden(externalChordsHidden);
     }
-  }, [externalChordsHidden])
+  }, [externalChordsHidden]);
 
   // Apply font-size CSS variable to the chord-display container.
   // DOM mutation pattern — avoids React re-renders on the chord node tree.
   useEffect(() => {
-    sheetRef.current?.style.setProperty('--chord-font-size', `${fontSize}px`)
-  }, [fontSize])
+    sheetRef.current?.style.setProperty("--chord-font-size", `${fontSize}px`);
+  }, [fontSize]);
 
   // Build chord-display container class with conditional modifiers.
-  const chordDisplayClass = ['chord-display', chordsHidden && 'chords-hidden']
+  const chordDisplayClass = ["chord-display", chordsHidden && "chords-hidden"]
     .filter(Boolean)
-    .join(' ')
+    .join(" ");
 
   return (
-    <div>
-      {/* ── Transposition control bar (accordion) ─────────────────────────── */}
-      <div
-        className={[
-          'mb-6 rounded-xl overflow-hidden',
-          'bg-brand-cream dark:bg-brand-espresso',
-          'border border-brand-brown/20 dark:border-brand-tan/20',
-        ].join(' ')}
-      >
-        {/* Accordion toggle row */}
-        <button
-          type="button"
-          onClick={() => setToolbarOpen((prev) => !prev)}
-          aria-expanded={toolbarOpen}
-          aria-label={toolbarOpen ? 'Hide song controls' : 'Show song controls'}
-          className={[
-            'w-full flex items-center gap-2 px-4 py-2.5',
-            'text-xs font-semibold uppercase tracking-widest',
-            'text-brand-brown dark:text-brand-tan',
-            'hover:bg-brand-brown/5 dark:hover:bg-brand-tan/5',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan',
-            'transition-colors duration-200',
-          ].join(' ')}
-        >
-          {/* Caret — rotates 90° when open */}
-          <svg
-            className={[
-              'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
-              toolbarOpen ? 'rotate-90' : '',
-            ].filter(Boolean).join(' ')}
-            viewBox="0 0 16 16"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 4l4 4-4 4"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Song Controls
-          {/* Key hint shown while collapsed */}
-          {!toolbarOpen && (
-            <span className="ml-auto font-mono normal-case tracking-normal text-brand-brown/60 dark:text-brand-tan/60">
-              {displayKey}
-            </span>
-          )}
-        </button>
+    <>
+      {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ───────────────────
+          Only rendered when this component owns auto-scroll. On the setlist
+          page, the parent (SetlistViewerClient) renders one shared toolbar.   */}
+      {!injectedAutoScroll && <AutoScrollToolbar scroll={autoScroll} />}
 
-        {/* Collapsible controls */}
+      <div>
+        {/* ── Transposition control bar (accordion) ─────────────────────────── */}
         <div
           className={[
-            'overflow-hidden transition-all duration-200 chord-sheet-toolbar-panel',
-            toolbarOpen ? 'max-h-40' : 'max-h-0',
-          ].join(' ')}
-          aria-label="Chord sheet controls"
+            "mb-6 rounded-xl overflow-hidden",
+            "bg-brand-cream dark:bg-brand-espresso",
+            "border border-brand-brown/20 dark:border-brand-tan/20",
+          ].join(" ")}
         >
-          <div className={[
-            'flex items-center gap-3 flex-wrap',
-            'px-4 py-3',
-            'border-t border-brand-brown/20 dark:border-brand-tan/20',
-          ].join(' ')}>
-
-            {/* ── Key transposition ───────────────────────────────────────── */}
-            <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
-              Key
-            </span>
-
-            {/* −1 semitone button */}
-            <button
-              type="button"
-              onClick={decrement}
-              aria-label="Transpose down one semitone"
-              className={[ctrlBtnClass, 'w-8 h-8'].join(' ')}
-            >
-              −1
-            </button>
-
-            {/* Key selector dropdown */}
-            <select
-              value={displayKey}
-              onChange={(e) => setTargetKey(e.target.value)}
-              aria-label="Select target key"
+          {/* Accordion toggle row */}
+          <button
+            type="button"
+            onClick={() => setToolbarOpen((prev) => !prev)}
+            aria-expanded={toolbarOpen}
+            aria-label={
+              toolbarOpen ? "Hide song controls" : "Show song controls"
+            }
+            className={[
+              "w-full flex items-center gap-2 px-4 py-2.5",
+              "text-xs font-semibold uppercase tracking-widest",
+              "text-brand-brown dark:text-brand-tan",
+              "hover:bg-brand-brown/5 dark:hover:bg-brand-tan/5",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
+              "transition-colors duration-200",
+            ].join(" ")}
+          >
+            {/* Caret — rotates 90° when open */}
+            <svg
               className={[
-                'px-3 py-1.5 rounded-lg',
-                'font-mono font-bold text-sm',
-                'text-brand-espresso dark:text-brand-cream',
-                'bg-brand-cream dark:bg-brand-espresso',
-                'border border-brand-tan dark:border-brand-tan/60',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-                'transition-colors duration-200',
-                'cursor-pointer',
-              ].join(' ')}
+                "w-3.5 h-3.5 shrink-0 transition-transform duration-200",
+                toolbarOpen ? "rotate-90" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
             >
-              {(NOTES as string[]).map((note) => (
-                <option key={note} value={note}>
-                  {note}
-                </option>
-              ))}
-            </select>
+              <path
+                d="M6 4l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Song Controls
+            {/* Key hint shown while collapsed */}
+            {!toolbarOpen && (
+              <span className="ml-auto font-mono normal-case tracking-normal text-brand-brown/60 dark:text-brand-tan/60">
+                {displayKey}
+              </span>
+            )}
+          </button>
 
-            {/* +1 semitone button */}
-            <button
-              type="button"
-              onClick={increment}
-              aria-label="Transpose up one semitone"
-              className={[ctrlBtnClass, 'w-8 h-8'].join(' ')}
+          {/* Collapsible controls */}
+          <div
+            className={[
+              "overflow-hidden transition-all duration-200 chord-sheet-toolbar-panel",
+              toolbarOpen ? "max-h-40" : "max-h-0",
+            ].join(" ")}
+            aria-label="Chord sheet controls"
+          >
+            <div
+              className={[
+                "flex items-center gap-3 flex-wrap",
+                "px-4 py-3",
+                "border-t border-brand-brown/20 dark:border-brand-tan/20",
+              ].join(" ")}
             >
-              +1
-            </button>
+              {/* ── Key transposition ───────────────────────────────────────── */}
+              <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
+                Key
+              </span>
 
-            {/* Reset key — only show when transposed */}
-            {semitoneOffset !== 0 && (
+              {/* −1 semitone button */}
               <button
                 type="button"
-                onClick={reset}
-                aria-label="Reset to original key"
-                className={[
-                  'px-2.5 py-1 rounded-lg shrink-0',
-                  'text-xs font-semibold font-sans',
-                  'text-brand-brown dark:text-brand-tan',
-                  'hover:text-brand-espresso dark:hover:text-brand-cream',
-                  'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-                  'transition-colors duration-200',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-                ].join(' ')}
+                onClick={decrement}
+                aria-label="Transpose down one semitone"
+                className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
               >
-                Reset
+                −1
               </button>
-            )}
 
-            {/* Original key indicator */}
-            <span className="ml-auto text-xs font-medium text-brand-brown dark:text-brand-tan shrink-0">
-              Original: {originalKey}
-            </span>
+              {/* Key selector dropdown */}
+              <select
+                value={displayKey}
+                onChange={(e) => setTargetKey(e.target.value)}
+                aria-label="Select target key"
+                className={[
+                  "px-3 py-1.5 rounded-lg",
+                  "font-mono font-bold text-sm",
+                  "text-brand-espresso dark:text-brand-cream",
+                  "bg-brand-cream dark:bg-brand-espresso",
+                  "border border-brand-tan dark:border-brand-tan/60",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                  "transition-colors duration-200",
+                  "cursor-pointer",
+                ].join(" ")}
+              >
+                {(NOTES as string[]).map((note) => (
+                  <option key={note} value={note}>
+                    {note}
+                  </option>
+                ))}
+              </select>
 
-            {/* ── Divider ───────────────────────────────────────────────────── */}
-            <span className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0" aria-hidden="true" />
+              {/* +1 semitone button */}
+              <button
+                type="button"
+                onClick={increment}
+                aria-label="Transpose up one semitone"
+                className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
+              >
+                +1
+              </button>
 
-            {/* ── Font size controls ───────────────────────────────────────── */}
-            <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
-              Size
-            </span>
+              {/* Reset key — only show when transposed */}
+              {semitoneOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={reset}
+                  aria-label="Reset to original key"
+                  className={[
+                    "px-2.5 py-1 rounded-lg shrink-0",
+                    "text-xs font-semibold font-sans",
+                    "text-brand-brown dark:text-brand-tan",
+                    "hover:text-brand-espresso dark:hover:text-brand-cream",
+                    "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                    "transition-colors duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                  ].join(" ")}
+                >
+                  Reset
+                </button>
+              )}
 
-            {/* A− decrease font */}
-            <button
-              type="button"
-              onClick={decreaseFont}
-              aria-label="Decrease font size"
-              className={[ctrlBtnClass, 'w-8 h-8 text-xs'].join(' ')}
-            >
-              A−
-            </button>
+              {/* Original key indicator */}
+              <span className="ml-auto text-xs font-medium text-brand-brown dark:text-brand-tan shrink-0">
+                Original: {originalKey}
+              </span>
 
-            {/* Font size indicator — click to reset */}
-            <button
-              type="button"
-              onClick={resetFont}
-              aria-label={`Font size ${fontSize}px — click to reset`}
-              title="Click to reset font size"
-              className={[
-                'px-2 py-1 rounded-lg shrink-0',
-                'text-xs font-mono font-bold',
-                'text-brand-espresso dark:text-brand-cream',
-                'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-                'transition-colors duration-200',
-              ].join(' ')}
-            >
-              {fontSize}px
-            </button>
+              {/* ── Divider ───────────────────────────────────────────────────── */}
+              <span
+                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
+                aria-hidden="true"
+              />
 
-            {/* A+ increase font */}
-            <button
-              type="button"
-              onClick={increaseFont}
-              aria-label="Increase font size"
-              className={[ctrlBtnClass, 'w-8 h-8 text-xs'].join(' ')}
-            >
-              A+
-            </button>
+              {/* ── Font size controls ───────────────────────────────────────── */}
+              <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
+                Size
+              </span>
 
-            {/* ── Divider ───────────────────────────────────────────────────── */}
-            <span className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0" aria-hidden="true" />
+              {/* A− decrease font */}
+              <button
+                type="button"
+                onClick={decreaseFont}
+                aria-label="Decrease font size"
+                className={[ctrlBtnClass, "w-8 h-8 text-xs"].join(" ")}
+              >
+                A−
+              </button>
 
-            {/* ── Stage-ready toggles ──────────────────────────────────────── */}
+              {/* Font size indicator — click to reset */}
+              <button
+                type="button"
+                onClick={resetFont}
+                aria-label={`Font size ${fontSize}px — click to reset`}
+                title="Click to reset font size"
+                className={[
+                  "px-2 py-1 rounded-lg shrink-0",
+                  "text-xs font-mono font-bold",
+                  "text-brand-espresso dark:text-brand-cream",
+                  "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                  "transition-colors duration-200",
+                ].join(" ")}
+              >
+                {fontSize}px
+              </button>
 
-            {/* Hide Chords toggle */}
-            <button
-              type="button"
-              onClick={() => setChordsHidden((prev) => !prev)}
-              aria-pressed={chordsHidden}
-              aria-label={chordsHidden ? 'Show chords' : 'Hide chords'}
-              className={[
-                toggleBtnClass,
-                chordsHidden ? toggleActiveClass : toggleInactiveClass,
-              ].join(' ')}
-            >
-              {chordsHidden ? 'Show Chords' : 'Hide Chords'}
-            </button>
+              {/* A+ increase font */}
+              <button
+                type="button"
+                onClick={increaseFont}
+                aria-label="Increase font size"
+                className={[ctrlBtnClass, "w-8 h-8 text-xs"].join(" ")}
+              >
+                A+
+              </button>
 
+              {/* ── Divider ───────────────────────────────────────────────────── */}
+              <span
+                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
+                aria-hidden="true"
+              />
+
+              {/* ── Stage-ready toggles ──────────────────────────────────────── */}
+
+              {/* Hide Chords toggle */}
+              <button
+                type="button"
+                onClick={() => setChordsHidden((prev) => !prev)}
+                aria-pressed={chordsHidden}
+                aria-label={chordsHidden ? "Show chords" : "Hide chords"}
+                className={[
+                  toggleBtnClass,
+                  chordsHidden ? toggleActiveClass : toggleInactiveClass,
+                ].join(" ")}
+              >
+                {chordsHidden ? "Show Chords" : "Hide Chords"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Chord sheet ────────────────────────────────────────────────────── */}
-      <div ref={sheetRef} className={chordDisplayClass} aria-label="Chord sheet">
-        {processedLines.map((line, lineIndex) => {
-          if (line.type === 'blank') {
-            return <div key={lineIndex} className="h-4" aria-hidden="true" />
-          }
+        {/* ── Chord sheet ────────────────────────────────────────────────────── */}
+        <div
+          ref={sheetRef}
+          className={chordDisplayClass}
+          aria-label="Chord sheet"
+        >
+          {processedLines.map((line, lineIndex) => {
+            if (line.type === "blank") {
+              return <div key={lineIndex} className="h-4" aria-hidden="true" />;
+            }
 
-          if (line.type === 'header') {
+            if (line.type === "header") {
+              return (
+                <span key={lineIndex} className="section-title">
+                  {line.raw}
+                </span>
+              );
+            }
+
+            if (line.type === "lyric") {
+              return (
+                <div
+                  key={lineIndex}
+                  className="text-brand-espresso dark:text-brand-cream leading-snug"
+                >
+                  {line.raw}
+                </div>
+              );
+            }
+
+            // type === 'chord' — omit entire row when chords are hidden
+            if (chordsHidden) return null;
+
             return (
-              <span key={lineIndex} className="section-title">
-                {line.raw}
-              </span>
-            )
-          }
-
-          if (line.type === 'lyric') {
-            return (
-              <div key={lineIndex} className="text-brand-espresso dark:text-brand-cream leading-snug">
-                {line.raw}
-              </div>
-            )
-          }
-
-          // type === 'chord' — omit entire row when chords are hidden
-          if (chordsHidden) return null
-
-          return (
-            <div key={lineIndex} className="chord-row leading-snug">
-              {line.tokens.map((token, tokenIndex) => {
-                if (token.isChord && token.originalChord !== null) {
+              <div key={lineIndex} className="chord-row leading-snug">
+                {line.tokens.map((token, tokenIndex) => {
+                  if (token.isChord && token.originalChord !== null) {
+                    return (
+                      <span
+                        key={tokenIndex}
+                        className="chord-item"
+                        data-original-chord={token.originalChord}
+                      >
+                        {token.text}
+                      </span>
+                    );
+                  }
+                  // Non-chord token (lyric text on a chord line, or whitespace padding)
                   return (
                     <span
                       key={tokenIndex}
-                      className="chord-item"
-                      data-original-chord={token.originalChord}
+                      className="text-brand-espresso dark:text-brand-cream"
                     >
                       {token.text}
                     </span>
-                  )
-                }
-                // Non-chord token (lyric text on a chord line, or whitespace padding)
-                return (
-                  <span key={tokenIndex} className="text-brand-espresso dark:text-brand-cream">
-                    {token.text}
-                  </span>
-                )
-              })}
-            </div>
-          )
-        })}
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Bottom spacer — prevents toolbar from obscuring chord content (AC 20) */}
+        {autoScroll.isActive && (
+          <div className="h-24 w-full" aria-hidden="true" />
+        )}
       </div>
-    </div>
-  )
+    </>
+  );
 }

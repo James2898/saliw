@@ -4,8 +4,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
-## [Unreleased] — 2026-04-27
+## [Unreleased] — 2026-05-03
+
 ### Changed
+
+- TASK-035 extension: removed manual-scroll auto-pause; reduced speed range to 5 steps × 5 px/s (1→5 px/s … 5→25 px/s); default speed changed from 3 to 1 (`TASK-035`)
+  - The `scroll` event listener that called `cancelRaf` on user wheel/touch input has been removed entirely; `lastScrollYRef` is gone. The rAF loop now runs uninterrupted regardless of manual scrolling.
+  - `MAX_SPEED` reduced from 10 to 5; `speedToPxPerSecond(n)` simplified to `n * 5`; slider `max` attribute and `aria-label` updated to reflect "of 5"; `DEFAULT_SPEED` changed from 3 to 1.
+  - Invalidates original AC 9, 10, 16, 17, 19 as documented in the task resolution notes.
+  - Affected files: `src/hooks/useAutoScroll.ts`, `src/components/client/AutoScrollToolbar.tsx`
+
+## [Unreleased] — 2026-04-27
+
+### Changed
+
 - Standardize loading indicators and save/error feedback for all async buttons across the portal (`TASK-034`)
   - Every async button now shows a Lucide `Loader2` spinner with `animate-spin` and present-progressive label while in flight; button is `disabled` and all sibling async buttons on the same resource are also locked (`isAnyPending`).
   - Inline error messages use `role="alert"` and `text-red-700 dark:text-red-400` uniformly; `text-red-500` in `GoLiveButton` and `FollowLeaderButton` corrected to `text-red-700` (WCAG AA on cream background).
@@ -14,17 +26,23 @@ All notable changes to the Saliw Music Portal are documented here.
   - Affected files: `src/components/client/LoginForm.tsx`, `src/components/client/ForgotPasswordForm.tsx`, `src/components/client/ResetPasswordForm.tsx`, `src/components/client/EditProfileForm.tsx`, `src/components/client/MusicianForm.tsx`, `src/components/client/NewSongFormClient.tsx`, `src/components/client/SongEditorClient.tsx`, `src/components/client/SetlistBuilder/SetlistPanel.tsx`, `src/components/client/SetlistBuilder/CloneSetlistDialog.tsx`, `src/components/client/SetlistBuilder/SetlistPeopleSection.tsx`, `src/components/client/SetlistBuilder/ErrorBanner.tsx`, `src/components/client/GoLiveButton.tsx`, `src/components/client/FollowLeaderButton.tsx`, `src/components/client/logout-modal.tsx`, `src/components/client/navbar.tsx`
 
 ## [Unreleased] — 2026-04-27
+
 ### Added
+
 - feat(metadata): add per-page browser-tab titles via `metadata.title.template`; homepage reads `Saliw` via `title.default`, all 17 other pages supply plain strings or `generateMetadata` without suffix
   - Affected files: `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/library/page.tsx`, `src/app/library/new/page.tsx`, `src/app/library/[id]/page.tsx`, `src/app/library/[id]/edit/page.tsx`, `src/app/setlists/page.tsx`, `src/app/setlists/new/page.tsx`, `src/app/setlists/[id]/page.tsx`, `src/app/setlists/[id]/edit/page.tsx`, `src/app/musicians/page.tsx`, `src/app/musicians/new/page.tsx`, `src/app/musicians/[id]/edit/page.tsx`, `src/app/profile/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/(auth)/forgot-password/page.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/app/auth/auth-code-error/page.tsx`
 
 ## [Unreleased] — 2026-04-27
+
 ### Added
+
 - Setlist People Section: worship leader assignment and instrumentalist lineup management on the setlist edit page; read-only people block on the setlist viewer page (`TASK-033`)
   - Affected files: `src/components/client/SetlistBuilder/SetlistPeopleSection.tsx`, `src/app/setlists/[id]/edit/page.tsx`, `src/app/setlists/[id]/page.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`
 
 ## [Unreleased] — 2026-04-27
+
 ### Added
+
 - Musicians Roster CRUD UI at `/musicians` (`TASK-032`)
   - Affected files: `src/app/musicians/page.tsx`, `src/app/musicians/new/page.tsx`, `src/app/musicians/[id]/edit/page.tsx`, `src/app/musicians/loading.tsx`, `src/components/client/MusicianForm.tsx`, `src/components/client/navbar.tsx`
 
