@@ -5,6 +5,8 @@ import type { ProcessedLine } from '@/utils/musicLogic'
 import { NOTES, shiftChord } from '@/utils/musicLogic'
 import { useTranspose } from '@/hooks/useTranspose'
 import { useFontSize } from '@/hooks/useFontSize'
+import { useAutoScroll } from '@/hooks/useAutoScroll'
+import AutoScrollToolbar from '@/components/client/AutoScrollToolbar'
 
 // ── Module-level constants — stable class strings extracted to avoid per-render allocations ──
 
@@ -83,6 +85,8 @@ export default function ChordSheetClient({
   const { fontSize, increase: increaseFont, decrease: decreaseFont, reset: resetFont } =
     useFontSize()
 
+  const autoScroll = useAutoScroll()
+
   const [chordsHidden, setChordsHidden] = useState(false)
   const [toolbarOpen, setToolbarOpen] = useState(false)
 
@@ -142,7 +146,11 @@ export default function ChordSheetClient({
     .join(' ')
 
   return (
-    <div>
+    <>
+      {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
+      <AutoScrollToolbar scroll={autoScroll} />
+
+      <div>
       {/* ── Transposition control bar (accordion) ─────────────────────────── */}
       <div
         className={[
@@ -400,6 +408,13 @@ export default function ChordSheetClient({
           )
         })}
       </div>
+
+      {/* ── Bottom spacer — prevents toolbar from obscuring chord content (AC 20) */}
+      {autoScroll.isActive && (
+        <div className="h-24 w-full" aria-hidden="true" />
+      )}
     </div>
+
+    </>
   )
 }
