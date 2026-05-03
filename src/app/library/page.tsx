@@ -1,104 +1,111 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Pencil } from 'lucide-react'
-import { createClient } from '@/services/supabase/server'
-import SearchBar from '@/components/client/SearchBar'
-import NewSongButton from '@/components/library/NewSongButton'
-import PaginationControls from '@/components/client/PaginationControls'
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
+import { createClient } from "@/services/supabase/server";
+import SearchBar from "@/components/client/SearchBar";
+import NewSongButton from "@/components/library/NewSongButton";
+import PaginationControls from "@/components/client/PaginationControls";
 
 export const metadata: Metadata = {
-  title: 'Song Library',
-  description: 'Browse and search the full worship song library.',
-}
+  title: "Song Library",
+  description: "Browse and search the full worship song library.",
+};
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 10;
 
 type SongRow = {
-  id: string
-  title: string
-  artist: string
-  original_key: string
-}
+  id: string;
+  title: string;
+  artist: string;
+  original_key: string;
+};
 
 interface LibraryPageProps {
-  searchParams: Promise<{ q?: string; page?: string }>
+  searchParams: Promise<{ q?: string; page?: string }>;
 }
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
   // ── Auth check (no redirect — page is public; used only for RBAC below) ───
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   // ── Resolve search params ───────────────────────────────────────────────────
-  const params = await searchParams
+  const params = await searchParams;
   // Strip PostgREST filter metacharacters to prevent filter-clause injection
-  const q = (params.q?.trim() ?? '').slice(0, 100).replace(/[(),%]/g, '')
+  const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%]/g, "");
 
   // Parse page param — clamp to 1 as a lower bound; upper bound applied after count is known
-  const rawPage = parseInt(params.page ?? '1', 10)
-  const parsedPage = isNaN(rawPage) ? 1 : rawPage
-  const requestedPage = Math.max(1, parsedPage)
+  const rawPage = parseInt(params.page ?? "1", 10);
+  const parsedPage = isNaN(rawPage) ? 1 : rawPage;
+  const requestedPage = Math.max(1, parsedPage);
 
   // ── Fetch user role for RBAC (only when authenticated) ────────────────────
-  let isMusicDirector = false
+  let isMusicDirector = false;
   if (user) {
     try {
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-      isMusicDirector = profile?.role === 'music_director'
+      isMusicDirector = profile?.role === "music_director";
     } catch {
-      isMusicDirector = false
+      isMusicDirector = false;
     }
   }
 
   // ── Fetch songs (paginated, single round-trip) ──────────────────────────────
   // SELECT only metadata columns — content (lyrics/chords) is intentionally excluded
-  let songs: SongRow[] = []
-  let fetchError = false
-  let count: number | null = null
+  let songs: SongRow[] = [];
+  let fetchError = false;
+  let count: number | null = null;
 
   try {
     let query = supabase
-      .from('songs')
-      .select('id, title, artist, original_key', { count: 'exact', head: false })
-      .order('title', { ascending: true })
+      .from("songs")
+      .select("id, title, artist, original_key", {
+        count: "exact",
+        head: false,
+      })
+      .order("title", { ascending: true });
 
     if (q) {
-      query = query.or(`title.ilike.%${q}%,artist.ilike.%${q}%`)
+      query = query.or(`title.ilike.%${q}%,artist.ilike.%${q}%`);
     }
 
-    const offset = (requestedPage - 1) * PAGE_SIZE
-    const { data, error, count: rowCount } = await query.range(offset, offset + PAGE_SIZE - 1)
+    const offset = (requestedPage - 1) * PAGE_SIZE;
+    const {
+      data,
+      error,
+      count: rowCount,
+    } = await query.range(offset, offset + PAGE_SIZE - 1);
 
     if (error) {
-      fetchError = true
+      fetchError = true;
     } else {
-      songs = (data ?? []) as SongRow[]
-      count = rowCount
+      songs = (data ?? []) as SongRow[];
+      count = rowCount;
     }
   } catch {
-    fetchError = true
+    fetchError = true;
   }
 
   // ── Derive pagination values ────────────────────────────────────────────────
-  const totalCount = count ?? 0
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   // Clamp currentPage to [1, totalPages] — handles out-of-bounds ?page params
-  const currentPage = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1
+  const currentPage = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1;
 
   // ── Derived empty-state message ─────────────────────────────────────────────
   const emptyMessage = fetchError
-    ? 'Unable to load songs. Please try again.'
+    ? "Unable to load songs. Please try again."
     : q
-    ? 'No songs match your search.'
-    : 'No songs in the library yet.'
+      ? "No songs match your search."
+      : "No songs in the library yet.";
 
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
@@ -112,7 +119,8 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           <NewSongButton isMusicDirector={isMusicDirector} />
         </div>
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-6">
-          {totalCount} {totalCount === 1 ? 'song' : 'songs'}{q ? ` matching "${q}"` : ' in library'}
+          {totalCount} {totalCount === 1 ? "song" : "songs"}
+          {q ? ` matching "${q}"` : " in library"}
         </p>
 
         {/* ── Search bar ───────────────────────────────────────────────────── */}
@@ -142,10 +150,10 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                   <Link
                     href={`/library/${song.id}`}
                     className={[
-                      'flex-1 flex items-center justify-between px-4 py-3 rounded-xl',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1',
-                      'min-w-0',
-                    ].join(' ')}
+                      "flex-1 flex items-center justify-between px-4 py-3 rounded-xl",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1",
+                      "min-w-0",
+                    ].join(" ")}
                     aria-label={`View ${song.title} by ${song.artist}`}
                   >
                     <div className="min-w-0">
@@ -166,11 +174,11 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                     <Link
                       href={`/library/${song.id}/edit`}
                       className={[
-                        'shrink-0 flex items-center justify-center w-9 h-9 mr-2 rounded-lg',
-                        'text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-                        'transition-colors duration-200',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1',
-                      ].join(' ')}
+                        "shrink-0 flex items-center justify-center w-9 h-9 mr-2 rounded-lg",
+                        "text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                        "transition-colors duration-200",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1",
+                      ].join(" ")}
                       aria-label={`Edit ${song.title}`}
                     >
                       <Pencil size={15} strokeWidth={2} aria-hidden="true" />
@@ -196,5 +204,5 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
         )}
       </div>
     </main>
-  )
+  );
 }
