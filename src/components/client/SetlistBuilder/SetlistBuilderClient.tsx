@@ -46,6 +46,7 @@ export interface SetlistBuilderClientProps {
   allSongs: SongLibraryItem[]
   libraryError?: string | null
   initialDate?: string              // empty string in create mode
+  initialIsPublic?: boolean
 }
 
 // ── Pure helper ────────────────────────────────────────────────────────────────
@@ -67,6 +68,7 @@ export default function SetlistBuilderClient({
   allSongs,
   libraryError,
   initialDate,
+  initialIsPublic = false,
 }: SetlistBuilderClientProps) {
   const router = useRouter()
 
@@ -74,16 +76,18 @@ export default function SetlistBuilderClient({
   const [localSongs, setLocalSongs] = useState<SortableSong[]>(() => initialSongs)
   const [name, setName] = useState(() => setlistName)
   const [date, setDate] = useState(() => initialDate ?? '')
+  const [isPublic, setIsPublic] = useState(() => initialIsPublic)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [showCloneDialog, setShowCloneDialog] = useState(false)
   const [isCloning, setIsCloning] = useState(false)
 
-  // Dirty: compare local vs initial (name, date, songs)
+  // Dirty: compare local vs initial (name, date, isPublic, songs)
   const isDirty =
     name !== setlistName ||
     date !== (initialDate ?? '') ||
+    isPublic !== initialIsPublic ||
     computeIsDirty(localSongs, initialSongs)
 
   // Derived values — never stored as separate state
@@ -137,6 +141,7 @@ export default function SetlistBuilderClient({
         const { data: created, error: createError } = await createSetlist({
           name: name.trim(),
           date: date,
+          is_public: isPublic,
         })
         if (createError || !created) {
           throw new Error(createError ?? 'Failed to create setlist.')
@@ -183,12 +188,13 @@ export default function SetlistBuilderClient({
       } else {
         // ── EDIT MODE ─────────────────────────────────────────────────────────
 
-        // Update setlist name/date if changed
-        if (name !== setlistName || date !== (initialDate ?? '')) {
+        // Update setlist header fields if changed
+        if (name !== setlistName || date !== (initialDate ?? '') || isPublic !== initialIsPublic) {
           const { error: updateErr } = await updateSetlist({
             id: setlistId,
             name: name.trim() || setlistName,
             date: date,
+            is_public: isPublic,
           })
           if (updateErr) throw new Error(updateErr)
         }
@@ -318,6 +324,36 @@ export default function SetlistBuilderClient({
             onChange={(e) => setDate(e.target.value)}
             className="rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1"
           />
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso px-4 py-2.5">
+          <div>
+            <p className={labelClass.replace('mb-1.5', 'mb-0')}>Public</p>
+            <p className="text-xs text-brand-brown/60 dark:text-brand-tan/60 mt-0.5">
+              {isPublic ? 'Anyone with the link can view this setlist' : 'Only music directors can view this setlist'}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isPublic}
+            onClick={() => setIsPublic((v) => !v)}
+            className={[
+              'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
+              'transition-colors duration-200 ease-in-out',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2',
+              isPublic
+                ? 'bg-brand-espresso dark:bg-brand-tan'
+                : 'bg-brand-brown/20 dark:bg-brand-brown/40',
+            ].join(' ')}
+          >
+            <span
+              className={[
+                'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm',
+                'transform transition-transform duration-200 ease-in-out',
+                isPublic ? 'translate-x-5' : 'translate-x-0',
+              ].join(' ')}
+            />
+          </button>
         </div>
       </div>
 
