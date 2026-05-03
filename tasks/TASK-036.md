@@ -216,9 +216,10 @@ Before reporting completion, the developer must:
 
 - **Completed (implementation):** 2026-05-03
 - **Real DB import (AC9, AC10):** DEFERRED — requires user-provided `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Script is structured and verified ready for AC9/AC10 to pass on first execution.
-- **Branch:** `feat/import-english-hymns-TASK-036` (branched from `origin/develop` at `14cf904`)
+- **Branch:** `feature/TASK-036-import-english-hymns` (branched from `origin/develop` at `14cf904`)
 - **Base branch:** `develop`
 - **Commits:** see commit log below; one commit per logical chunk per task guidance.
+- **Note:** Branch renamed per @release-manager convention check (2026-05-03). Previous label was `feat/import-english-hymns-TASK-036`; renamed via `git branch -m` only — no commits amended, no remote affected (branch was never pushed).
 
 ### Files changed
 
