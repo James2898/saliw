@@ -9,16 +9,21 @@ export default function LibraryLoading() {
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
       <div className="max-w-3xl mx-auto">
-
         {/* ── Header skeleton ──────────────────────────────────────────────── */}
-        <div className="flex items-start justify-between gap-4 mb-1" aria-hidden="true">
+        <div
+          className="flex items-start justify-between gap-4 mb-1"
+          aria-hidden="true"
+        >
           {/* Title placeholder */}
           <div className="h-9 w-44 rounded-lg animate-pulse bg-brand-brown/10" />
           {/* New Song button placeholder (desktop) */}
           <div className="hidden md:block h-9 w-28 rounded-xl animate-pulse bg-brand-brown/10" />
         </div>
         {/* Count line placeholder */}
-        <div className="h-3 w-28 rounded animate-pulse bg-brand-brown/10 mb-6" aria-hidden="true" />
+        <div
+          className="h-3 w-28 rounded animate-pulse bg-brand-brown/10 mb-6"
+          aria-hidden="true"
+        />
 
         {/* ── Search bar skeleton ───────────────────────────────────────────── */}
         <div className="mb-6" aria-hidden="true">
@@ -26,7 +31,11 @@ export default function LibraryLoading() {
         </div>
 
         {/* ── Song row skeletons ────────────────────────────────────────────── */}
-        <ul className="flex flex-col gap-2" role="list" aria-label="Loading songs">
+        <ul
+          className="flex flex-col gap-2"
+          role="list"
+          aria-label="Loading songs"
+        >
           {Array.from({ length: 10 }).map((_, i) => (
             <li key={i}>
               <div
@@ -44,8 +53,7 @@ export default function LibraryLoading() {
             </li>
           ))}
         </ul>
-
       </div>
     </main>
-  )
+  );
 }

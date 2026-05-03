@@ -1,24 +1,30 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from "react";
 
-type PaddingVariant = 'none' | 'sm' | 'md' | 'lg'
+type PaddingVariant = "none" | "sm" | "md" | "lg";
 
 interface CardProps {
-  children: ReactNode
-  className?: string
-  padding?: PaddingVariant
+  children: ReactNode;
+  className?: string;
+  padding?: PaddingVariant;
 }
 
 const paddingMap: Record<PaddingVariant, string> = {
-  none: '',
-  sm: 'p-4',
-  md: 'p-6',
-  lg: 'p-10',
-}
+  none: "",
+  sm: "p-4",
+  md: "p-6",
+  lg: "p-10",
+};
 
-export default function Card({ children, className = '', padding = 'md' }: CardProps) {
+export default function Card({
+  children,
+  className = "",
+  padding = "md",
+}: CardProps) {
   return (
-    <div className={`main-card rounded-3xl border ${paddingMap[padding]} ${className}`}>
+    <div
+      className={`main-card rounded-3xl border ${paddingMap[padding]} ${className}`}
+    >
       {children}
     </div>
-  )
+  );
 }
