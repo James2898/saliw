@@ -38,6 +38,7 @@ export default async function HomePage() {
           .select('id, name, date, setlist_songs(count)')
           .gte('date', todayISO)
           .order('date', { ascending: true })
+          .order('name', { ascending: true })
           .limit(5),
         supabase
           .from('songs')
@@ -117,6 +118,7 @@ export default async function HomePage() {
       .select('id, name, date, setlist_songs(count)')
       .gte('date', todayISO)
       .order('date', { ascending: true })
+      .order('name', { ascending: true })
       .limit(5),
   ])
 
