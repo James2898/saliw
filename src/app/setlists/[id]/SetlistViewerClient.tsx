@@ -7,7 +7,9 @@ import ServiceNavigator from '@/components/client/ServiceNavigator'
 import SetlistSongSection from '@/components/client/SetlistSongSection'
 import GoLiveButton from '@/components/client/GoLiveButton'
 import FollowLeaderButton from '@/components/client/FollowLeaderButton'
+import AutoScrollToolbar from '@/components/client/AutoScrollToolbar'
 import { useSetlistSync } from '@/hooks/useSetlistSync'
+import { useAutoScroll } from '@/hooks/useAutoScroll'
 import type { ProcessedLine } from '@/utils/musicLogic'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -78,8 +80,13 @@ export default function SetlistViewerClient({
   const [globalChordsHidden, setGlobalChordsHidden] = useState(false)
   const toggleGlobalChords = useCallback(() => setGlobalChordsHidden((prev) => !prev), [])
 
+  const autoScroll = useAutoScroll()
+
   return (
     <>
+      {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
+      <AutoScrollToolbar scroll={autoScroll} />
+
       {/* ── Setlist header (name + date + Go Live/Follow Leader + Hide Chords) ── */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
@@ -202,6 +209,11 @@ export default function SetlistViewerClient({
           )
         })}
       </div>
+
+      {/* ── Bottom spacer — prevents toolbar from obscuring last song content (AC 20) */}
+      {autoScroll.isActive && (
+        <div className="h-24 w-full" aria-hidden="true" />
+      )}
     </>
   )
 }
