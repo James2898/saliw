@@ -1,69 +1,78 @@
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
-import { createClient } from '@/services/supabase/server'
-import { getSetlistById, getSetlistWithSongs, getSetlistLineup } from '@/app/actions/setlistActions'
-import { getAllSongs } from '@/app/actions/songActions'
-import { listMusicians } from '@/app/actions/musicianActions'
-import Card from '@/components/server/card'
-import SetlistBuilderClient from '@/components/client/SetlistBuilder/SetlistBuilderClient'
-import SetlistPeopleSection from '@/components/client/SetlistBuilder/SetlistPeopleSection'
-import type { SortableSong, SongLibraryItem } from '@/components/client/SetlistBuilder/SetlistBuilderClient'
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import { createClient } from "@/services/supabase/server";
+import {
+  getSetlistById,
+  getSetlistWithSongs,
+  getSetlistLineup,
+} from "@/app/actions/setlistActions";
+import { getAllSongs } from "@/app/actions/songActions";
+import { listMusicians } from "@/app/actions/musicianActions";
+import Card from "@/components/server/card";
+import SetlistBuilderClient from "@/components/client/SetlistBuilder/SetlistBuilderClient";
+import SetlistPeopleSection from "@/components/client/SetlistBuilder/SetlistPeopleSection";
+import type {
+  SortableSong,
+  SongLibraryItem,
+} from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 interface EditSetlistPageProps {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: EditSetlistPageProps) {
-  const { id } = await params
-  const { data: setlist } = await getSetlistById({ id })
-  if (!setlist) return { title: 'Edit Setlist' }
-  return { title: `Edit ${setlist.name}` }
+  const { id } = await params;
+  const { data: setlist } = await getSetlistById({ id });
+  if (!setlist) return { title: "Edit Setlist" };
+  return { title: `Edit ${setlist.name}` };
 }
 
-export default async function EditSetlistPage({ params }: EditSetlistPageProps) {
-  const { id } = await params
-  const supabase = await createClient()
+export default async function EditSetlistPage({
+  params,
+}: EditSetlistPageProps) {
+  const { id } = await params;
+  const supabase = await createClient();
 
   // ── Auth check ─────────────────────────────────────────────────────────────
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login')
+    redirect("/login");
   }
 
   // ── Role check ─────────────────────────────────────────────────────────────
-  let isMusicDirector = false
+  let isMusicDirector = false;
   try {
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    isMusicDirector = profile?.role === 'music_director'
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    isMusicDirector = profile?.role === "music_director";
   } catch {
-    isMusicDirector = false
+    isMusicDirector = false;
   }
 
   if (!isMusicDirector) {
-    redirect(`/setlists/${id}`)
+    redirect(`/setlists/${id}`);
   }
 
   // ── Back link shared style ──────────────────────────────────────────────────
   const backLinkClass = [
-    'inline-flex items-center gap-1.5 mb-6',
-    'text-sm font-medium text-brand-brown dark:text-brand-tan',
-    'hover:text-brand-espresso dark:hover:text-brand-cream',
-    'transition-colors duration-200',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
-  ].join(' ')
+    "inline-flex items-center gap-1.5 mb-6",
+    "text-sm font-medium text-brand-brown dark:text-brand-tan",
+    "hover:text-brand-espresso dark:hover:text-brand-cream",
+    "transition-colors duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2",
+  ].join(" ");
 
   // ── Fetch setlist header ────────────────────────────────────────────────────
-  const { data: setlist, error: setlistError } = await getSetlistById({ id })
+  const { data: setlist, error: setlistError } = await getSetlistById({ id });
 
   if (setlistError || !setlist) {
     return (
@@ -80,7 +89,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
           </Card>
         </div>
       </main>
-    )
+    );
   }
 
   // ── Parallel fetch: setlist songs + all songs + musicians + lineup ──────────
@@ -94,7 +103,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
     getAllSongs(),
     listMusicians(),
     getSetlistLineup({ setlist_id: id }),
-  ])
+  ]);
 
   if (songsError) {
     return (
@@ -111,13 +120,13 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
           </Card>
         </div>
       </main>
-    )
+    );
   }
 
   // ── Sort by order_index ascending ──────────────────────────────────────────
   const sortedSongs = (songsRaw ?? [])
     .slice()
-    .sort((a, b) => a.order_index - b.order_index)
+    .sort((a, b) => a.order_index - b.order_index);
 
   // ── Map to SortableSong[] ──────────────────────────────────────────────────
   const initialSongs: SortableSong[] = sortedSongs.map((entry, i) => ({
@@ -128,7 +137,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
     originalKey: entry.songs.original_key,
     performanceKey: entry.performance_key,
     orderIndex: i,
-  }))
+  }));
 
   // ── Map allSongs to SongLibraryItem[] ──────────────────────────────────────
   const allSongs: SongLibraryItem[] = (allSongsRaw ?? []).map((s) => ({
@@ -136,7 +145,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
     title: s.title,
     artist: s.artist,
     original_key: s.original_key,
-  }))
+  }));
 
   return (
     <div className="min-h-screen bg-brand-cream dark:bg-brand-darker font-sans">
@@ -170,11 +179,11 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
             initialSongs={initialSongs}
             allSongs={allSongs}
             libraryError={libraryError}
-            initialDate={setlist.date ? setlist.date.slice(0, 10) : ''}
+            initialDate={setlist.date ? setlist.date.slice(0, 10) : ""}
             initialIsPublic={setlist.is_public}
           />
         </div>
       </main>
     </div>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-import type { ReactElement } from 'react'
-import Link from 'next/link'
+import type { ReactElement } from "react";
+import Link from "next/link";
 
 export interface RecentSong {
-  id: string
-  title: string
-  artist: string
-  original_key: string
+  id: string;
+  title: string;
+  artist: string;
+  original_key: string;
 }
 
 interface RecentSongsProps {
-  songs: RecentSong[]
+  songs: RecentSong[];
 }
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan";
 
 export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
   return (
@@ -22,7 +22,9 @@ export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
         Recent Songs
       </p>
       {songs.length === 0 ? (
-        <p className="text-sm text-brand-brown dark:text-brand-tan">No songs in the library yet.</p>
+        <p className="text-sm text-brand-brown dark:text-brand-tan">
+          No songs in the library yet.
+        </p>
       ) : (
         <ul className="flex flex-col gap-2" role="list">
           {songs.map((song) => (
@@ -30,10 +32,10 @@ export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
               <Link
                 href={`/library/${song.id}`}
                 className={[
-                  'flex items-center justify-between gap-3 px-3 py-2 rounded-lg',
-                  'hover:bg-brand-tan/10 transition-colors duration-200',
+                  "flex items-center justify-between gap-3 px-3 py-2 rounded-lg",
+                  "hover:bg-brand-tan/10 transition-colors duration-200",
                   focusRing,
-                ].join(' ')}
+                ].join(" ")}
                 aria-label={`View ${song.title} by ${song.artist}`}
               >
                 <div className="min-w-0">
@@ -53,5 +55,5 @@ export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
         </ul>
       )}
     </section>
-  )
+  );
 }

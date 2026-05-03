@@ -1,7 +1,7 @@
-'use server'
+"use server";
 
-import { createClient } from '@/services/supabase/server'
-import type { DbMusician } from '@/types/supabase'
+import { createClient } from "@/services/supabase/server";
+import type { DbMusician } from "@/types/supabase";
 
 /**
  * Fetches all musicians from the musicians table, ordered by name ascending.
@@ -9,22 +9,31 @@ import type { DbMusician } from '@/types/supabase'
  *
  * @returns All musician rows ordered by name, or an error message
  */
-export async function listMusicians(): Promise<{ data: DbMusician[] | null; error: string | null }> {
+export async function listMusicians(): Promise<{
+  data: DbMusician[] | null;
+  error: string | null;
+}> {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from('musicians')
-      .select('id, name, notes')
-      .order('name', { ascending: true })
+      .from("musicians")
+      .select("id, name, notes")
+      .order("name", { ascending: true });
 
     if (error) {
-      return { data: null, error: 'Unable to load musicians. Please try again.' }
+      return {
+        data: null,
+        error: "Unable to load musicians. Please try again.",
+      };
     }
 
-    return { data: (data ?? []) as DbMusician[], error: null }
+    return { data: (data ?? []) as DbMusician[], error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -35,28 +44,34 @@ export async function listMusicians(): Promise<{ data: DbMusician[] | null; erro
  * @param input - The musician UUID to fetch
  * @returns The musician row, or an error message (PGRST116 → not-found)
  */
-export async function getMusicianById(
-  input: { id: string }
-): Promise<{ data: DbMusician | null; error: string | null }> {
+export async function getMusicianById(input: {
+  id: string;
+}): Promise<{ data: DbMusician | null; error: string | null }> {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from('musicians')
-      .select('id, name, notes, created_by, created_at, updated_at')
-      .eq('id', input.id)
-      .single()
+      .from("musicians")
+      .select("id, name, notes, created_by, created_at, updated_at")
+      .eq("id", input.id)
+      .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return { data: null, error: 'Musician not found.' }
+      if (error.code === "PGRST116") {
+        return { data: null, error: "Musician not found." };
       }
-      return { data: null, error: 'Unable to load musician. Please try again.' }
+      return {
+        data: null,
+        error: "Unable to load musician. Please try again.",
+      };
     }
 
-    return { data: data as DbMusician, error: null }
+    return { data: data as DbMusician, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -68,37 +83,47 @@ export async function getMusicianById(
  * @param input - The musician name and optional notes
  * @returns The created musician row, or an error message
  */
-export async function createMusician(
-  input: { name: string; notes?: string }
-): Promise<{ data: DbMusician | null; error: string | null }> {
+export async function createMusician(input: {
+  name: string;
+  notes?: string;
+}): Promise<{ data: DbMusician | null; error: string | null }> {
   try {
-    const supabase = await createClient()
-    const userId = (await supabase.auth.getUser()).data.user?.id
+    const supabase = await createClient();
+    const userId = (await supabase.auth.getUser()).data.user?.id;
 
     if (!userId) {
-      return { data: null, error: 'Unauthorized' }
+      return { data: null, error: "Unauthorized" };
     }
 
     const { data, error } = await supabase
-      .from('musicians')
+      .from("musicians")
       .insert({
         name: input.name,
         notes: input.notes ?? null,
         created_by: userId,
       })
-      .select('id, name, notes, created_by, created_at, updated_at')
-      .single()
+      .select("id, name, notes, created_by, created_at, updated_at")
+      .single();
 
     if (error) {
-      if (error.code === '42501') {
-        return { data: null, error: 'You do not have permission to perform this action.' }
+      if (error.code === "42501") {
+        return {
+          data: null,
+          error: "You do not have permission to perform this action.",
+        };
       }
-      return { data: null, error: 'Unable to create musician. Please try again.' }
+      return {
+        data: null,
+        error: "Unable to create musician. Please try again.",
+      };
     }
 
-    return { data: data as DbMusician, error: null }
+    return { data: data as DbMusician, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -111,47 +136,60 @@ export async function createMusician(
  * @param input - The musician id plus optional name and/or notes
  * @returns The updated musician row, or an error message
  */
-export async function updateMusician(
-  input: { id: string; name?: string; notes?: string }
-): Promise<{ data: DbMusician | null; error: string | null }> {
+export async function updateMusician(input: {
+  id: string;
+  name?: string;
+  notes?: string;
+}): Promise<{ data: DbMusician | null; error: string | null }> {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return { data: null, error: 'Unauthorized' }
+      return { data: null, error: "Unauthorized" };
     }
 
     // Guard: at least one field must be supplied
     if (input.name === undefined && input.notes === undefined) {
-      return { data: null, error: 'No fields to update.' }
+      return { data: null, error: "No fields to update." };
     }
 
     // Build payload with only the fields that are explicitly provided
-    const payload: Record<string, unknown> = {}
-    if (input.name !== undefined) payload.name = input.name
-    if (input.notes !== undefined) payload.notes = input.notes
+    const payload: Record<string, unknown> = {};
+    if (input.name !== undefined) payload.name = input.name;
+    if (input.notes !== undefined) payload.notes = input.notes;
 
     const { data, error } = await supabase
-      .from('musicians')
+      .from("musicians")
       .update(payload)
-      .eq('id', input.id)
-      .select('id, name, notes, created_by, created_at, updated_at')
-      .single()
+      .eq("id", input.id)
+      .select("id, name, notes, created_by, created_at, updated_at")
+      .single();
 
     if (error) {
-      if (error.code === '42501') {
-        return { data: null, error: 'You do not have permission to perform this action.' }
+      if (error.code === "42501") {
+        return {
+          data: null,
+          error: "You do not have permission to perform this action.",
+        };
       }
-      if (error.code === 'PGRST116') {
-        return { data: null, error: 'Musician not found.' }
+      if (error.code === "PGRST116") {
+        return { data: null, error: "Musician not found." };
       }
-      return { data: null, error: 'Unable to update musician. Please try again.' }
+      return {
+        data: null,
+        error: "Unable to update musician. Please try again.",
+      };
     }
 
-    return { data: data as DbMusician, error: null }
+    return { data: data as DbMusician, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -163,31 +201,42 @@ export async function updateMusician(
  * @param input - The musician id to delete
  * @returns The deleted musician id, or an error message
  */
-export async function deleteMusician(
-  input: { id: string }
-): Promise<{ data: { id: string } | null; error: string | null }> {
+export async function deleteMusician(input: {
+  id: string;
+}): Promise<{ data: { id: string } | null; error: string | null }> {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return { data: null, error: 'Unauthorized' }
+      return { data: null, error: "Unauthorized" };
     }
 
     const { error } = await supabase
-      .from('musicians')
+      .from("musicians")
       .delete()
-      .eq('id', input.id)
+      .eq("id", input.id);
 
     if (error) {
-      if (error.code === '42501') {
-        return { data: null, error: 'You do not have permission to perform this action.' }
+      if (error.code === "42501") {
+        return {
+          data: null,
+          error: "You do not have permission to perform this action.",
+        };
       }
-      return { data: null, error: 'Unable to delete musician. Please try again.' }
+      return {
+        data: null,
+        error: "Unable to delete musician. Please try again.",
+      };
     }
 
-    return { data: { id: input.id }, error: null }
+    return { data: { id: input.id }, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
