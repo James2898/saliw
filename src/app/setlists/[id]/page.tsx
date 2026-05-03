@@ -127,12 +127,12 @@ export default async function SetlistViewerPage({
     musiciansRaw?.find((m) => m.id === setlist.worship_leader_id)?.name ?? null;
 
   // ── Build simplified lineup for viewer (AC-30) ─────────────────────────────
-  const lineup: Array<{ name: string; instrument: string }> = (lineupRaw ?? []).map(
-    (entry) => ({
-      name: entry.musicians.name,
-      instrument: entry.instrument,
-    })
-  );
+  const lineup: Array<{ name: string; instrument: string }> = (
+    lineupRaw ?? []
+  ).map((entry) => ({
+    name: entry.musicians.name,
+    instrument: entry.instrument,
+  }));
 
   // ── Sort songs by order_index ascending ────────────────────────────────────
   const songs = (songsRaw ?? [])

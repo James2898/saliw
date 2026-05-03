@@ -7,10 +7,10 @@
  *   key: string →  original_key: string
  */
 export type Song = {
-  id: string
-  title: string
-  artist: string
-  original_key: string
-  content: string
-  singer?: string
-}
+  id: string;
+  title: string;
+  artist: string;
+  original_key: string;
+  content: string;
+  singer?: string;
+};

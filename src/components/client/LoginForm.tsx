@@ -1,17 +1,18 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
-import { signInWithPasswordAction } from '@/app/actions/authActions'
-import Button from '@/components/client/button'
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { signInWithPasswordAction } from "@/app/actions/authActions";
+import Button from "@/components/client/button";
 
 const inputClass =
-  'font-sans text-brand-espresso bg-transparent border border-brand-brown rounded-xl px-3 py-2 ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2 ' +
-  'dark:text-brand-cream dark:border-brand-tan'
+  "font-sans text-brand-espresso bg-transparent border border-brand-brown rounded-xl px-3 py-2 " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2 " +
+  "dark:text-brand-cream dark:border-brand-tan";
 
-const labelClass = 'text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream'
+const labelClass =
+  "text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream";
 
 /**
  * LoginForm — Client Component.
@@ -21,22 +22,22 @@ const labelClass = 'text-sm font-semibold font-sans text-brand-espresso dark:tex
  */
 export default function LoginForm() {
   // --- Password form state ---
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [isPasswordPending, startPasswordTransition] = useTransition()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isPasswordPending, startPasswordTransition] = useTransition();
 
   function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setPasswordError(null)
+    e.preventDefault();
+    setPasswordError(null);
     startPasswordTransition(async () => {
-      const result = await signInWithPasswordAction({ email, password })
+      const result = await signInWithPasswordAction({ email, password });
       // result is only defined when the action returns { error: string }.
       // On success, the action calls redirect() which never returns a value.
-      if (result && 'error' in result) {
-        setPasswordError(result.error)
+      if (result && "error" in result) {
+        setPasswordError(result.error);
       }
-    })
+    });
   }
 
   return (
@@ -52,8 +53,8 @@ export default function LoginForm() {
             type="email"
             value={email}
             onChange={(e) => {
-              setEmail(e.target.value)
-              setPasswordError(null)
+              setEmail(e.target.value);
+              setPasswordError(null);
             }}
             required
             className={inputClass}
@@ -69,8 +70,8 @@ export default function LoginForm() {
             type="password"
             value={password}
             onChange={(e) => {
-              setPassword(e.target.value)
-              setPasswordError(null)
+              setPassword(e.target.value);
+              setPasswordError(null);
             }}
             required
             className={inputClass}
@@ -91,7 +92,7 @@ export default function LoginForm() {
           variant="primary"
           size="md"
           disabled={isPasswordPending}
-          aria-label={isPasswordPending ? 'Signing in' : 'Sign in'}
+          aria-label={isPasswordPending ? "Signing in" : "Sign in"}
         >
           {isPasswordPending ? (
             <>
@@ -103,7 +104,7 @@ export default function LoginForm() {
               Signing in…
             </>
           ) : (
-            'Sign In'
+            "Sign In"
           )}
         </Button>
 
@@ -115,5 +116,5 @@ export default function LoginForm() {
         </Link>
       </form>
     </div>
-  )
+  );
 }

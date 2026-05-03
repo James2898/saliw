@@ -8,7 +8,6 @@ export default function SetlistsLoading() {
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
       <div className="max-w-3xl mx-auto">
-
         {/* ── Header skeleton ──────────────────────────────────────────────── */}
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 mb-3">
@@ -24,15 +23,19 @@ export default function SetlistsLoading() {
         </div>
 
         {/* ── Skeleton cards ────────────────────────────────────────────────── */}
-        <ul className="flex flex-col gap-2" role="list" aria-label="Loading setlists">
+        <ul
+          className="flex flex-col gap-2"
+          role="list"
+          aria-label="Loading setlists"
+        >
           {Array.from({ length: 3 }).map((_, i) => (
             <li key={i}>
               <div
                 className={[
-                  'flex flex-col md:flex-row md:items-center md:justify-between gap-2',
-                  'rounded-xl border-l-4 border-brand-brown/10 p-4',
-                  'animate-pulse bg-brand-brown/10',
-                ].join(' ')}
+                  "flex flex-col md:flex-row md:items-center md:justify-between gap-2",
+                  "rounded-xl border-l-4 border-brand-brown/10 p-4",
+                  "animate-pulse bg-brand-brown/10",
+                ].join(" ")}
                 aria-hidden="true"
               >
                 {/* Name placeholder */}
@@ -49,5 +52,5 @@ export default function SetlistsLoading() {
         </ul>
       </div>
     </main>
-  )
+  );
 }

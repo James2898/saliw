@@ -1,17 +1,18 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
-import { sendPasswordResetAction } from '@/app/actions/authActions'
-import Button from '@/components/client/button'
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { sendPasswordResetAction } from "@/app/actions/authActions";
+import Button from "@/components/client/button";
 
 const inputClass =
-  'font-sans text-brand-espresso bg-transparent border border-brand-brown rounded-xl px-3 py-2 ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2 ' +
-  'dark:text-brand-cream dark:border-brand-tan'
+  "font-sans text-brand-espresso bg-transparent border border-brand-brown rounded-xl px-3 py-2 " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2 " +
+  "dark:text-brand-cream dark:border-brand-tan";
 
-const labelClass = 'text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream'
+const labelClass =
+  "text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream";
 
 /**
  * ForgotPasswordForm — Client Component.
@@ -21,22 +22,22 @@ const labelClass = 'text-sm font-semibold font-sans text-brand-espresso dark:tex
  * component never calls Supabase directly.
  */
 export default function ForgotPasswordForm() {
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [succeeded, setSucceeded] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [succeeded, setSucceeded] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
     startTransition(async () => {
-      const result = await sendPasswordResetAction({ email })
-      if ('success' in result) {
-        setSucceeded(true)
+      const result = await sendPasswordResetAction({ email });
+      if ("success" in result) {
+        setSucceeded(true);
       } else {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
   return (
@@ -52,8 +53,8 @@ export default function ForgotPasswordForm() {
               type="email"
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value)
-                setError(null)
+                setEmail(e.target.value);
+                setError(null);
               }}
               required
               className={inputClass}
@@ -74,7 +75,7 @@ export default function ForgotPasswordForm() {
             variant="primary"
             size="md"
             disabled={isPending}
-            aria-label={isPending ? 'Sending reset link' : 'Send reset link'}
+            aria-label={isPending ? "Sending reset link" : "Send reset link"}
           >
             {isPending ? (
               <>
@@ -86,7 +87,7 @@ export default function ForgotPasswordForm() {
                 Sending…
               </>
             ) : (
-              'Send Reset Link'
+              "Send Reset Link"
             )}
           </Button>
         </form>
@@ -105,5 +106,5 @@ export default function ForgotPasswordForm() {
         Back to sign in
       </Link>
     </div>
-  )
+  );
 }

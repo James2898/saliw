@@ -1,21 +1,21 @@
-import type { ReactElement } from 'react'
-import Link from 'next/link'
-import { Pencil } from 'lucide-react'
+import type { ReactElement } from "react";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 
 export interface NextUpSetlist {
-  id: string
-  name: string
-  date: string
-  songCount: number
+  id: string;
+  name: string;
+  date: string;
+  songCount: number;
 }
 
 interface NextUpCardProps {
-  setlist: NextUpSetlist | null
-  isMusicDirector: boolean
+  setlist: NextUpSetlist | null;
+  isMusicDirector: boolean;
 }
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan'
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan";
 
 export default function NextUpCard({
   setlist,
@@ -31,19 +31,20 @@ export default function NextUpCard({
         {isMusicDirector ? (
           <div className="flex flex-col gap-4">
             <p className="text-base text-brand-espresso dark:text-brand-cream">
-              You don&apos;t have any setlists yet. Build your first one to get started.
+              You don&apos;t have any setlists yet. Build your first one to get
+              started.
             </p>
             <div>
               <Link
                 href="/setlists/new"
                 className={[
-                  'inline-flex items-center justify-center font-sans font-semibold',
-                  'bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream',
-                  'border border-brand-tan hover:border-brand-brown',
-                  'transition-colors duration-200',
-                  'text-base px-4 py-2 rounded-xl',
+                  "inline-flex items-center justify-center font-sans font-semibold",
+                  "bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream",
+                  "border border-brand-tan hover:border-brand-brown",
+                  "transition-colors duration-200",
+                  "text-base px-4 py-2 rounded-xl",
                   focusRing,
-                ].join(' ')}
+                ].join(" ")}
               >
                 Create your first setlist
               </Link>
@@ -55,14 +56,14 @@ export default function NextUpCard({
           </p>
         )}
       </section>
-    )
+    );
   }
 
-  const formattedDate = new Date(setlist.date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const formattedDate = new Date(setlist.date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
@@ -75,8 +76,8 @@ export default function NextUpCard({
             {setlist.name}
           </h2>
           <p className="text-sm text-brand-brown dark:text-brand-tan mt-1">
-            {formattedDate} &middot; {setlist.songCount}{' '}
-            {setlist.songCount === 1 ? 'song' : 'songs'}
+            {formattedDate} &middot; {setlist.songCount}{" "}
+            {setlist.songCount === 1 ? "song" : "songs"}
           </p>
         </div>
         {isMusicDirector && (
@@ -84,11 +85,11 @@ export default function NextUpCard({
             href={`/setlists/${setlist.id}/edit`}
             aria-label={`Edit ${setlist.name}`}
             className={[
-              'shrink-0 flex items-center justify-center w-9 h-9 rounded-lg',
-              'text-brand-brown hover:text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-tan dark:hover:text-brand-cream dark:hover:bg-brand-tan/10',
-              'transition-colors duration-200',
+              "shrink-0 flex items-center justify-center w-9 h-9 rounded-lg",
+              "text-brand-brown hover:text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-tan dark:hover:text-brand-cream dark:hover:bg-brand-tan/10",
+              "transition-colors duration-200",
               focusRing,
-            ].join(' ')}
+            ].join(" ")}
           >
             <Pencil size={15} strokeWidth={2} aria-hidden="true" />
           </Link>
@@ -98,17 +99,17 @@ export default function NextUpCard({
         <Link
           href={`/setlists/${setlist.id}`}
           className={[
-            'inline-flex items-center justify-center font-sans font-semibold',
-            'bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream',
-            'border border-brand-tan hover:border-brand-brown',
-            'transition-colors duration-200',
-            'text-base px-4 py-2 rounded-xl',
+            "inline-flex items-center justify-center font-sans font-semibold",
+            "bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream",
+            "border border-brand-tan hover:border-brand-brown",
+            "transition-colors duration-200",
+            "text-base px-4 py-2 rounded-xl",
             focusRing,
-          ].join(' ')}
+          ].join(" ")}
         >
           Open Stage View
         </Link>
       </div>
     </section>
-  )
+  );
 }

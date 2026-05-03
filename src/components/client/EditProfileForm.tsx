@@ -1,44 +1,45 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import { Loader2 } from 'lucide-react'
-import { updateProfileAction } from '@/app/actions/profileActions'
-import Button from '@/components/client/button'
-import type { Profile } from '@/types/Profile'
+import { useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
+import { updateProfileAction } from "@/app/actions/profileActions";
+import Button from "@/components/client/button";
+import type { Profile } from "@/types/Profile";
 
 interface EditProfileFormProps {
-  profile: Profile
+  profile: Profile;
 }
 
 export default function EditProfileForm({ profile }: EditProfileFormProps) {
-  const [fullName, setFullName] = useState(profile.full_name ?? '')
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [fullName, setFullName] = useState(profile.full_name ?? "");
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = useState<"success" | "error" | null>(
+    null
+  );
+  const [isPending, startTransition] = useTransition();
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFullName(e.target.value)
-    setFeedback(null)
-    setFeedbackType(null)
+    setFullName(e.target.value);
+    setFeedback(null);
+    setFeedbackType(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     startTransition(async () => {
-      const result = await updateProfileAction({ full_name: fullName })
-      if ('success' in result) {
-        setFeedback('Profile updated.')
-        setFeedbackType('success')
+      const result = await updateProfileAction({ full_name: fullName });
+      if ("success" in result) {
+        setFeedback("Profile updated.");
+        setFeedbackType("success");
       } else {
-        setFeedback(result.error)
-        setFeedbackType('error')
+        setFeedback(result.error);
+        setFeedbackType("error");
       }
-    })
+    });
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 max-w-md">
-
       {/* Email — read-only display, never submitted */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-semibold font-sans text-brand-espresso dark:text-brand-cream">
@@ -70,7 +71,7 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
       </div>
 
       {/* Inline feedback */}
-      {feedback && feedbackType === 'success' && (
+      {feedback && feedbackType === "success" && (
         <p
           aria-live="polite"
           className="text-sm font-sans text-brand-brown dark:text-brand-tan"
@@ -78,7 +79,7 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
           {feedback}
         </p>
       )}
-      {feedback && feedbackType === 'error' && (
+      {feedback && feedbackType === "error" && (
         <p
           role="alert"
           className="text-sm font-sans text-red-700 dark:text-red-400"
@@ -92,7 +93,7 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
         variant="primary"
         size="md"
         disabled={isPending}
-        aria-label={isPending ? 'Saving changes' : 'Save changes'}
+        aria-label={isPending ? "Saving changes" : "Save changes"}
       >
         {isPending ? (
           <>
@@ -104,9 +105,9 @@ export default function EditProfileForm({ profile }: EditProfileFormProps) {
             Saving&hellip;
           </>
         ) : (
-          'Save Changes'
+          "Save Changes"
         )}
       </Button>
     </form>
-  )
+  );
 }
