@@ -1,8 +1,8 @@
-'use server'
+"use server";
 
-import { createClient } from '@/services/supabase/server'
-import { chordRegex, NOTES } from '@/utils/musicLogic'
-import type { DbSong } from '@/types/supabase'
+import { createClient } from "@/services/supabase/server";
+import { chordRegex, NOTES } from "@/utils/musicLogic";
+import type { DbSong } from "@/types/supabase";
 
 /**
  * Validates that the given song content contains at least one recognizable chord.
@@ -12,8 +12,8 @@ import type { DbSong } from '@/types/supabase'
  * to prevent stale state from prior regex executions producing false negatives.
  */
 function hasValidChordContent(content: string): boolean {
-  chordRegex.lastIndex = 0
-  return chordRegex.test(content)
+  chordRegex.lastIndex = 0;
+  return chordRegex.test(content);
 }
 
 /**
@@ -24,27 +24,42 @@ function hasValidChordContent(content: string): boolean {
  * @param input - Song fields to insert
  * @returns The created song row, or an error message
  */
-export async function createSong(
-  input: { title: string; artist: string; original_key: string; content: string; singer?: string }
-): Promise<{ data: DbSong | null; error: string | null }> {
+export async function createSong(input: {
+  title: string;
+  artist: string;
+  original_key: string;
+  content: string;
+  singer?: string;
+}): Promise<{ data: DbSong | null; error: string | null }> {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return { data: null, error: 'Unauthorized' }
+      return { data: null, error: "Unauthorized" };
     }
 
-    if (input.original_key !== undefined && !(NOTES as readonly string[]).includes(input.original_key)) {
-      return { data: null, error: 'Invalid key. Must be one of: ' + NOTES.join(', ') }
+    if (
+      input.original_key !== undefined &&
+      !(NOTES as readonly string[]).includes(input.original_key)
+    ) {
+      return {
+        data: null,
+        error: "Invalid key. Must be one of: " + NOTES.join(", "),
+      };
     }
 
     if (!hasValidChordContent(input.content)) {
-      return { data: null, error: 'Song content must contain at least one valid chord.' }
+      return {
+        data: null,
+        error: "Song content must contain at least one valid chord.",
+      };
     }
 
     const { data, error } = await supabase
-      .from('songs')
+      .from("songs")
       .insert({
         title: input.title,
         artist: input.artist,
@@ -53,20 +68,26 @@ export async function createSong(
         created_by: user.id,
         singer: input.singer ?? null,
       })
-      .select('id, title, artist, original_key, content, created_by, singer')
-      .single()
+      .select("id, title, artist, original_key, content, created_by, singer")
+      .single();
 
     if (error) {
-      if (error.code === '42501') {
+      if (error.code === "42501") {
         // PostgreSQL insufficient privilege — RLS rejection
-        return { data: null, error: 'You do not have permission to perform this action.' }
+        return {
+          data: null,
+          error: "You do not have permission to perform this action.",
+        };
       }
-      return { data: null, error: 'Unable to create song. Please try again.' }
+      return { data: null, error: "Unable to create song. Please try again." };
     }
 
-    return { data: data as DbSong, error: null }
+    return { data: data as DbSong, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -78,58 +99,73 @@ export async function createSong(
  * @param input - Song id plus any fields to update (all optional except id)
  * @returns The updated song row, or an error message
  */
-export async function updateSong(
-  input: {
-    id: string
-    title?: string
-    artist?: string
-    original_key?: string
-    content?: string
-    singer?: string
-  }
-): Promise<{ data: DbSong | null; error: string | null }> {
+export async function updateSong(input: {
+  id: string;
+  title?: string;
+  artist?: string;
+  original_key?: string;
+  content?: string;
+  singer?: string;
+}): Promise<{ data: DbSong | null; error: string | null }> {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return { data: null, error: 'Unauthorized' }
+      return { data: null, error: "Unauthorized" };
     }
 
-    if (input.original_key !== undefined && !(NOTES as readonly string[]).includes(input.original_key)) {
-      return { data: null, error: 'Invalid key. Must be one of: ' + NOTES.join(', ') }
+    if (
+      input.original_key !== undefined &&
+      !(NOTES as readonly string[]).includes(input.original_key)
+    ) {
+      return {
+        data: null,
+        error: "Invalid key. Must be one of: " + NOTES.join(", "),
+      };
     }
 
     if (input.content !== undefined && !hasValidChordContent(input.content)) {
-      return { data: null, error: 'Song content must contain at least one valid chord.' }
+      return {
+        data: null,
+        error: "Song content must contain at least one valid chord.",
+      };
     }
 
-    const { id, ...fields } = input
+    const { id, ...fields } = input;
     const updatePayload = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
-    )
+    );
 
     const { data, error } = await supabase
-      .from('songs')
+      .from("songs")
       .update(updatePayload)
-      .eq('id', id)
-      .select('id, title, artist, original_key, content, created_by, singer')
-      .single()
+      .eq("id", id)
+      .select("id, title, artist, original_key, content, created_by, singer")
+      .single();
 
     if (error) {
-      if (error.code === '42501') {
-        return { data: null, error: 'You do not have permission to perform this action.' }
+      if (error.code === "42501") {
+        return {
+          data: null,
+          error: "You do not have permission to perform this action.",
+        };
       }
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         // PostgREST: no rows returned — song not found or RLS hid it
-        return { data: null, error: 'Song not found.' }
+        return { data: null, error: "Song not found." };
       }
-      return { data: null, error: 'Unable to update song. Please try again.' }
+      return { data: null, error: "Unable to update song. Please try again." };
     }
 
-    return { data: data as DbSong, error: null }
+    return { data: data as DbSong, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -141,28 +177,34 @@ export async function updateSong(
  */
 export async function getAllSongs(): Promise<{
   data: Array<{
-    id: string
-    title: string
-    artist: string
-    original_key: string
-  }> | null
-  error: string | null
+    id: string;
+    title: string;
+    artist: string;
+    original_key: string;
+  }> | null;
+  error: string | null;
 }> {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from('songs')
-      .select('id, title, artist, original_key')
-      .order('title', { ascending: true })
+      .from("songs")
+      .select("id, title, artist, original_key")
+      .order("title", { ascending: true });
 
     if (error) {
-      return { data: null, error: 'Unable to load song library. Please try again.' }
+      return {
+        data: null,
+        error: "Unable to load song library. Please try again.",
+      };
     }
 
-    return { data: data ?? [], error: null }
+    return { data: data ?? [], error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -173,31 +215,36 @@ export async function getAllSongs(): Promise<{
  * @param input - The id of the song to delete
  * @returns The deleted song id, or an error message
  */
-export async function deleteSong(
-  input: { id: string }
-): Promise<{ data: { id: string } | null; error: string | null }> {
+export async function deleteSong(input: {
+  id: string;
+}): Promise<{ data: { id: string } | null; error: string | null }> {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return { data: null, error: 'Unauthorized' }
+      return { data: null, error: "Unauthorized" };
     }
 
-    const { error } = await supabase
-      .from('songs')
-      .delete()
-      .eq('id', input.id)
+    const { error } = await supabase.from("songs").delete().eq("id", input.id);
 
     if (error) {
-      if (error.code === '42501') {
-        return { data: null, error: 'You do not have permission to perform this action.' }
+      if (error.code === "42501") {
+        return {
+          data: null,
+          error: "You do not have permission to perform this action.",
+        };
       }
-      return { data: null, error: 'Unable to delete song. Please try again.' }
+      return { data: null, error: "Unable to delete song. Please try again." };
     }
 
-    return { data: { id: input.id }, error: null }
+    return { data: { id: input.id }, error: null };
   } catch {
-    return { data: null, error: 'An unexpected error occurred. Please try again.' }
+    return {
+      data: null,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }

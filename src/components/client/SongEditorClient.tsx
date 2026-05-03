@@ -1,57 +1,61 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
-import { preProcessChords, NOTES } from '@/utils/musicLogic'
-import { updateSong } from '@/app/actions/songActions'
-import ChordSheetClient from '@/components/SongViewer/ChordSheetClient'
-import type { Song } from '@/types/Song'
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { preProcessChords, NOTES } from "@/utils/musicLogic";
+import { updateSong } from "@/app/actions/songActions";
+import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
+import type { Song } from "@/types/Song";
 
 const inputBaseClass = [
-  'w-full px-3 py-2 rounded-xl',
-  'bg-brand-cream dark:bg-brand-espresso',
-  'text-brand-espresso dark:text-brand-cream',
-  'border border-brand-brown/30 dark:border-brand-tan/30',
-  'text-sm font-sans',
-  'placeholder:text-brand-brown/50 dark:placeholder:text-brand-tan/50',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-  'transition-colors duration-200',
-].join(' ')
+  "w-full px-3 py-2 rounded-xl",
+  "bg-brand-cream dark:bg-brand-espresso",
+  "text-brand-espresso dark:text-brand-cream",
+  "border border-brand-brown/30 dark:border-brand-tan/30",
+  "text-sm font-sans",
+  "placeholder:text-brand-brown/50 dark:placeholder:text-brand-tan/50",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+  "transition-colors duration-200",
+].join(" ");
 
 const labelClass =
-  'block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5'
+  "block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5";
 
 interface SongEditorClientProps {
-  song: Song
+  song: Song;
 }
 
-type MobileTab = 'edit' | 'preview'
+type MobileTab = "edit" | "preview";
 
 export default function SongEditorClient({ song }: SongEditorClientProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   // ── Content state ───────────────────────────────────────────────────────────
-  const [currentContent, setCurrentContent] = useState(song.content)
-  const [savedBaseline, setSavedBaseline] = useState(song.content)
+  const [currentContent, setCurrentContent] = useState(song.content);
+  const [savedBaseline, setSavedBaseline] = useState(song.content);
 
   // ── Singer state — lazy initializer avoids setState-in-effect ──────────────
-  const [singer, setSinger] = useState(() => song.singer ?? '')
+  const [singer, setSinger] = useState(() => song.singer ?? "");
 
   // ── Saved baseline for singer (for dirty-tracking) ──────────────────────────
-  const [savedSinger, setSavedSinger] = useState(() => song.singer ?? '')
+  const [savedSinger, setSavedSinger] = useState(() => song.singer ?? "");
 
   // ── Original key state ───────────────────────────────────────────────────────
-  const [originalKey, setOriginalKey] = useState(() => song.original_key ?? 'C')
-  const [savedOriginalKey, setSavedOriginalKey] = useState(() => song.original_key ?? 'C')
+  const [originalKey, setOriginalKey] = useState(
+    () => song.original_key ?? "C"
+  );
+  const [savedOriginalKey, setSavedOriginalKey] = useState(
+    () => song.original_key ?? "C"
+  );
 
   // ── Title state ──────────────────────────────────────────────────────────────
-  const [title, setTitle] = useState(() => song.title)
-  const [savedTitle, setSavedTitle] = useState(() => song.title)
+  const [title, setTitle] = useState(() => song.title);
+  const [savedTitle, setSavedTitle] = useState(() => song.title);
 
   // ── Artist state ─────────────────────────────────────────────────────────────
-  const [artist, setArtist] = useState(() => song.artist)
-  const [savedArtist, setSavedArtist] = useState(() => song.artist)
+  const [artist, setArtist] = useState(() => song.artist);
+  const [savedArtist, setSavedArtist] = useState(() => song.artist);
 
   // isDirty: true if content, singer, original key, title, or artist diverge from last saved state
   const isDirty =
@@ -59,90 +63,90 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     singer !== savedSinger ||
     originalKey !== savedOriginalKey ||
     title !== savedTitle ||
-    artist !== savedArtist
+    artist !== savedArtist;
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<MobileTab>('edit')
+  const [activeTab, setActiveTab] = useState<MobileTab>("edit");
 
   // ── Save state ──────────────────────────────────────────────────────────────
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // ── Unsaved-changes modal state ─────────────────────────────────────────────
-  const [pendingNavHref, setPendingNavHref] = useState<string | null>(null)
-  const isModalOpen = pendingNavHref !== null
+  const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
+  const isModalOpen = pendingNavHref !== null;
 
   // ── Focus trap refs for modal ───────────────────────────────────────────────
-  const modalStayRef = useRef<HTMLButtonElement>(null)
-  const modalLeaveRef = useRef<HTMLButtonElement>(null)
+  const modalStayRef = useRef<HTMLButtonElement>(null);
+  const modalLeaveRef = useRef<HTMLButtonElement>(null);
 
   // ── beforeunload — browser-level guard ─────────────────────────────────────
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (isDirty) {
-        e.preventDefault()
-        e.returnValue = ''
+        e.preventDefault();
+        e.returnValue = "";
       }
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   // ── Focus trap + Escape key for modal ──────────────────────────────────────
   useEffect(() => {
-    if (!isModalOpen) return
+    if (!isModalOpen) return;
 
     // Focus the "Stay" button when modal opens
-    modalStayRef.current?.focus()
+    modalStayRef.current?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setPendingNavHref(null)
-        return
+      if (e.key === "Escape") {
+        setPendingNavHref(null);
+        return;
       }
       // Focus trap: Tab cycles between Stay and Leave buttons only
-      if (e.key === 'Tab') {
-        e.preventDefault()
-        const focusedEl = document.activeElement
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const focusedEl = document.activeElement;
         if (focusedEl === modalStayRef.current) {
-          modalLeaveRef.current?.focus()
+          modalLeaveRef.current?.focus();
         } else {
-          modalStayRef.current?.focus()
+          modalStayRef.current?.focus();
         }
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isModalOpen])
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen]);
 
   // ── Modal actions ───────────────────────────────────────────────────────────
-  const handleStay = () => setPendingNavHref(null)
+  const handleStay = () => setPendingNavHref(null);
 
   const handleLeave = () => {
-    const href = pendingNavHref
-    setPendingNavHref(null)
-    if (href) router.push(href)
-  }
+    const href = pendingNavHref;
+    setPendingNavHref(null);
+    if (href) router.push(href);
+  };
 
   // ── Paste & Clean ───────────────────────────────────────────────────────────
   const handleClean = () => {
     const cleaned = currentContent
       .split(/\r?\n|\r/)
       .map((line) => line.trimEnd())
-      .join('\n')
-    setCurrentContent(cleaned)
-    setSaveError(null)
-  }
+      .join("\n");
+    setCurrentContent(cleaned);
+    setSaveError(null);
+  };
 
   // ── Save action ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!isDirty || isSaving) return
+    if (!isDirty || isSaving) return;
 
-    setIsSaving(true)
-    setSaveError(null)
-    setSaveSuccess(false)
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
 
     const result = await updateSong({
       id: song.id,
@@ -151,60 +155,60 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       original_key: originalKey,
       content: currentContent,
       singer: singer || undefined,
-    })
+    });
 
-    setIsSaving(false)
+    setIsSaving(false);
 
     if (result.error) {
-      setSaveError(result.error)
+      setSaveError(result.error);
     } else {
-      setSavedBaseline(currentContent)
-      setSavedSinger(singer)
-      setSavedOriginalKey(originalKey)
-      setSavedTitle(title)
-      setSavedArtist(artist)
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 2000)
+      setSavedBaseline(currentContent);
+      setSavedSinger(singer);
+      setSavedOriginalKey(originalKey);
+      setSavedTitle(title);
+      setSavedArtist(artist);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     }
-  }
+  };
 
   // ── Live preview data ───────────────────────────────────────────────────────
-  const processedLines = preProcessChords(currentContent)
+  const processedLines = preProcessChords(currentContent);
 
   // ── Shared panel styles ─────────────────────────────────────────────────────
   const panelClasses = [
-    'rounded-2xl border border-brand-brown/20 dark:border-brand-tan/20',
-    'bg-brand-cream dark:bg-brand-espresso',
-    'p-4',
-  ].join(' ')
+    "rounded-2xl border border-brand-brown/20 dark:border-brand-tan/20",
+    "bg-brand-cream dark:bg-brand-espresso",
+    "p-4",
+  ].join(" ");
 
   const tabButtonBase = [
-    'px-4 py-2 text-sm font-semibold transition-colors duration-200 border-b-2',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-  ].join(' ')
+    "px-4 py-2 text-sm font-semibold transition-colors duration-200 border-b-2",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+  ].join(" ");
 
   // ── Shared textarea element (reused in both mobile and desktop views) ───────
   const textareaEl = (
     <textarea
       value={currentContent}
       onChange={(e) => {
-        setCurrentContent(e.target.value)
-        if (saveError) setSaveError(null)
+        setCurrentContent(e.target.value);
+        if (saveError) setSaveError(null);
       }}
       aria-label="Song chord sheet editor"
       spellCheck={false}
       className={[
-        'w-full min-h-[480px] resize-y rounded-xl p-3',
-        'font-mono text-sm leading-relaxed',
-        'text-brand-espresso dark:text-brand-cream',
-        'bg-brand-cream dark:bg-brand-espresso',
-        'border border-brand-brown/20 dark:border-brand-tan/20',
-        'focus:outline-none focus:ring-2 focus:ring-brand-espresso dark:focus:ring-brand-tan focus:ring-offset-1',
-        'transition-colors duration-200',
-      ].join(' ')}
-      style={{ whiteSpace: 'pre' }}
+        "w-full min-h-[480px] resize-y rounded-xl p-3",
+        "font-mono text-sm leading-relaxed",
+        "text-brand-espresso dark:text-brand-cream",
+        "bg-brand-cream dark:bg-brand-espresso",
+        "border border-brand-brown/20 dark:border-brand-tan/20",
+        "focus:outline-none focus:ring-2 focus:ring-brand-espresso dark:focus:ring-brand-tan focus:ring-offset-1",
+        "transition-colors duration-200",
+      ].join(" ")}
+      style={{ whiteSpace: "pre" }}
     />
-  )
+  );
 
   // ── Shared preview element ──────────────────────────────────────────────────
   const previewEl = (
@@ -214,7 +218,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         originalKey={originalKey}
       />
     </div>
-  )
+  );
 
   return (
     <>
@@ -274,7 +278,11 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
             id="editor-original-key"
             value={originalKey}
             onChange={(e) => setOriginalKey(e.target.value)}
-            className={[inputBaseClass, 'cursor-pointer', 'font-mono font-bold'].join(' ')}
+            className={[
+              inputBaseClass,
+              "cursor-pointer",
+              "font-mono font-bold",
+            ].join(" ")}
           >
             {(NOTES as string[]).map((note) => (
               <option key={note} value={note}>
@@ -291,14 +299,14 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           type="button"
           onClick={handleSave}
           disabled={!isDirty || isSaving}
-          aria-label={isSaving ? 'Saving changes' : 'Save changes'}
+          aria-label={isSaving ? "Saving changes" : "Save changes"}
           className={[
-            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
+            "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
             isDirty && !isSaving
-              ? 'bg-brand-espresso text-brand-cream hover:bg-brand-brown cursor-pointer'
-              : 'bg-brand-espresso/30 text-brand-cream/50 opacity-50 cursor-not-allowed',
-          ].join(' ')}
+              ? "bg-brand-espresso text-brand-cream hover:bg-brand-brown cursor-pointer"
+              : "bg-brand-espresso/30 text-brand-cream/50 opacity-50 cursor-not-allowed",
+          ].join(" ")}
         >
           {isSaving ? (
             <>
@@ -306,7 +314,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
               Saving…
             </>
           ) : (
-            'Save Changes'
+            "Save Changes"
           )}
         </button>
 
@@ -315,25 +323,31 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           onClick={handleClean}
           aria-label="Strip trailing whitespace and normalize line endings"
           className={[
-            'px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200',
-            'text-brand-espresso dark:text-brand-cream',
-            'bg-brand-cream dark:bg-brand-espresso',
-            'border border-brand-brown/30 dark:border-brand-tan/30',
-            'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-          ].join(' ')}
+            "px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200",
+            "text-brand-espresso dark:text-brand-cream",
+            "bg-brand-cream dark:bg-brand-espresso",
+            "border border-brand-brown/30 dark:border-brand-tan/30",
+            "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+          ].join(" ")}
         >
           Clean
         </button>
 
         {isDirty && (
-          <span className="text-xs font-medium text-brand-brown dark:text-brand-tan" aria-live="polite">
+          <span
+            className="text-xs font-medium text-brand-brown dark:text-brand-tan"
+            aria-live="polite"
+          >
             Unsaved changes
           </span>
         )}
 
         {saveSuccess && (
-          <span className="text-xs font-medium text-green-700 dark:text-green-400" aria-live="polite">
+          <span
+            className="text-xs font-medium text-green-700 dark:text-green-400"
+            aria-live="polite"
+          >
             Saved!
           </span>
         )}
@@ -341,7 +355,10 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
 
       {/* ── Save error ──────────────────────────────────────────────────────── */}
       {saveError && (
-        <p role="alert" className="mb-4 text-sm font-medium text-red-700 dark:text-red-400">
+        <p
+          role="alert"
+          className="mb-4 text-sm font-medium text-red-700 dark:text-red-400"
+        >
           {saveError}
         </p>
       )}
@@ -356,15 +373,15 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           id="tab-edit"
           type="button"
           role="tab"
-          aria-selected={activeTab === 'edit'}
+          aria-selected={activeTab === "edit"}
           aria-controls="panel-edit"
-          onClick={() => setActiveTab('edit')}
+          onClick={() => setActiveTab("edit")}
           className={[
             tabButtonBase,
-            activeTab === 'edit'
-              ? 'text-brand-espresso dark:text-brand-cream border-brand-espresso dark:border-brand-cream'
-              : 'text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream',
-          ].join(' ')}
+            activeTab === "edit"
+              ? "text-brand-espresso dark:text-brand-cream border-brand-espresso dark:border-brand-cream"
+              : "text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream",
+          ].join(" ")}
         >
           Edit
         </button>
@@ -372,15 +389,15 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           id="tab-preview"
           type="button"
           role="tab"
-          aria-selected={activeTab === 'preview'}
+          aria-selected={activeTab === "preview"}
           aria-controls="panel-preview"
-          onClick={() => setActiveTab('preview')}
+          onClick={() => setActiveTab("preview")}
           className={[
             tabButtonBase,
-            activeTab === 'preview'
-              ? 'text-brand-espresso dark:text-brand-cream border-brand-espresso dark:border-brand-cream'
-              : 'text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream',
-          ].join(' ')}
+            activeTab === "preview"
+              ? "text-brand-espresso dark:text-brand-cream border-brand-espresso dark:border-brand-cream"
+              : "text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream",
+          ].join(" ")}
         >
           Preview
         </button>
@@ -399,9 +416,9 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           aria-labelledby="tab-edit"
           className={[
             panelClasses,
-            activeTab === 'edit' ? 'block' : 'hidden',
-            'lg:block',
-          ].join(' ')}
+            activeTab === "edit" ? "block" : "hidden",
+            "lg:block",
+          ].join(" ")}
         >
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-2">
             Editor
@@ -416,9 +433,9 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           aria-labelledby="tab-preview"
           className={[
             panelClasses,
-            activeTab === 'preview' ? 'block' : 'hidden',
-            'lg:block',
-          ].join(' ')}
+            activeTab === "preview" ? "block" : "hidden",
+            "lg:block",
+          ].join(" ")}
         >
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-2">
             Preview
@@ -432,7 +449,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            if (e.target === e.currentTarget) handleStay()
+            if (e.target === e.currentTarget) handleStay();
           }}
         >
           <div
@@ -440,11 +457,11 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
             aria-modal="true"
             aria-labelledby="unsaved-modal-title"
             className={[
-              'w-full max-w-sm rounded-2xl p-6',
-              'bg-brand-cream dark:bg-brand-espresso',
-              'border border-brand-brown/20 dark:border-brand-tan/20',
-              'shadow-2xl',
-            ].join(' ')}
+              "w-full max-w-sm rounded-2xl p-6",
+              "bg-brand-cream dark:bg-brand-espresso",
+              "border border-brand-brown/20 dark:border-brand-tan/20",
+              "shadow-2xl",
+            ].join(" ")}
           >
             <h2
               id="unsaved-modal-title"
@@ -453,7 +470,8 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
               Unsaved Changes
             </h2>
             <p className="text-sm text-brand-brown dark:text-brand-tan mb-6">
-              You have unsaved changes to this song. If you leave now, your changes will be lost.
+              You have unsaved changes to this song. If you leave now, your
+              changes will be lost.
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -461,13 +479,13 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
                 type="button"
                 onClick={handleStay}
                 className={[
-                  'px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200',
-                  'text-brand-espresso dark:text-brand-cream',
-                  'bg-brand-cream dark:bg-brand-espresso',
-                  'border border-brand-brown/30 dark:border-brand-tan/30',
-                  'hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-                ].join(' ')}
+                  "px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200",
+                  "text-brand-espresso dark:text-brand-cream",
+                  "bg-brand-cream dark:bg-brand-espresso",
+                  "border border-brand-brown/30 dark:border-brand-tan/30",
+                  "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                ].join(" ")}
               >
                 Stay
               </button>
@@ -476,11 +494,11 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
                 type="button"
                 onClick={handleLeave}
                 className={[
-                  'px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200',
-                  'bg-brand-espresso text-brand-cream',
-                  'hover:bg-brand-brown',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1',
-                ].join(' ')}
+                  "px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200",
+                  "bg-brand-espresso text-brand-cream",
+                  "hover:bg-brand-brown",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                ].join(" ")}
               >
                 Leave
               </button>
@@ -489,5 +507,5 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         </div>
       )}
     </>
-  )
+  );
 }

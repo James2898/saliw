@@ -1,12 +1,12 @@
-import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/services/supabase/server'
-import LoginForm from '@/components/client/LoginForm'
-import Card from '@/components/server/card'
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/services/supabase/server";
+import LoginForm from "@/components/client/LoginForm";
+import Card from "@/components/server/card";
 
 export const metadata: Metadata = {
-  title: 'Sign In',
-}
+  title: "Sign In",
+};
 
 /**
  * Login page — Server Component.
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
  * Auth gating for protected routes is handled in those pages, not here.
  */
 export default async function LoginPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (user) {
-    redirect('/')
+    redirect("/");
   }
 
   return (
@@ -36,5 +36,5 @@ export default async function LoginPage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }

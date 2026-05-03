@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { useEffect, useRef } from 'react'
-import { Loader2 } from 'lucide-react'
-import Button from '@/components/client/button'
+import { useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
+import Button from "@/components/client/button";
 
 interface CloneSetlistDialogProps {
-  isOpen: boolean
-  setlistName: string
-  isCloning: boolean
-  onConfirm: () => void
-  onCancel: () => void
+  isOpen: boolean;
+  setlistName: string;
+  isCloning: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 /**
@@ -28,55 +28,55 @@ export default function CloneSetlistDialog({
   onConfirm,
   onCancel,
 }: CloneSetlistDialogProps) {
-  const cancelRef = useRef<HTMLButtonElement>(null)
-  const confirmRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
 
   // Move focus to Cancel button when dialog opens
   useEffect(() => {
     if (isOpen) {
-      cancelRef.current?.focus()
+      cancelRef.current?.focus();
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   // Escape key + focus trap
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onCancel()
-        return
+      if (e.key === "Escape") {
+        onCancel();
+        return;
       }
 
       // Focus trap — cycle between Cancel and Confirm buttons
-      if (e.key === 'Tab') {
+      if (e.key === "Tab") {
         const focusables = [cancelRef.current, confirmRef.current].filter(
           Boolean
-        ) as HTMLElement[]
-        if (focusables.length === 0) return
+        ) as HTMLElement[];
+        if (focusables.length === 0) return;
 
-        const first = focusables[0]
-        const last = focusables[focusables.length - 1]
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
 
         if (e.shiftKey) {
           if (document.activeElement === first) {
-            e.preventDefault()
-            last.focus()
+            e.preventDefault();
+            last.focus();
           }
         } else {
           if (document.activeElement === last) {
-            e.preventDefault()
-            first.focus()
+            e.preventDefault();
+            first.focus();
           }
         }
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onCancel])
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onCancel]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <>
@@ -93,11 +93,11 @@ export default function CloneSetlistDialog({
         aria-modal="true"
         aria-labelledby="clone-setlist-dialog-title"
         className={[
-          'fixed z-[90] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-          'w-[min(90vw,24rem)]',
-          'bg-[var(--brand-background)] border border-brand-brown/20 rounded-2xl',
-          'p-6 flex flex-col gap-4 shadow-lg',
-        ].join(' ')}
+          "fixed z-[90] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+          "w-[min(90vw,24rem)]",
+          "bg-[var(--brand-background)] border border-brand-brown/20 rounded-2xl",
+          "p-6 flex flex-col gap-4 shadow-lg",
+        ].join(" ")}
       >
         {/* Title */}
         <h2
@@ -109,10 +109,10 @@ export default function CloneSetlistDialog({
 
         {/* Body */}
         <p className="font-sans text-sm text-brand-brown dark:text-brand-tan">
-          A copy of{' '}
+          A copy of{" "}
           <span className="font-semibold text-brand-espresso dark:text-brand-cream">
             {setlistName}
-          </span>{' '}
+          </span>{" "}
           will be created as &ldquo;{setlistName} copy&rdquo;. You will be taken
           to the new setlist.
         </p>
@@ -136,7 +136,7 @@ export default function CloneSetlistDialog({
             size="sm"
             onClick={onConfirm}
             disabled={isCloning}
-            aria-label={isCloning ? 'Cloning setlist' : 'Clone setlist'}
+            aria-label={isCloning ? "Cloning setlist" : "Clone setlist"}
           >
             {isCloning ? (
               <>
@@ -148,11 +148,11 @@ export default function CloneSetlistDialog({
                 Cloning&hellip;
               </>
             ) : (
-              'Clone setlist'
+              "Clone setlist"
             )}
           </Button>
         </div>
       </div>
     </>
-  )
+  );
 }
