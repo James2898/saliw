@@ -1,44 +1,44 @@
-'use client'
+"use client";
 
-import { useMemo, useState, useCallback } from 'react'
-import Link from 'next/link'
-import { Pencil } from 'lucide-react'
-import ServiceNavigator from '@/components/client/ServiceNavigator'
-import SetlistSongSection from '@/components/client/SetlistSongSection'
-import GoLiveButton from '@/components/client/GoLiveButton'
-import FollowLeaderButton from '@/components/client/FollowLeaderButton'
-import AutoScrollToolbar from '@/components/client/AutoScrollToolbar'
-import { useSetlistSync } from '@/hooks/useSetlistSync'
-import { useAutoScroll } from '@/hooks/useAutoScroll'
-import type { ProcessedLine } from '@/utils/musicLogic'
+import { useMemo, useState, useCallback } from "react";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
+import ServiceNavigator from "@/components/client/ServiceNavigator";
+import SetlistSongSection from "@/components/client/SetlistSongSection";
+import GoLiveButton from "@/components/client/GoLiveButton";
+import FollowLeaderButton from "@/components/client/FollowLeaderButton";
+import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
+import { useSetlistSync } from "@/hooks/useSetlistSync";
+import { useAutoScroll } from "@/hooks/useAutoScroll";
+import type { ProcessedLine } from "@/utils/musicLogic";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ClientSong {
-  junctionId: string
-  setlistId: string
-  title: string
-  artist: string
-  originalKey: string
-  processedLines: ProcessedLine[]
-  performanceKey: string
+  junctionId: string;
+  setlistId: string;
+  title: string;
+  artist: string;
+  originalKey: string;
+  processedLines: ProcessedLine[];
+  performanceKey: string;
 }
 
 interface NavigatorSong {
-  junctionId: string
-  title: string
+  junctionId: string;
+  title: string;
 }
 
 interface SetlistViewerClientProps {
-  songs: ClientSong[]
-  navigatorSongs: NavigatorSong[]
-  setlistId: string
-  isLeader: boolean
-  isAuthenticated: boolean
-  setlistName: string
-  formattedDate: string | null
-  worshipLeaderName: string | null
-  lineup: Array<{ name: string; instrument: string }>
+  songs: ClientSong[];
+  navigatorSongs: NavigatorSong[];
+  setlistId: string;
+  isLeader: boolean;
+  isAuthenticated: boolean;
+  setlistName: string;
+  formattedDate: string | null;
+  worshipLeaderName: string | null;
+  lineup: Array<{ name: string; instrument: string }>;
 }
 
 /**
@@ -67,20 +67,27 @@ export default function SetlistViewerClient({
   // Wrapped in useMemo so syncSongs keeps a stable reference between renders,
   // preventing validJunctionIds inside useSetlistSync from recomputing unnecessarily.
   const syncSongs = useMemo(
-    () => songs.map((s) => ({ junctionId: s.junctionId, performanceKey: s.performanceKey })),
-    [songs],
-  )
+    () =>
+      songs.map((s) => ({
+        junctionId: s.junctionId,
+        performanceKey: s.performanceKey,
+      })),
+    [songs]
+  );
 
   const sync = useSetlistSync({
     setlistId,
     isLeader,
     songs: syncSongs,
-  })
+  });
 
-  const [globalChordsHidden, setGlobalChordsHidden] = useState(false)
-  const toggleGlobalChords = useCallback(() => setGlobalChordsHidden((prev) => !prev), [])
+  const [globalChordsHidden, setGlobalChordsHidden] = useState(false);
+  const toggleGlobalChords = useCallback(
+    () => setGlobalChordsHidden((prev) => !prev),
+    []
+  );
 
-  const autoScroll = useAutoScroll()
+  const autoScroll = useAutoScroll();
 
   return (
     <>
@@ -130,18 +137,22 @@ export default function SetlistViewerClient({
             type="button"
             onClick={toggleGlobalChords}
             aria-pressed={globalChordsHidden}
-            aria-label={globalChordsHidden ? 'Show chords for all songs' : 'Hide chords for all songs'}
-            className={[
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg',
-              'text-xs font-semibold',
-              'border transition-colors duration-200',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2',
+            aria-label={
               globalChordsHidden
-                ? 'bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan'
-                : 'text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10',
-            ].join(' ')}
+                ? "Show chords for all songs"
+                : "Hide chords for all songs"
+            }
+            className={[
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+              "text-xs font-semibold",
+              "border transition-colors duration-200",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2",
+              globalChordsHidden
+                ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan"
+                : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+            ].join(" ")}
           >
-            {globalChordsHidden ? 'Show Chords' : 'Hide Chords'}
+            {globalChordsHidden ? "Show Chords" : "Hide Chords"}
           </button>
         </div>
       </div>
@@ -152,7 +163,7 @@ export default function SetlistViewerClient({
           {worshipLeaderName && (
             <p className="text-sm">
               <span className="font-semibold text-brand-brown dark:text-brand-tan">
-                Worship Leader:{' '}
+                Worship Leader:{" "}
               </span>
               <span className="font-bold text-brand-espresso dark:text-brand-cream">
                 {worshipLeaderName}
@@ -162,10 +173,10 @@ export default function SetlistViewerClient({
           {lineup.length > 0 && (
             <p className="text-sm">
               <span className="font-semibold text-brand-brown dark:text-brand-tan">
-                Lineup:{' '}
+                Lineup:{" "}
               </span>
               <span className="font-bold text-brand-espresso dark:text-brand-cream">
-                {lineup.map((e) => `${e.name} — ${e.instrument}`).join(', ')}
+                {lineup.map((e) => `${e.name} — ${e.instrument}`).join(", ")}
               </span>
             </p>
           )}
@@ -182,13 +193,15 @@ export default function SetlistViewerClient({
           isLive: sync.isLive,
           onActiveSongChange: sync.onActiveSongChange,
         }}
+        onBeforeNavigate={autoScroll.isActive ? autoScroll.pause : undefined}
+        onAfterNavigate={autoScroll.isActive ? autoScroll.resume : undefined}
       />
 
       {/* ── Song sections ──────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-10">
         {songs.map((song) => {
-          const overrideKey = sync.overrideKeys.get(song.junctionId)
-          const liveSyncState = sync.songSyncStates.get(song.junctionId)
+          const overrideKey = sync.overrideKeys.get(song.junctionId);
+          const liveSyncState = sync.songSyncStates.get(song.junctionId);
 
           return (
             <SetlistSongSection
@@ -202,11 +215,14 @@ export default function SetlistViewerClient({
               performanceKey={song.performanceKey}
               isLeader={isLeader}
               overrideKey={overrideKey}
-              onKeyChangeLive={isLeader && sync.isLive ? sync.notifyKeyChange : undefined}
+              onKeyChangeLive={
+                isLeader && sync.isLive ? sync.notifyKeyChange : undefined
+              }
               liveSyncState={liveSyncState}
               externalChordsHidden={globalChordsHidden}
+              autoScroll={autoScroll}
             />
-          )
+          );
         })}
       </div>
 
@@ -215,5 +231,5 @@ export default function SetlistViewerClient({
         <div className="h-24 w-full" aria-hidden="true" />
       )}
     </>
-  )
+  );
 }

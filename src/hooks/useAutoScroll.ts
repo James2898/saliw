@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'saliw_autoscroll_speed'
-const MIN_SPEED = 1
-const MAX_SPEED = 10
-const DEFAULT_SPEED = 3
+const STORAGE_KEY = "saliw_autoscroll_speed";
+const MIN_SPEED = 1;
+const MAX_SPEED = 5;
+const DEFAULT_SPEED = 1;
 
 /**
- * Maps a speed unit (1–10) to pixels per second.
- * Unit 1 → 20 px/s, Unit 10 → 200 px/s (linear interpolation).
+ * Maps a speed unit (1–5) to pixels per second.
+ * Unit 1 → 5 px/s, Unit 2 → 10, Unit 3 → 15, Unit 4 → 20, Unit 5 → 25 px/s.
  */
 function speedToPxPerSecond(speed: number): number {
-  return 20 + (speed - 1) * (200 - 20) / (MAX_SPEED - MIN_SPEED)
+  return speed * 5;
 }
 
 function clamp(value: number): number {
-  return Math.min(MAX_SPEED, Math.max(MIN_SPEED, value))
+  return Math.min(MAX_SPEED, Math.max(MIN_SPEED, value));
 }
 
 /**
@@ -27,41 +27,41 @@ function clamp(value: number): number {
  * BUG-007 compliance: declared before any useEffect that references it.
  */
 function readStoredSpeed(): number {
-  if (typeof window === 'undefined') return DEFAULT_SPEED
+  if (typeof window === "undefined") return DEFAULT_SPEED;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored !== null) {
-      const parsed = parseInt(stored, 10)
-      if (!isNaN(parsed)) return clamp(parsed)
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed)) return clamp(parsed);
     }
   } catch {
     // localStorage unavailable — use default (AC 30)
   }
-  return DEFAULT_SPEED
+  return DEFAULT_SPEED;
 }
 
 // ── Return type ────────────────────────────────────────────────────────────────
 
 export type UseAutoScrollReturn = {
   /** True when the main auto-scroll feature is active (panel visible, scrolling or paused). */
-  isActive: boolean
+  isActive: boolean;
   /** True when actively scrolling (not paused). Only meaningful when isActive is true. */
-  isScrolling: boolean
+  isScrolling: boolean;
   /** True when manually paused by user. Only meaningful when isActive is true. */
-  isPaused: boolean
+  isPaused: boolean;
   /** True when page content fits within viewport (toggle should be disabled). */
-  cannotScroll: boolean
-  /** Speed unit 1–10. Default 3. Persisted to localStorage. */
-  speed: number
+  cannotScroll: boolean;
+  /** Speed unit 1–5. Default 1. Persisted to localStorage. */
+  speed: number;
   /** Activate or deactivate auto-scroll (main toolbar toggle). */
-  toggle: () => void
+  toggle: () => void;
   /** Pause scrolling (keeps panel visible, preserves position). */
-  pause: () => void
+  pause: () => void;
   /** Resume scrolling from current position. */
-  resume: () => void
-  /** Set scroll speed (1–10). Persists to localStorage. */
-  setSpeed: (value: number) => void
-}
+  resume: () => void;
+  /** Set scroll speed (1–5). Persists to localStorage. */
+  setSpeed: (value: number) => void;
+};
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
@@ -80,241 +80,230 @@ export type UseAutoScrollReturn = {
  */
 export function useAutoScroll(): UseAutoScrollReturn {
   // Speed persisted to localStorage via lazy initializer (BUG-001)
-  const [speed, setSpeedState] = useState<number>(readStoredSpeed)
+  const [speed, setSpeedState] = useState<number>(readStoredSpeed);
 
   // Main feature active/inactive (main toggle)
-  const [isActive, setIsActive] = useState(false)
+  const [isActive, setIsActive] = useState(false);
 
   // Scrolling vs. paused within an active session
-  const [isScrolling, setIsScrolling] = useState(false)
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // Whether the page content is short enough to not need scrolling
-  const [cannotScroll, setCannotScroll] = useState(false)
+  const [cannotScroll, setCannotScroll] = useState(false);
 
   // Ref to the current rAF id so we can cancel it
-  const rafIdRef = useRef<number | null>(null)
+  const rafIdRef = useRef<number | null>(null);
 
   // Speed ref so the rAF callback reads the latest speed without stale closure
-  const speedRef = useRef<number>(speed)
+  const speedRef = useRef<number>(speed);
 
   // Track the last rAF timestamp for delta-based scrolling
-  const lastTimestampRef = useRef<number | null>(null)
+  const lastTimestampRef = useRef<number | null>(null);
 
-  // Track the last known scrollY to detect manual scroll
-  const lastScrollYRef = useRef<number>(0)
+  // Sub-pixel scroll accumulator. At low speeds (e.g. speed 1 = 5 px/s) a single
+  // frame produces <1 px of movement, which the browser rounds to 0 → nothing
+  // visibly scrolls. We accumulate fractional pixels here and flush whole pixels
+  // to window.scrollBy so slow speeds remain visibly smooth.
+  const scrollAccumulatorRef = useRef<number>(0);
 
   // Whether we are currently auto-scrolling (ref for use inside event listeners)
-  const isScrollingRef = useRef(false)
+  const isScrollingRef = useRef(false);
 
   // Whether the feature is active (ref for use inside event listeners)
-  const isActiveRef = useRef(false)
+  const isActiveRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => {
-    isScrollingRef.current = isScrolling
-  }, [isScrolling])
+    isScrollingRef.current = isScrolling;
+  }, [isScrolling]);
 
   useEffect(() => {
-    isActiveRef.current = isActive
-  }, [isActive])
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   // ── Persist speed to localStorage (BUG-007: declared before useEffect) ────
 
   const persistSpeed = useCallback((value: number) => {
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, String(value))
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, String(value));
       }
     } catch {
       // localStorage unavailable — non-fatal (AC 30)
     }
-  }, [])
+  }, []);
 
   // ── Cancel the active rAF loop (BUG-007: declared before useEffect) ────────
 
   const cancelRaf = useCallback(() => {
     if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current)
-      rafIdRef.current = null
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
     }
-    lastTimestampRef.current = null
-  }, [])
+    lastTimestampRef.current = null;
+    scrollAccumulatorRef.current = 0;
+  }, []);
 
   // ── rAF scroll loop ────────────────────────────────────────────────────────
 
   const startRaf = useCallback(() => {
-    cancelRaf()
+    cancelRaf();
 
     function step(timestamp: number) {
-      if (lastTimestampRef.current === null) {
-        lastTimestampRef.current = timestamp
+      // Self-defending exit: if pause/toggle ran between rAF schedule and fire,
+      // honor that and stop the loop. Belt-and-braces alongside cancelRaf.
+      if (!isScrollingRef.current) {
+        rafIdRef.current = null;
+        return;
       }
 
-      const delta = timestamp - lastTimestampRef.current
-      lastTimestampRef.current = timestamp
+      if (lastTimestampRef.current === null) {
+        lastTimestampRef.current = timestamp;
+      }
 
-      const pxPerSecond = speedToPxPerSecond(speedRef.current)
-      const scrollAmount = (pxPerSecond * delta) / 1000
+      const delta = timestamp - lastTimestampRef.current;
+      lastTimestampRef.current = timestamp;
 
-      const scrollTop = window.scrollY
-      const clientHeight = document.documentElement.clientHeight
-      const scrollHeight = document.documentElement.scrollHeight
+      const pxPerSecond = speedToPxPerSecond(speedRef.current);
+      const scrollAmount = (pxPerSecond * delta) / 1000;
+
+      const scrollTop = window.scrollY;
+      const clientHeight = document.documentElement.clientHeight;
+      const scrollHeight = document.documentElement.scrollHeight;
 
       // AC 15: auto-stop at bottom of page
       if (scrollTop + clientHeight >= scrollHeight - 2) {
-        cancelRaf()
-        setIsScrolling(false)
-        setIsActive(false)
-        isScrollingRef.current = false
-        isActiveRef.current = false
-        return
+        cancelRaf();
+        setIsScrolling(false);
+        setIsActive(false);
+        isScrollingRef.current = false;
+        isActiveRef.current = false;
+        return;
       }
 
-      lastScrollYRef.current = scrollTop + scrollAmount
-      window.scrollBy(0, scrollAmount)
+      scrollAccumulatorRef.current += scrollAmount;
+      const wholePixels = Math.floor(scrollAccumulatorRef.current);
+      if (wholePixels > 0) {
+        scrollAccumulatorRef.current -= wholePixels;
+        window.scrollBy(0, wholePixels);
+      }
 
-      rafIdRef.current = requestAnimationFrame(step)
+      rafIdRef.current = requestAnimationFrame(step);
     }
 
-    rafIdRef.current = requestAnimationFrame(step)
-  }, [cancelRaf])
+    rafIdRef.current = requestAnimationFrame(step);
+  }, [cancelRaf]);
 
   // ── setSpeed (public API) ──────────────────────────────────────────────────
 
   const setSpeed = useCallback(
     (value: number) => {
-      const clamped = clamp(value)
-      speedRef.current = clamped
-      setSpeedState(clamped)
-      persistSpeed(clamped)
+      const clamped = clamp(value);
+      speedRef.current = clamped;
+      setSpeedState(clamped);
+      persistSpeed(clamped);
     },
-    [persistSpeed],
-  )
+    [persistSpeed]
+  );
 
   // ── toggle (main toolbar toggle, AC 2 & 3) ─────────────────────────────────
 
   const toggle = useCallback(() => {
     if (isActiveRef.current) {
       // Deactivate — stop scrolling, hide panel, preserve position (AC 3)
-      cancelRaf()
-      setIsActive(false)
-      setIsScrolling(false)
-      isActiveRef.current = false
-      isScrollingRef.current = false
+      cancelRaf();
+      setIsActive(false);
+      setIsScrolling(false);
+      isActiveRef.current = false;
+      isScrollingRef.current = false;
     } else {
       // Activate — show panel and begin scrolling immediately (AC 2)
-      setIsActive(true)
-      setIsScrolling(true)
-      isActiveRef.current = true
-      isScrollingRef.current = true
-      lastScrollYRef.current = typeof window !== 'undefined' ? window.scrollY : 0
-      startRaf()
+      setIsActive(true);
+      setIsScrolling(true);
+      isActiveRef.current = true;
+      isScrollingRef.current = true;
+      startRaf();
     }
-  }, [cancelRaf, startRaf])
+  }, [cancelRaf, startRaf]);
 
   // ── pause (AC 8) ───────────────────────────────────────────────────────────
 
   const pause = useCallback(() => {
-    cancelRaf()
-    setIsScrolling(false)
-    isScrollingRef.current = false
-  }, [cancelRaf])
+    cancelRaf();
+    setIsScrolling(false);
+    isScrollingRef.current = false;
+  }, [cancelRaf]);
 
   // ── resume (AC 8, 17) ──────────────────────────────────────────────────────
 
   const resume = useCallback(() => {
-    setIsScrolling(true)
-    isScrollingRef.current = true
-    startRaf()
-  }, [startRaf])
+    setIsScrolling(true);
+    isScrollingRef.current = true;
+    startRaf();
+  }, [startRaf]);
 
   // ── cannotScroll detector — runs on mount and on window resize ─────────────
 
   useEffect(() => {
     function checkScrollable() {
-      if (typeof window === 'undefined') return
-      const scrollHeight = document.documentElement.scrollHeight
-      const clientHeight = document.documentElement.clientHeight
-      setCannotScroll(scrollHeight <= clientHeight)
+      if (typeof window === "undefined") return;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      setCannotScroll(scrollHeight <= clientHeight);
     }
 
-    checkScrollable()
-    window.addEventListener('resize', checkScrollable)
-    return () => window.removeEventListener('resize', checkScrollable)
-  }, [])
-
-  // ── Manual scroll detection (AC 16, 17) ───────────────────────────────────
-
-  useEffect(() => {
-    function handleScroll() {
-      if (!isScrollingRef.current) return
-
-      const currentScrollY = window.scrollY
-      // If the scroll position has jumped more than expected from rAF output,
-      // we treat it as a manual scroll. Use a threshold to avoid false positives
-      // from normal rAF increments (max increment ~200px/s * frame = ~3–4px).
-      const expected = lastScrollYRef.current
-      const diff = Math.abs(currentScrollY - expected)
-
-      if (diff > 8) {
-        // User manually scrolled — pause (AC 16)
-        cancelRaf()
-        setIsScrolling(false)
-        isScrollingRef.current = false
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [cancelRaf])
+    checkScrollable();
+    window.addEventListener("resize", checkScrollable);
+    return () => window.removeEventListener("resize", checkScrollable);
+  }, []);
 
   // ── Spacebar key handler (AC 18) ──────────────────────────────────────────
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.code !== 'Space') return
-      if (!isActiveRef.current) return
+      if (e.code !== "Space") return;
+      if (!isActiveRef.current) return;
 
       // Don't intercept spacebar when user is typing in an input/textarea
-      const target = e.target as HTMLElement
+      const target = e.target as HTMLElement;
       if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
         target.isContentEditable
       ) {
-        return
+        return;
       }
 
-      e.preventDefault()
+      e.preventDefault();
 
       if (isScrollingRef.current) {
         // Currently scrolling → pause
-        cancelRaf()
-        setIsScrolling(false)
-        isScrollingRef.current = false
+        cancelRaf();
+        setIsScrolling(false);
+        isScrollingRef.current = false;
       } else {
         // Currently paused → resume
-        setIsScrolling(true)
-        isScrollingRef.current = true
-        startRaf()
+        setIsScrolling(true);
+        isScrollingRef.current = true;
+        startRaf();
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [cancelRaf, startRaf])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cancelRaf, startRaf]);
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
 
   useEffect(() => {
     return () => {
-      cancelRaf()
-    }
-  }, [cancelRaf])
+      cancelRaf();
+    };
+  }, [cancelRaf]);
 
   // Derive isPaused: active but not scrolling
-  const isPaused = isActive && !isScrolling
+  const isPaused = isActive && !isScrolling;
 
   return {
     isActive,
@@ -326,5 +315,5 @@ export function useAutoScroll(): UseAutoScrollReturn {
     pause,
     resume,
     setSpeed,
-  }
+  };
 }
