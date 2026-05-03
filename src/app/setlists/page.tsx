@@ -21,7 +21,7 @@ type SetlistRow = {
   date: string | null;
   leader_id: string | null;
   is_public: boolean | null;
-  setlist_songs: { order_index: number; songs: { title: string } | null }[];
+  setlist_songs: { order_index: number; songs: { title: string }[] }[];
 };
 
 interface SetlistsPageProps {
@@ -153,7 +153,7 @@ export default async function SetlistsPage({
               {setlists.map((setlist) => {
                 const songTitles = [...setlist.setlist_songs]
                   .sort((a, b) => a.order_index - b.order_index)
-                  .map((ss) => ss.songs?.title)
+                  .map((ss) => ss.songs[0]?.title)
                   .filter(Boolean) as string[];
                 const formattedDate = setlist.date
                   ? new Date(setlist.date).toLocaleDateString("en-US", {
