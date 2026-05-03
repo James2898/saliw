@@ -397,7 +397,7 @@ export async function getSetlistWithSongs(
  * @returns The updated setlist id, or an error message
  */
 export async function updateSetlist(
-  input: { id: string; name?: string; date?: string; worship_leader_id?: string | null }
+  input: { id: string; name?: string; date?: string; worship_leader_id?: string | null; is_public?: boolean }
 ): Promise<{ data: { id: string } | null; error: string | null }> {
   try {
     const supabase = await createClient()
@@ -408,7 +408,7 @@ export async function updateSetlist(
     }
 
     // Guard: at least one field must be provided
-    if (input.name === undefined && input.date === undefined && input.worship_leader_id === undefined) {
+    if (input.name === undefined && input.date === undefined && input.worship_leader_id === undefined && input.is_public === undefined) {
       return { data: null, error: 'No fields to update.' }
     }
 
@@ -417,6 +417,7 @@ export async function updateSetlist(
     if (input.name !== undefined) payload.name = input.name
     if (input.date !== undefined) payload.date = input.date || null
     if (input.worship_leader_id !== undefined) payload.worship_leader_id = input.worship_leader_id
+    if (input.is_public !== undefined) payload.is_public = input.is_public
 
     const { error } = await supabase
       .from('setlists')

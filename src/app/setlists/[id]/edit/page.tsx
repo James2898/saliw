@@ -171,6 +171,7 @@ export default async function EditSetlistPage({ params }: EditSetlistPageProps) 
             allSongs={allSongs}
             libraryError={libraryError}
             initialDate={setlist.date ? setlist.date.slice(0, 10) : ''}
+            initialIsPublic={setlist.is_public}
           />
         </div>
       </main>
