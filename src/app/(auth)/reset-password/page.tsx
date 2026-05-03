@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
-import ResetPasswordForm from '@/components/client/ResetPasswordForm'
-import Card from '@/components/server/card'
+import type { Metadata } from "next";
+import ResetPasswordForm from "@/components/client/ResetPasswordForm";
+import Card from "@/components/server/card";
 
 export const metadata: Metadata = {
-  title: 'Reset Password',
-}
+  title: "Reset Password",
+};
 
 /**
  * Reset Password page — Server Component.
@@ -26,5 +26,5 @@ export default function ResetPasswordPage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }

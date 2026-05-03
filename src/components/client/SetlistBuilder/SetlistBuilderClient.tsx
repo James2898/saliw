@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Copy } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Copy } from "lucide-react";
 import {
   addSongToSetlist,
   removeSongFromSetlist,
@@ -11,52 +11,55 @@ import {
   createSetlist,
   updateSetlist,
   cloneSetlist,
-} from '@/app/actions/setlistActions'
-import Button from '@/components/client/button'
-import ErrorBanner from './ErrorBanner'
-import SetlistPanel from './SetlistPanel'
-import LibraryPanel from './LibraryPanel'
-import CloneSetlistDialog from './CloneSetlistDialog'
+} from "@/app/actions/setlistActions";
+import Button from "@/components/client/button";
+import ErrorBanner from "./ErrorBanner";
+import SetlistPanel from "./SetlistPanel";
+import LibraryPanel from "./LibraryPanel";
+import CloneSetlistDialog from "./CloneSetlistDialog";
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
 export interface SortableSong {
-  junctionId: string | null  // null = newly added (not yet persisted)
-  songId: string
-  title: string
-  artist: string
-  originalKey: string
-  performanceKey: string     // editable, defaults to originalKey on add
-  orderIndex: number
+  junctionId: string | null; // null = newly added (not yet persisted)
+  songId: string;
+  title: string;
+  artist: string;
+  originalKey: string;
+  performanceKey: string; // editable, defaults to originalKey on add
+  orderIndex: number;
 }
 
 export interface SongLibraryItem {
-  id: string
-  title: string
-  artist: string
-  original_key: string
+  id: string;
+  title: string;
+  artist: string;
+  original_key: string;
 }
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
 export interface SetlistBuilderClientProps {
-  setlistId: string | null          // null = create mode
-  setlistName: string               // empty string in create mode
-  initialSongs: SortableSong[]
-  allSongs: SongLibraryItem[]
-  libraryError?: string | null
-  initialDate?: string              // empty string in create mode
-  initialIsPublic?: boolean
+  setlistId: string | null; // null = create mode
+  setlistName: string; // empty string in create mode
+  initialSongs: SortableSong[];
+  allSongs: SongLibraryItem[];
+  libraryError?: string | null;
+  initialDate?: string; // empty string in create mode
+  initialIsPublic?: boolean;
 }
 
 // ── Pure helper ────────────────────────────────────────────────────────────────
 
-function computeIsDirty(local: SortableSong[], initial: SortableSong[]): boolean {
-  if (local.length !== initial.length) return true
+function computeIsDirty(
+  local: SortableSong[],
+  initial: SortableSong[]
+): boolean {
+  if (local.length !== initial.length) return true;
   return local.some((s, i) => {
-    const orig = initial[i]
-    return s.songId !== orig.songId || s.performanceKey !== orig.performanceKey
-  })
+    const orig = initial[i];
+    return s.songId !== orig.songId || s.performanceKey !== orig.performanceKey;
+  });
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -70,28 +73,30 @@ export default function SetlistBuilderClient({
   initialDate,
   initialIsPublic = false,
 }: SetlistBuilderClientProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   // All lazy initialisers — never seeded inside useEffect (MEMORY.md warning)
-  const [localSongs, setLocalSongs] = useState<SortableSong[]>(() => initialSongs)
-  const [name, setName] = useState(() => setlistName)
-  const [date, setDate] = useState(() => initialDate ?? '')
-  const [isPublic, setIsPublic] = useState(() => initialIsPublic)
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [query, setQuery] = useState('')
-  const [showCloneDialog, setShowCloneDialog] = useState(false)
-  const [isCloning, setIsCloning] = useState(false)
+  const [localSongs, setLocalSongs] = useState<SortableSong[]>(
+    () => initialSongs
+  );
+  const [name, setName] = useState(() => setlistName);
+  const [date, setDate] = useState(() => initialDate ?? "");
+  const [isPublic, setIsPublic] = useState(() => initialIsPublic);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
 
   // Dirty: compare local vs initial (name, date, isPublic, songs)
   const isDirty =
     name !== setlistName ||
-    date !== (initialDate ?? '') ||
+    date !== (initialDate ?? "") ||
     isPublic !== initialIsPublic ||
-    computeIsDirty(localSongs, initialSongs)
+    computeIsDirty(localSongs, initialSongs);
 
   // Derived values — never stored as separate state
-  const addedIds = new Set(localSongs.map((s) => s.songId))
+  const addedIds = new Set(localSongs.map((s) => s.songId));
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -107,7 +112,7 @@ export default function SetlistBuilderClient({
         performanceKey: song.original_key,
         orderIndex: prev.length,
       },
-    ])
+    ]);
   }
 
   function handleRemove(songId: string) {
@@ -115,26 +120,26 @@ export default function SetlistBuilderClient({
       prev
         .filter((s) => s.songId !== songId)
         .map((s, i) => ({ ...s, orderIndex: i }))
-    )
+    );
   }
 
   function handleKeyChange(songId: string, key: string) {
     setLocalSongs((prev) =>
       prev.map((s) => (s.songId === songId ? { ...s, performanceKey: key } : s))
-    )
+    );
   }
 
   function handleReorder(newSongs: SortableSong[]) {
-    setLocalSongs(newSongs)
+    setLocalSongs(newSongs);
   }
 
   async function handleSave() {
     if (setlistId === null && !name.trim()) {
-      setError('Setlist name is required.')
-      return
+      setError("Setlist name is required.");
+      return;
     }
-    setIsSaving(true)
-    setError(null)
+    setIsSaving(true);
+    setError(null);
     try {
       if (setlistId === null) {
         // ── CREATE MODE ────────────────────────────────────────────────────────
@@ -142,21 +147,21 @@ export default function SetlistBuilderClient({
           name: name.trim(),
           date: date,
           is_public: isPublic,
-        })
+        });
         if (createError || !created) {
-          throw new Error(createError ?? 'Failed to create setlist.')
+          throw new Error(createError ?? "Failed to create setlist.");
         }
-        const newId = created.id
+        const newId = created.id;
 
         // Add all songs
-        const addedJunctionIds: Record<string, string> = {}
+        const addedJunctionIds: Record<string, string> = {};
         for (const song of localSongs) {
           const { data, error: addErr } = await addSongToSetlist({
             setlist_id: newId,
             song_id: song.songId,
-          })
-          if (addErr || !data) throw new Error(addErr ?? 'Failed to add song.')
-          addedJunctionIds[song.songId] = data.id
+          });
+          if (addErr || !data) throw new Error(addErr ?? "Failed to add song.");
+          addedJunctionIds[song.songId] = data.id;
         }
 
         // Reorder if there are songs
@@ -164,12 +169,12 @@ export default function SetlistBuilderClient({
           const updates = localSongs.map((s, i) => ({
             id: addedJunctionIds[s.songId]!,
             order_index: i,
-          }))
+          }));
           const { error: orderErr } = await updateSetlistSongOrder({
             setlist_id: newId,
             updates,
-          })
-          if (orderErr) throw new Error(orderErr)
+          });
+          if (orderErr) throw new Error(orderErr);
         }
 
         // Update performance keys that differ from original
@@ -179,68 +184,74 @@ export default function SetlistBuilderClient({
               id: addedJunctionIds[song.songId]!,
               setlist_id: newId,
               performance_key: song.performanceKey,
-            })
-            if (keyErr) throw new Error(keyErr)
+            });
+            if (keyErr) throw new Error(keyErr);
           }
         }
 
-        router.push(`/setlists/${newId}`)
+        router.push(`/setlists/${newId}`);
       } else {
         // ── EDIT MODE ─────────────────────────────────────────────────────────
 
         // Update setlist header fields if changed
-        if (name !== setlistName || date !== (initialDate ?? '') || isPublic !== initialIsPublic) {
+        if (
+          name !== setlistName ||
+          date !== (initialDate ?? "") ||
+          isPublic !== initialIsPublic
+        ) {
           const { error: updateErr } = await updateSetlist({
             id: setlistId,
             name: name.trim() || setlistName,
             date: date,
             is_public: isPublic,
-          })
-          if (updateErr) throw new Error(updateErr)
+          });
+          if (updateErr) throw new Error(updateErr);
         }
 
         // 1. Determine adds (junctionId === null)
-        const toAdd = localSongs.filter((s) => s.junctionId === null)
+        const toAdd = localSongs.filter((s) => s.junctionId === null);
 
         // 2. Determine removes (in initial but not in local by songId)
-        const localSongIds = new Set(localSongs.map((s) => s.songId))
-        const toRemove = initialSongs.filter((s) => !localSongIds.has(s.songId))
+        const localSongIds = new Set(localSongs.map((s) => s.songId));
+        const toRemove = initialSongs.filter(
+          (s) => !localSongIds.has(s.songId)
+        );
 
         // 3. Determine key changes (junctionId exists, performanceKey changed)
         const toUpdateKey = localSongs.filter((s) => {
-          if (!s.junctionId) return false
-          const orig = initialSongs.find((o) => o.junctionId === s.junctionId)
-          return orig && orig.performanceKey !== s.performanceKey
-        })
+          if (!s.junctionId) return false;
+          const orig = initialSongs.find((o) => o.junctionId === s.junctionId);
+          return orig && orig.performanceKey !== s.performanceKey;
+        });
 
         // Execute removes
         for (const song of toRemove) {
           const { error: removeErr } = await removeSongFromSetlist({
             id: song.junctionId!,
             setlist_id: setlistId,
-          })
-          if (removeErr) throw new Error(removeErr)
+          });
+          if (removeErr) throw new Error(removeErr);
         }
 
         // Execute adds — capture returned junction IDs
-        const addedJunctionIds: Record<string, string> = {}
+        const addedJunctionIds: Record<string, string> = {};
         for (const song of toAdd) {
           const { data, error: addErr } = await addSongToSetlist({
             setlist_id: setlistId,
             song_id: song.songId,
-          })
-          if (addErr || !data) throw new Error(addErr ?? 'Failed to add song.')
-          addedJunctionIds[song.songId] = data.id
+          });
+          if (addErr || !data) throw new Error(addErr ?? "Failed to add song.");
+          addedJunctionIds[song.songId] = data.id;
         }
 
         // Rebuild junction IDs in local songs for subsequent operations
         const songsWithIds = localSongs.map((s) => ({
           ...s,
           junctionId: s.junctionId ?? addedJunctionIds[s.songId] ?? null,
-        }))
+        }));
 
         // Execute reorder (full list)
-        const validSongs = songsWithIds.filter((s) => s.junctionId !== null)
+        const validSongs = songsWithIds.filter((s) => s.junctionId !== null);
         if (validSongs.length > 0) {
           const { error: orderErr } = await updateSetlistSongOrder({
             setlist_id: setlistId,
@@ -248,8 +259,8 @@ export default function SetlistBuilderClient({
               id: s.junctionId!,
               order_index: i,
             })),
-          })
-          if (orderErr) throw new Error(orderErr)
+          });
+          if (orderErr) throw new Error(orderErr);
         }
 
         // Execute key updates
@@ -258,49 +269,55 @@ export default function SetlistBuilderClient({
             id: song.junctionId!,
             setlist_id: setlistId,
             performance_key: song.performanceKey,
-          })
-          if (keyErr) throw new Error(keyErr)
+          });
+          if (keyErr) throw new Error(keyErr);
         }
 
         // Full navigation to re-mount with fresh server props (avoids stale name/date state)
-        router.push(`/setlists/${setlistId}/edit`)
+        router.push(`/setlists/${setlistId}/edit`);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to save. Please try again.')
+      setError(
+        e instanceof Error ? e.message : "Unable to save. Please try again."
+      );
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
   }
 
   async function handleClone() {
-    if (!setlistId) return
-    setIsCloning(true)
-    setError(null)
+    if (!setlistId) return;
+    setIsCloning(true);
+    setError(null);
     try {
-      const { data, error: cloneError } = await cloneSetlist({ id: setlistId })
+      const { data, error: cloneError } = await cloneSetlist({ id: setlistId });
       if (cloneError || !data) {
-        throw new Error(cloneError ?? 'Failed to clone setlist.')
+        throw new Error(cloneError ?? "Failed to clone setlist.");
       }
-      setShowCloneDialog(false)
-      router.push(`/setlists/${data.id}/edit`)
+      setShowCloneDialog(false);
+      router.push(`/setlists/${data.id}/edit`);
     } catch (e) {
-      setShowCloneDialog(false)
-      setError(e instanceof Error ? e.message : 'Unable to clone setlist. Please try again.')
+      setShowCloneDialog(false);
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Unable to clone setlist. Please try again."
+      );
     } finally {
-      setIsCloning(false)
+      setIsCloning(false);
     }
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
   const inputClass = [
-    'w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso',
-    'px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream placeholder:text-brand-brown/40 dark:placeholder:text-brand-tan/40',
-    'focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1',
-  ].join(' ')
+    "w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso",
+    "px-4 py-2.5 text-sm text-brand-espresso dark:text-brand-cream placeholder:text-brand-brown/40 dark:placeholder:text-brand-tan/40",
+    "focus:outline-none focus:ring-2 focus:ring-brand-espresso focus:ring-offset-1",
+  ].join(" ");
 
   const labelClass =
-    'block text-xs font-semibold uppercase tracking-widest text-brand-brown mb-1.5'
+    "block text-xs font-semibold uppercase tracking-widest text-brand-brown mb-1.5";
 
   return (
     <div>
@@ -327,9 +344,11 @@ export default function SetlistBuilderClient({
         </div>
         <div className="flex items-center justify-between rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso px-4 py-2.5">
           <div>
-            <p className={labelClass.replace('mb-1.5', 'mb-0')}>Public</p>
+            <p className={labelClass.replace("mb-1.5", "mb-0")}>Public</p>
             <p className="text-xs text-brand-brown/60 dark:text-brand-tan/60 mt-0.5">
-              {isPublic ? 'Anyone with the link can view this setlist' : 'Only music directors can view this setlist'}
+              {isPublic
+                ? "Anyone with the link can view this setlist"
+                : "Only music directors can view this setlist"}
             </p>
           </div>
           <button
@@ -338,20 +357,20 @@ export default function SetlistBuilderClient({
             aria-checked={isPublic}
             onClick={() => setIsPublic((v) => !v)}
             className={[
-              'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
-              'transition-colors duration-200 ease-in-out',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2',
+              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+              "transition-colors duration-200 ease-in-out",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
               isPublic
-                ? 'bg-brand-espresso dark:bg-brand-tan'
-                : 'bg-brand-brown/20 dark:bg-brand-brown/40',
-            ].join(' ')}
+                ? "bg-brand-espresso dark:bg-brand-tan"
+                : "bg-brand-brown/20 dark:bg-brand-brown/40",
+            ].join(" ")}
           >
             <span
               className={[
-                'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm',
-                'transform transition-transform duration-200 ease-in-out',
-                isPublic ? 'translate-x-5' : 'translate-x-0',
-              ].join(' ')}
+                "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm",
+                "transform transition-transform duration-200 ease-in-out",
+                isPublic ? "translate-x-5" : "translate-x-0",
+              ].join(" ")}
             />
           </button>
         </div>
@@ -386,7 +405,8 @@ export default function SetlistBuilderClient({
         {/* Setlist Panel — left / top */}
         <div>
           <p className="text-sm font-semibold text-brand-brown/60 uppercase tracking-widest mb-4">
-            Setlist ({localSongs.length} {localSongs.length === 1 ? 'song' : 'songs'})
+            Setlist ({localSongs.length}{" "}
+            {localSongs.length === 1 ? "song" : "songs"})
           </p>
           <SetlistPanel
             songs={localSongs}
@@ -422,5 +442,5 @@ export default function SetlistBuilderClient({
         onCancel={() => setShowCloneDialog(false)}
       />
     </div>
-  )
+  );
 }

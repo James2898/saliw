@@ -1,12 +1,12 @@
-import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/services/supabase/server'
-import ForgotPasswordForm from '@/components/client/ForgotPasswordForm'
-import Card from '@/components/server/card'
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/services/supabase/server";
+import ForgotPasswordForm from "@/components/client/ForgotPasswordForm";
+import Card from "@/components/server/card";
 
 export const metadata: Metadata = {
-  title: 'Forgot Password',
-}
+  title: "Forgot Password",
+};
 
 /**
  * Forgot Password page — Server Component.
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
  * No layout.tsx exists in the (auth) route group — each page owns its shell.
  */
 export default async function ForgotPasswordPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (user) {
-    redirect('/')
+    redirect("/");
   }
 
   return (
@@ -36,5 +36,5 @@ export default async function ForgotPasswordPage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }
