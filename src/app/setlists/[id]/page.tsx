@@ -159,8 +159,12 @@ export default async function SetlistViewerPage({
   // ── Format date for display ─────────────────────────────────────────────────
   const formattedDate = setlist.date
     ? (() => {
-        const [y, m, d] = setlist.date!.split("-").map(Number);
-        return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+        const dt = new Date(setlist.date);
+        return new Date(
+          dt.getUTCFullYear(),
+          dt.getUTCMonth(),
+          dt.getUTCDate()
+        ).toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
           day: "numeric",

@@ -30,15 +30,16 @@ export default function UpcomingSetlists({
       ) : (
         <ul className="flex flex-col gap-2" role="list">
           {setlists.map((setlist) => {
-            const [y, m, d] = setlist.date.split("-").map(Number);
-            const formattedDate = new Date(y, m - 1, d).toLocaleDateString(
-              "en-US",
-              {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              }
-            );
+            const dt = new Date(setlist.date);
+            const formattedDate = new Date(
+              dt.getUTCFullYear(),
+              dt.getUTCMonth(),
+              dt.getUTCDate()
+            ).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            });
             return (
               <li key={setlist.id}>
                 <Link
