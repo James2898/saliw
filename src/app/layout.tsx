@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     siteName: "Saliw",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "Saliw — Worship Music Portal",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     title: "Saliw",
     description:
       "Professional web portal for worship leaders and musicians. Dynamic chord transposition, song library, and setlist management.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
 };
 
