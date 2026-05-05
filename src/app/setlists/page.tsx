@@ -21,7 +21,7 @@ type SetlistRow = {
   date: string | null;
   leader_id: string | null;
   is_public: boolean | null;
-  setlist_songs: { order_index: number; songs: { title: string }[] }[];
+  setlist_songs: { order_index: number; songs: { title: string } | null }[];
 };
 
 interface SetlistsPageProps {
@@ -72,10 +72,13 @@ export default async function SetlistsPage({
   try {
     let query = supabase
       .from("setlists")
-      .select("id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))", {
-        count: "exact",
-        head: false,
-      })
+      .select(
+        "id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))",
+        {
+          count: "exact",
+          head: false,
+        }
+      )
       .order("date", { ascending: false });
 
     if (q) {
@@ -92,7 +95,7 @@ export default async function SetlistsPage({
     if (error) {
       fetchError = true;
     } else {
-      setlists = (data ?? []) as SetlistRow[];
+      setlists = (data ?? []) as unknown as SetlistRow[];
       count = rowCount;
     }
   } catch {
@@ -153,14 +156,21 @@ export default async function SetlistsPage({
               {setlists.map((setlist) => {
                 const songTitles = [...setlist.setlist_songs]
                   .sort((a, b) => a.order_index - b.order_index)
-                  .map((ss) => ss.songs[0]?.title)
+                  .map((ss) => ss.songs?.title)
                   .filter(Boolean) as string[];
                 const formattedDate = setlist.date
-                  ? new Date(setlist.date).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
+                  ? (() => {
+                      const dt = new Date(setlist.date);
+                      return new Date(
+                        dt.getUTCFullYear(),
+                        dt.getUTCMonth(),
+                        dt.getUTCDate()
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      });
+                    })()
                   : null;
 
                 return (
