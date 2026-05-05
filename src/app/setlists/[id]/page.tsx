@@ -158,11 +158,18 @@ export default async function SetlistViewerPage({
 
   // ── Format date for display ─────────────────────────────────────────────────
   const formattedDate = setlist.date
-    ? new Date(setlist.date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+    ? (() => {
+        const dt = new Date(setlist.date);
+        return new Date(
+          dt.getUTCFullYear(),
+          dt.getUTCMonth(),
+          dt.getUTCDate()
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      })()
     : null;
 
   return (
