@@ -5,7 +5,7 @@ import { Pencil } from "lucide-react";
 export interface NextUpSetlist {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   songCount: number;
 }
 
@@ -59,11 +59,20 @@ export default function NextUpCard({
     );
   }
 
-  const formattedDate = new Date(setlist.date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = setlist.date
+    ? (() => {
+        const dt = new Date(setlist.date);
+        return new Date(
+          dt.getUTCFullYear(),
+          dt.getUTCMonth(),
+          dt.getUTCDate()
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      })()
+    : null;
 
   return (
     <section className="rounded-2xl border border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso dark:border-brand-tan/20 p-6">
@@ -76,8 +85,8 @@ export default function NextUpCard({
             {setlist.name}
           </h2>
           <p className="text-sm text-brand-brown dark:text-brand-tan mt-1">
-            {formattedDate} &middot; {setlist.songCount}{" "}
-            {setlist.songCount === 1 ? "song" : "songs"}
+            {formattedDate ? <>{formattedDate} &middot; </> : null}
+            {setlist.songCount} {setlist.songCount === 1 ? "song" : "songs"}
           </p>
         </div>
         {isMusicDirector && (
