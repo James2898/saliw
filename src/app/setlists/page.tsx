@@ -180,9 +180,9 @@ export default async function SetlistsPage({
                       className={[
                         "flex flex-col md:flex-row md:items-center md:justify-between gap-2",
                         "bg-[--brand-cream] dark:bg-brand-espresso",
-                        "rounded-xl border-l-4 border-[--brand-tan] p-4",
+                        "rounded-xl border border-brand-tan/25 dark:border-brand-tan/15 border-l-4 border-l-[var(--brand-tan)] p-4",
                         isMusicDirector ? "pr-10" : "",
-                        "hover:shadow-md transition-shadow duration-200",
+                        "shadow-sm hover:shadow-md transition-shadow duration-200",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
                       ].join(" ")}
                       aria-label={`View setlist: ${setlist.name}${formattedDate ? `, ${formattedDate}` : ""}${songTitles.length > 0 ? `, songs: ${songTitles.join(", ")}` : ""}`}
