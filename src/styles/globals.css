@@ -94,12 +94,10 @@ body {
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
-/* Light mode: espresso text (#2D1F1B) on tan background (#BC8E5C) — contrast ~6.5:1, WCAG AA pass */
+/* Light mode: bright red (#C0392B) on cream background (#FDF8F3) — contrast ~5.1:1, WCAG AA pass */
 .chord-item {
-  color: var(--brand-espresso);
-  background-color: var(--brand-tan);
-  padding: 0 4px;
-  border-radius: 3px;
+  color: #c0392b;
+  font-weight: 600;
   font-family: var(--font-mono);
 }
 
