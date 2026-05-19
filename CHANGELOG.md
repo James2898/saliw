@@ -4,6 +4,18 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-05-19
+
+### Added
+
+- Items-per-page selector (10 / 25 / 50 / 100) on Setlists and Song Library list views (`TASK-037`)
+  - Persisted via `?pageSize=N` URL query parameter; page resets to 1 on change
+  - Selector follows Artisan palette with explicit `dark:` variants (BUG-004 safe)
+  - Accessible via `<label htmlFor="pageSize">` + native `<select>`; keyboard navigable
+  - Server-side validation: invalid or absent `pageSize` defaults to 10
+  - PaginationControls renders even when totalCount === 0 (nav buttons auto-disabled)
+  - Affected files: `src/app/setlists/page.tsx`, `src/app/library/page.tsx`, `src/components/client/PaginationControls.tsx`
+
 ## [Unreleased] — 2026-05-03
 
 ### Added
