@@ -4,6 +4,7 @@ import { Pencil } from "lucide-react";
 import { createClient } from "@/services/supabase/server";
 import SearchBar from "@/components/client/SearchBar";
 import PaginationControls from "@/components/client/PaginationControls";
+import PageSizeSelect from "@/components/client/PageSizeSelect";
 import NewSetlistButton from "@/components/setlists/NewSetlistButton";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   description: "Browse and manage worship setlists.",
 };
 
-const PAGE_SIZE = 10;
+const ALLOWED_PAGE_SIZES = [10, 25, 50, 100] as const;
 
 type SetlistRow = {
   id: string;
@@ -25,7 +26,7 @@ type SetlistRow = {
 };
 
 interface SetlistsPageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 export default async function SetlistsPage({
@@ -42,6 +43,14 @@ export default async function SetlistsPage({
   const params = await searchParams;
   // Strip PostgREST filter metacharacters to prevent filter-clause injection
   const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%]/g, "");
+
+  // Parse pageSize param — validate against allowed set, default to 10
+  const rawPageSize = parseInt(params.pageSize ?? "10", 10);
+  const pageSize = (ALLOWED_PAGE_SIZES as readonly number[]).includes(
+    rawPageSize
+  )
+    ? rawPageSize
+    : 10;
 
   // Parse page param — clamp to 1 as a lower bound; upper bound applied after count is known
   const rawPage = parseInt(params.page ?? "1", 10);
@@ -85,12 +94,12 @@ export default async function SetlistsPage({
       query = query.ilike("name", `%${q}%`);
     }
 
-    const offset = (requestedPage - 1) * PAGE_SIZE;
+    const offset = (requestedPage - 1) * pageSize;
     const {
       data,
       error,
       count: rowCount,
-    } = await query.range(offset, offset + PAGE_SIZE - 1);
+    } = await query.range(offset, offset + pageSize - 1);
 
     if (error) {
       fetchError = true;
@@ -104,7 +113,7 @@ export default async function SetlistsPage({
 
   // ── Derive pagination values ────────────────────────────────────────────────
   const totalCount = count ?? 0;
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const totalPages = Math.ceil(totalCount / pageSize);
   // Clamp currentPage to [1, totalPages] — handles out-of-bounds ?page params
   const currentPage = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1;
 
@@ -133,8 +142,17 @@ export default async function SetlistsPage({
             {q ? ` matching "${q}"` : ""}
           </p>
 
-          {/* ── Search bar ─────────────────────────────────────────────────── */}
-          <SearchBar defaultValue={q} basePath="/setlists" />
+          {/* ── Search bar + page size ─────────────────────────────────────── */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <SearchBar defaultValue={q} basePath="/setlists" />
+            </div>
+            <PageSizeSelect
+              pageSize={pageSize}
+              q={q || undefined}
+              basePath="/setlists"
+            />
+          </div>
         </div>
 
         {/* ── Setlist list ─────────────────────────────────────────────────── */}
@@ -180,9 +198,9 @@ export default async function SetlistsPage({
                       className={[
                         "flex flex-col md:flex-row md:items-center md:justify-between gap-2",
                         "bg-[--brand-cream] dark:bg-brand-espresso",
-                        "rounded-xl border-l-4 border-[--brand-tan] p-4",
+                        "rounded-xl border border-brand-tan/25 dark:border-brand-tan/15 border-l-4 border-l-[var(--brand-tan)] p-4",
                         isMusicDirector ? "pr-10" : "",
-                        "hover:shadow-md transition-shadow duration-200",
+                        "shadow-sm hover:shadow-md transition-shadow duration-200",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
                       ].join(" ")}
                       aria-label={`View setlist: ${setlist.name}${formattedDate ? `, ${formattedDate}` : ""}${songTitles.length > 0 ? `, songs: ${songTitles.join(", ")}` : ""}`}
@@ -226,12 +244,12 @@ export default async function SetlistsPage({
         </div>
 
         {/* ── Pagination controls ───────────────────────────────────────────── */}
-        {!fetchError && totalCount > 0 && (
+        {!fetchError && (
           <div className="mt-6">
             <PaginationControls
               currentPage={currentPage}
               totalCount={totalCount}
-              pageSize={PAGE_SIZE}
+              pageSize={pageSize}
               q={q || undefined}
               basePath="/setlists"
             />

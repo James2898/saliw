@@ -17,9 +17,16 @@ interface PaginationControlsProps {
   basePath?: string;
 }
 
-function buildUrl(page: number, basePath: string, q?: string): string {
+// BUG-007: buildUrl declared before useRouter hook reference below
+function buildUrl(
+  page: number,
+  basePath: string,
+  pageSize: number,
+  q?: string
+): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
+  params.set("pageSize", String(pageSize));
   params.set("page", String(page));
   return `${basePath}?${params.toString()}`;
 }
@@ -42,11 +49,10 @@ export default function PaginationControls({
       aria-label="Pagination"
       className="flex items-center justify-center gap-1"
     >
-      {/* First */}
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(1, basePath, q))}
+        onClick={() => router.replace(buildUrl(1, basePath, pageSize, q))}
         disabled={isFirst}
         aria-label="Go to first page"
         aria-disabled={isFirst}
@@ -54,11 +60,12 @@ export default function PaginationControls({
         <ChevronsLeft size={16} strokeWidth={2} aria-hidden="true" />
       </Button>
 
-      {/* Prev */}
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(currentPage - 1, basePath, q))}
+        onClick={() =>
+          router.replace(buildUrl(currentPage - 1, basePath, pageSize, q))
+        }
         disabled={isFirst}
         aria-label="Go to previous page"
         aria-disabled={isFirst}
@@ -66,7 +73,6 @@ export default function PaginationControls({
         <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
       </Button>
 
-      {/* Page indicator */}
       <span
         className="px-3 py-1.5 text-sm font-semibold text-brand-brown select-none"
         aria-live="polite"
@@ -74,11 +80,12 @@ export default function PaginationControls({
         Page {currentPage} of {totalPages}
       </span>
 
-      {/* Next */}
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(currentPage + 1, basePath, q))}
+        onClick={() =>
+          router.replace(buildUrl(currentPage + 1, basePath, pageSize, q))
+        }
         disabled={isLast}
         aria-label="Go to next page"
         aria-disabled={isLast}
@@ -86,11 +93,12 @@ export default function PaginationControls({
         <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
       </Button>
 
-      {/* Last */}
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(totalPages, basePath, q))}
+        onClick={() =>
+          router.replace(buildUrl(totalPages, basePath, pageSize, q))
+        }
         disabled={isLast}
         aria-label="Go to last page"
         aria-disabled={isLast}
