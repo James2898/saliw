@@ -217,6 +217,7 @@ export default async function SetlistViewerPage({
   // ── Pre-process chord sheets server-side ───────────────────────────────────
   const processedSongs = songs.map((entry) => ({
     junctionId: entry.id,
+    songId: entry.song_id,
     setlistId: id,
     title: entry.songs.title,
     artist: entry.songs.artist,
