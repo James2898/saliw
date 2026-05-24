@@ -7,21 +7,45 @@ import { Search } from "lucide-react";
 interface SearchBarProps {
   defaultValue: string;
   basePath?: string;
+  /** Pass current page size so search navigation preserves it (AC-19 / AM-2) */
+  pageSize?: number;
+  /** Pass current letter filter so search navigation preserves it (AC-19 / AM-2) */
+  letter?: string;
+}
+
+// BUG-007: buildSearchUrl declared above any hook that references it.
+function buildSearchUrl(
+  basePath: string,
+  term: string,
+  pageSize: number | undefined,
+  letter: string | undefined
+): string {
+  const params = new URLSearchParams();
+  if (term) params.set("q", term);
+  if (pageSize !== undefined) params.set("pageSize", String(pageSize));
+  // Always reset to page 1 on new search
+  params.set("page", "1");
+  if (letter) params.set("letter", letter);
+  const qs = params.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
 }
 
 /**
- * SearchBar — Client Component for the Song Library.
+ * SearchBar — Client Component for the Song Library and Setlist List.
  *
  * Accepts the current search query as `defaultValue` (passed from the Server Component
  * via the URL `?q` param) and debounces URL updates at 300ms to avoid firing a
  * navigation on every keystroke.
  *
  * Uses `router.replace` to avoid polluting browser history on every keypress.
+ * Preserves all live params (pageSize, letter) when navigating (AM-2 / AC-19).
  * Does NOT call Supabase or any Server Action.
  */
 export default function SearchBar({
   defaultValue,
   basePath = "/library",
+  pageSize,
+  letter,
 }: SearchBarProps) {
   const router = useRouter();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,14 +59,10 @@ export default function SearchBar({
       }
 
       debounceRef.current = setTimeout(() => {
-        if (term) {
-          router.replace(`${basePath}?q=${encodeURIComponent(term)}`);
-        } else {
-          router.replace(basePath);
-        }
+        router.replace(buildSearchUrl(basePath, term, pageSize, letter));
       }, 300);
     },
-    [router, basePath]
+    [router, basePath, pageSize, letter]
   );
 
   return (
