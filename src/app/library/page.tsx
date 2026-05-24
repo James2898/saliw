@@ -5,13 +5,14 @@ import { createClient } from "@/services/supabase/server";
 import SearchBar from "@/components/client/SearchBar";
 import NewSongButton from "@/components/library/NewSongButton";
 import PaginationControls from "@/components/client/PaginationControls";
+import PageSizeSelect from "@/components/client/PageSizeSelect";
 
 export const metadata: Metadata = {
   title: "Song Library",
   description: "Browse and search the full worship song library.",
 };
 
-const PAGE_SIZE = 10;
+const ALLOWED_PAGE_SIZES = [10, 25, 50, 100] as const;
 
 type SongRow = {
   id: string;
@@ -21,7 +22,7 @@ type SongRow = {
 };
 
 interface LibraryPageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
@@ -36,6 +37,14 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const params = await searchParams;
   // Strip PostgREST filter metacharacters to prevent filter-clause injection
   const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%]/g, "");
+
+  // Parse pageSize param — validate against allowed set, default to 10
+  const rawPageSize = parseInt(params.pageSize ?? "10", 10);
+  const pageSize = (ALLOWED_PAGE_SIZES as readonly number[]).includes(
+    rawPageSize
+  )
+    ? rawPageSize
+    : 10;
 
   // Parse page param — clamp to 1 as a lower bound; upper bound applied after count is known
   const rawPage = parseInt(params.page ?? "1", 10);
@@ -77,12 +86,12 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       query = query.or(`title.ilike.%${q}%,artist.ilike.%${q}%`);
     }
 
-    const offset = (requestedPage - 1) * PAGE_SIZE;
+    const offset = (requestedPage - 1) * pageSize;
     const {
       data,
       error,
       count: rowCount,
-    } = await query.range(offset, offset + PAGE_SIZE - 1);
+    } = await query.range(offset, offset + pageSize - 1);
 
     if (error) {
       fetchError = true;
@@ -96,7 +105,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
 
   // ── Derive pagination values ────────────────────────────────────────────────
   const totalCount = count ?? 0;
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const totalPages = Math.ceil(totalCount / pageSize);
   // Clamp currentPage to [1, totalPages] — handles out-of-bounds ?page params
   const currentPage = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1;
 
@@ -123,9 +132,16 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           {q ? ` matching "${q}"` : " in library"}
         </p>
 
-        {/* ── Search bar ───────────────────────────────────────────────────── */}
-        <div className="mb-6">
-          <SearchBar defaultValue={q} basePath="/library" />
+        {/* ── Search bar + page size ───────────────────────────────────────── */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1">
+            <SearchBar defaultValue={q} basePath="/library" />
+          </div>
+          <PageSizeSelect
+            pageSize={pageSize}
+            q={q || undefined}
+            basePath="/library"
+          />
         </div>
 
         {/* ── Song list ────────────────────────────────────────────────────── */}
@@ -136,7 +152,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
             role="status"
             aria-live="polite"
           >
-            <p className="text-sm font-semibold text-brand-brown">
+            <p className="text-sm font-semibold text-brand-brown dark:text-brand-tan">
               {emptyMessage}
             </p>
           </div>
@@ -191,12 +207,12 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
         )}
 
         {/* ── Pagination controls ───────────────────────────────────────────── */}
-        {!fetchError && totalCount > 0 && (
+        {!fetchError && (
           <div className="mt-6">
             <PaginationControls
               currentPage={currentPage}
               totalCount={totalCount}
-              pageSize={PAGE_SIZE}
+              pageSize={pageSize}
               q={q || undefined}
               basePath="/library"
             />
