@@ -277,16 +277,18 @@ export function useAutoScroll(): UseAutoScrollReturn {
 
       e.preventDefault();
 
-      if (!isActiveRef.current) {
-        // Inactive → activate autoscroll and begin scrolling (AC-1)
-        toggle();
-      } else if (isScrollingRef.current) {
-        // Active + scrolling → pause (AC-2)
+      // BUG-014 guard: inert instances (not the toolbar-owning instance) must
+      // not activate from Space. Only the toolbar button calls toggle() to
+      // activate. Space is for pause/resume within an already-active session.
+      if (!isActiveRef.current) return;
+
+      if (isScrollingRef.current) {
+        // Active + scrolling → pause
         cancelRaf();
         setIsScrolling(false);
         isScrollingRef.current = false;
       } else {
-        // Active + paused → resume (AC-3)
+        // Active + paused → resume
         setIsScrolling(true);
         isScrollingRef.current = true;
         startRaf();
@@ -295,7 +297,7 @@ export function useAutoScroll(): UseAutoScrollReturn {
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cancelRaf, startRaf, toggle]);
+  }, [cancelRaf, startRaf]);
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
 

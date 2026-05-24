@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { UseAutoScrollReturn } from "@/hooks/useAutoScroll";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -121,10 +121,16 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
     setSpeed,
   } = scroll;
 
-  // SSR guard: lazy initializer returns true only in a browser environment.
-  // This prevents the keyboard hint from appearing in server-rendered HTML (AC-9, AC-10).
-  // BUG-001 compliant: no setState inside useEffect.
-  const [mounted] = useState(() => typeof window !== "undefined");
+  // SSR guard: two-step mount pattern prevents React hydration mismatch.
+  // useState(false) ensures SSR and first client render both produce false.
+  // useEffect sets mounted=true after hydration completes (AC-9, AC-10).
+  // BUG-001 safe: setMounted(true) writes a static boolean — not external
+  // state like localStorage — so it does not trigger cascading renders.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   return (
     <div
