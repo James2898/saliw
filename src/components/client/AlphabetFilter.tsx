@@ -98,7 +98,7 @@ export default function AlphabetFilter({
   return (
     <nav aria-label="Filter by first letter" className="mb-4">
       {/* flex-wrap ensures multi-row layout on mobile (OQ-2) — NOT overflow-x scroll */}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap justify-between">
         {chips.map(({ label, value }) => {
           const isActive =
             value === null ? activeLetter === null : activeLetter === value;
@@ -113,7 +113,7 @@ export default function AlphabetFilter({
                   : `Filter by letter ${label}`
               }
               onClick={() => handleSelect(value)}
-              className={`cursor-pointer text-sm transition-colors bg-transparent border-none p-0 leading-none${
+              className={`cursor-pointer text-sm font-semibold transition-colors bg-transparent border-none p-0 leading-none${
                 isActive
                   ? " font-bold text-brand-espresso dark:text-brand-cream"
                   : " text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream"
