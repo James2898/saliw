@@ -438,7 +438,7 @@ export default function SetlistSettingsModal({
                               : preset.value === "#3D1F0D" ||
                                   preset.value === "#8B6347"
                                 ? "text-white"
-                                : "text-brand-espresso",
+                                : "text-brand-espresso dark:text-brand-espresso",
                           ].join(" ")}
                           viewBox="0 0 16 16"
                           fill="none"
@@ -497,7 +497,7 @@ export default function SetlistSettingsModal({
                             "absolute w-4 h-4",
                             preset.value === "#FFFFFF" ||
                             preset.value === "#C0392B"
-                              ? "text-brand-espresso"
+                              ? "text-brand-espresso dark:text-brand-espresso"
                               : "text-white",
                           ].join(" ")}
                           viewBox="0 0 16 16"
