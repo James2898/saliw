@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import Button from "@/components/client/button";
 
 // BUG-016: Use ALPHABET (not LETTERS) to avoid shadowing any dynamic variable
 // derived from searchParams in the same scope.
@@ -34,6 +33,12 @@ const ALPHABET = [
   "Y",
   "Z",
 ] as const;
+
+// BUG-019: chips hoisted to module scope to avoid re-creation on every render.
+const chips: Array<{ label: string; value: string | null }> = [
+  { label: "All", value: null },
+  ...ALPHABET.map((l) => ({ label: l, value: l })),
+];
 
 interface AlphabetFilterProps {
   activeLetter: string | null;
@@ -90,11 +95,6 @@ export default function AlphabetFilter({
     [router, activeLetter, basePath, q, pageSize]
   );
 
-  const chips: Array<{ label: string; value: string | null }> = [
-    { label: "All", value: null },
-    ...ALPHABET.map((l) => ({ label: l, value: l })),
-  ];
-
   return (
     <nav aria-label="Filter by first letter" className="mb-4">
       {/* flex-wrap ensures multi-row layout on mobile (OQ-2) — NOT overflow-x scroll */}
@@ -103,43 +103,24 @@ export default function AlphabetFilter({
           const isActive =
             value === null ? activeLetter === null : activeLetter === value;
 
-          if (isActive) {
-            // AM-1: primary variant lacks dark: variants on text/border — add inline overrides.
-            // BUG-004/BUG-005: every brand utility needs explicit dark: pair.
-            return (
-              <Button
-                key={label}
-                variant="primary"
-                size="sm"
-                aria-pressed={true}
-                aria-label={
-                  value === null
-                    ? "Show all (clear letter filter)"
-                    : `Filter by letter ${label}`
-                }
-                onClick={() => handleSelect(value)}
-                className="dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan"
-              >
-                {label}
-              </Button>
-            );
-          }
-
           return (
-            <Button
+            <button
               key={label}
-              variant="ghost"
-              size="sm"
-              aria-pressed={false}
+              aria-pressed={isActive}
               aria-label={
                 value === null
                   ? "Show all (clear letter filter)"
                   : `Filter by letter ${label}`
               }
               onClick={() => handleSelect(value)}
+              className={`cursor-pointer text-sm transition-colors bg-transparent border-none p-0 leading-none${
+                isActive
+                  ? " font-bold text-brand-espresso dark:text-brand-cream"
+                  : " text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream"
+              }`}
             >
               {label}
-            </Button>
+            </button>
           );
         })}
       </div>
