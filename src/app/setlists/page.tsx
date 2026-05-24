@@ -6,6 +6,7 @@ import SearchBar from "@/components/client/SearchBar";
 import PaginationControls from "@/components/client/PaginationControls";
 import PageSizeSelect from "@/components/client/PageSizeSelect";
 import NewSetlistButton from "@/components/setlists/NewSetlistButton";
+import AlphabetFilter from "@/components/client/AlphabetFilter";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,12 @@ type SetlistRow = {
 };
 
 interface SetlistsPageProps {
-  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    pageSize?: string;
+    letter?: string;
+  }>;
 }
 
 export default async function SetlistsPage({
@@ -43,6 +49,13 @@ export default async function SetlistsPage({
   const params = await searchParams;
   // Strip PostgREST filter metacharacters to prevent filter-clause injection
   const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%]/g, "");
+
+  // Sanitize letter param — accept only a single uppercase A–Z letter
+  const rawLetter = params.letter?.trim().toUpperCase() ?? "";
+  const letter =
+    rawLetter.length === 1 && rawLetter >= "A" && rawLetter <= "Z"
+      ? rawLetter
+      : null;
 
   // Parse pageSize param — validate against allowed set, default to 10
   const rawPageSize = parseInt(params.pageSize ?? "10", 10);
@@ -94,6 +107,11 @@ export default async function SetlistsPage({
       query = query.ilike("name", `%${q}%`);
     }
 
+    // Letter filter: prefix match on name column (AC-16), AND-composed with q filter (AC-7)
+    if (letter) {
+      query = query.ilike("name", `${letter}%`);
+    }
+
     const offset = (requestedPage - 1) * pageSize;
     const {
       data,
@@ -120,9 +138,13 @@ export default async function SetlistsPage({
   // ── Derived empty-state message ─────────────────────────────────────────────
   const emptyMessage = fetchError
     ? "Unable to load setlists. Please try again."
-    : q
-      ? "No setlists match your search."
-      : "No setlists yet.";
+    : letter && q
+      ? `No setlists starting with '${letter}' matching "${q}".`
+      : letter
+        ? `No setlists starting with '${letter}'.`
+        : q
+          ? "No setlists match your search."
+          : "No setlists yet.";
 
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
@@ -139,20 +161,35 @@ export default async function SetlistsPage({
 
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-4">
             {totalCount} {totalCount === 1 ? "setlist" : "setlists"}
+            {letter ? ` starting with '${letter}'` : ""}
             {q ? ` matching "${q}"` : ""}
           </p>
 
           {/* ── Search bar + page size ─────────────────────────────────────── */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-4">
             <div className="flex-1">
-              <SearchBar defaultValue={q} basePath="/setlists" />
+              <SearchBar
+                defaultValue={q}
+                basePath="/setlists"
+                pageSize={pageSize}
+                letter={letter ?? undefined}
+              />
             </div>
             <PageSizeSelect
               pageSize={pageSize}
               q={q || undefined}
               basePath="/setlists"
+              letter={letter ?? undefined}
             />
           </div>
+
+          {/* ── Alphabet filter bar ─────────────────────────────────────────── */}
+          <AlphabetFilter
+            activeLetter={letter}
+            basePath="/setlists"
+            q={q || undefined}
+            pageSize={pageSize}
+          />
         </div>
 
         {/* ── Setlist list ─────────────────────────────────────────────────── */}
@@ -252,6 +289,7 @@ export default async function SetlistsPage({
               pageSize={pageSize}
               q={q || undefined}
               basePath="/setlists"
+              letter={letter ?? undefined}
             />
           </div>
         )}
