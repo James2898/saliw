@@ -262,9 +262,9 @@ export function useAutoScroll(): UseAutoScrollReturn {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.code !== "Space") return;
-      if (!isActiveRef.current) return;
 
       // Don't intercept spacebar when user is typing in an input/textarea
+      // (AC-6: suppress with no state change and no preventDefault)
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -277,22 +277,25 @@ export function useAutoScroll(): UseAutoScrollReturn {
 
       e.preventDefault();
 
-      if (isScrollingRef.current) {
-        // Currently scrolling → pause
+      if (!isActiveRef.current) {
+        // Inactive → activate autoscroll and begin scrolling (AC-1)
+        toggle();
+      } else if (isScrollingRef.current) {
+        // Active + scrolling → pause (AC-2)
         cancelRaf();
         setIsScrolling(false);
         isScrollingRef.current = false;
       } else {
-        // Currently paused → resume
+        // Active + paused → resume (AC-3)
         setIsScrolling(true);
         isScrollingRef.current = true;
         startRaf();
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cancelRaf, startRaf]);
+  }, [cancelRaf, startRaf, toggle]);
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
 
