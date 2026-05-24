@@ -63,6 +63,25 @@ interface ChordSheetClientProps {
    * parallel rAF loop and the parent's pause() couldn't stop them.
    */
   injectedAutoScroll?: UseAutoScrollReturn;
+  /**
+   * Lyric font size in pixels, lifted from SetlistViewerClient.
+   * When provided, the component uses this value instead of its own hook.
+   * When absent (e.g. standalone song viewer), the component manages its own
+   * font size via the on-sheet controls.
+   */
+  fontSize?: number;
+  /** Increase lyric font size — provided when fontSize prop is controlled externally. */
+  onIncreaseFont?: () => void;
+  /** Decrease lyric font size — provided when fontSize prop is controlled externally. */
+  onDecreaseFont?: () => void;
+  /** Reset lyric font size — provided when fontSize prop is controlled externally. */
+  onResetFont?: () => void;
+  /** Chord-specific font size in pixels, injected from SetlistViewerClient. */
+  chordFontSize?: number;
+  /** Chord background color CSS value (hex or "transparent"). */
+  chordBg?: string;
+  /** Chord font color CSS value (hex). */
+  chordColor?: string;
 }
 
 /**
@@ -88,6 +107,13 @@ export default function ChordSheetClient({
   onKeyChangeLive,
   externalChordsHidden,
   injectedAutoScroll,
+  fontSize: fontSizeProp,
+  onIncreaseFont,
+  onDecreaseFont,
+  onResetFont,
+  chordFontSize,
+  chordBg,
+  chordColor,
 }: ChordSheetClientProps) {
   const {
     semitoneOffset,
@@ -98,12 +124,15 @@ export default function ChordSheetClient({
     reset,
   } = useTranspose(originalKey, initialKey);
 
-  const {
-    fontSize,
-    increase: increaseFont,
-    decrease: decreaseFont,
-    reset: resetFont,
-  } = useFontSize();
+  // When font size is controlled externally (setlist viewer), use the injected values.
+  // When used standalone (single song viewer / song editor), fall back to the internal hook.
+  // Rules of Hooks: useFontSize is always called; its return value is only used when
+  // no external font size prop is provided.
+  const internalFontSize = useFontSize();
+  const fontSize = fontSizeProp ?? internalFontSize.fontSize;
+  const increaseFont = onIncreaseFont ?? internalFontSize.increase;
+  const decreaseFont = onDecreaseFont ?? internalFontSize.decrease;
+  const resetFont = onResetFont ?? internalFontSize.reset;
 
   // Always call the hook (rules of hooks), but prefer the injected instance
   // when a parent owns auto-scroll. The internal instance stays inert in that
@@ -166,6 +195,32 @@ export default function ChordSheetClient({
   useEffect(() => {
     sheetRef.current?.style.setProperty("--chord-font-size", `${fontSize}px`);
   }, [fontSize]);
+
+  // Apply chord-specific font size CSS variable to the container.
+  useEffect(() => {
+    if (chordFontSize !== undefined) {
+      sheetRef.current?.style.setProperty(
+        "--chord-item-font-size",
+        `${chordFontSize}px`
+      );
+    }
+  }, [chordFontSize]);
+
+  // Apply chord color CSS variable to the container.
+  // Injecting on the container ref (not on individual spans) so the CSS
+  // variable cascades to all .chord-item spans without touching their DOM nodes.
+  useEffect(() => {
+    if (chordColor !== undefined) {
+      sheetRef.current?.style.setProperty("--chord-color", chordColor);
+    }
+  }, [chordColor]);
+
+  // Apply chord background CSS variable to the container.
+  useEffect(() => {
+    if (chordBg !== undefined) {
+      sheetRef.current?.style.setProperty("--chord-bg", chordBg);
+    }
+  }, [chordBg]);
 
   // Build chord-display container class with conditional modifiers.
   const chordDisplayClass = ["chord-display", chordsHidden && "chords-hidden"]
