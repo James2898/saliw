@@ -8,6 +8,7 @@ import SetlistSongSection from "@/components/client/SetlistSongSection";
 import GoLiveButton from "@/components/client/GoLiveButton";
 import FollowLeaderButton from "@/components/client/FollowLeaderButton";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
+import AppendSongsButton from "@/components/client/AppendSongsButton";
 import { useSetlistSync } from "@/hooks/useSetlistSync";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import type { ProcessedLine } from "@/utils/musicLogic";
@@ -16,6 +17,8 @@ import type { ProcessedLine } from "@/utils/musicLogic";
 
 interface ClientSong {
   junctionId: string;
+  /** The songs table PK — used by AppendSongsButton to prevent duplicate additions. */
+  songId: string;
   setlistId: string;
   title: string;
   artist: string;
@@ -75,6 +78,14 @@ export default function SetlistViewerClient({
     [songs]
   );
 
+  // Set of song IDs (songs table PK) already present in the setlist — passed to
+  // AppendSongsButton so the modal pre-checks and disables existing songs (AC-20, AC-24).
+  // Wrapped in useMemo so the Set reference stays stable across renders.
+  const existingSongIds = useMemo(
+    () => new Set(songs.map((s) => s.songId)),
+    [songs]
+  );
+
   const sync = useSetlistSync({
     setlistId,
     isLeader,
@@ -93,6 +104,14 @@ export default function SetlistViewerClient({
     <>
       {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
       <AutoScrollToolbar scroll={autoScroll} />
+
+      {/* ── Append Songs FAB — desktop-only, fixed bottom-left (TASK-038 AC-1–7) */}
+      {isLeader && (
+        <AppendSongsButton
+          setlistId={setlistId}
+          existingSongIds={existingSongIds}
+        />
+      )}
 
       {/* ── Setlist header (name + date + Go Live/Follow Leader + Hide Chords) ── */}
       <div className="mb-8">
