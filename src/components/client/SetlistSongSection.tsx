@@ -28,6 +28,20 @@ interface SetlistSongSectionProps {
   /** Shared auto-scroll instance owned by SetlistViewerClient — passed down
    *  so each per-song ChordSheetClient does not spawn its own rAF loop. */
   autoScroll?: UseAutoScrollReturn;
+  /** Lyric font size in pixels, lifted from SetlistViewerClient. */
+  fontSize?: number;
+  /** Increase lyric font size callback, lifted from SetlistViewerClient. */
+  onIncreaseFont?: () => void;
+  /** Decrease lyric font size callback, lifted from SetlistViewerClient. */
+  onDecreaseFont?: () => void;
+  /** Reset lyric font size callback, lifted from SetlistViewerClient. */
+  onResetFont?: () => void;
+  /** Chord-specific font size in pixels. */
+  chordFontSize?: number;
+  /** Chord background color CSS value (hex or "transparent"). */
+  chordBg?: string;
+  /** Chord font color CSS value (hex). */
+  chordColor?: string;
 }
 
 // Wrap ChordSheetClient in React.memo to prevent re-renders triggered
@@ -57,6 +71,13 @@ function SetlistSongSection({
   liveSyncState,
   externalChordsHidden,
   autoScroll,
+  fontSize,
+  onIncreaseFont,
+  onDecreaseFont,
+  onResetFont,
+  chordFontSize,
+  chordBg,
+  chordColor,
 }: SetlistSongSectionProps) {
   // Track the current display key as reported by ChordSheetClient via onKeyChange
   const [currentKey, setCurrentKey] = useState<string>(performanceKey);
@@ -236,6 +257,13 @@ function SetlistSongSection({
         onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
         externalChordsHidden={externalChordsHidden}
         injectedAutoScroll={autoScroll}
+        fontSize={fontSize}
+        onIncreaseFont={onIncreaseFont}
+        onDecreaseFont={onDecreaseFont}
+        onResetFont={onResetFont}
+        chordFontSize={chordFontSize}
+        chordBg={chordBg}
+        chordColor={chordColor}
       />
     </section>
   );
