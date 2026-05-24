@@ -94,17 +94,21 @@ body {
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
-/* Light mode: bright red (#C0392B) on cream background (#FDF8F3) — contrast ~5.1:1, WCAG AA pass */
+/* Light mode: color/bg controlled by CSS custom properties for live preview.
+   Default: bright red (#C0392B) on transparent — contrast ~5.1:1, WCAG AA pass */
 .chord-item {
-  color: #c0392b;
+  color: var(--chord-color, #c0392b);
+  background-color: var(--chord-bg, transparent);
+  font-size: var(--chord-item-font-size, inherit);
   font-weight: 600;
   font-family: var(--font-mono);
 }
 
-/* Dark mode: cream text (#FDF8F3) on brown background (#835B43) — contrast ~4.7:1, WCAG AA pass */
+/* Dark mode: default to cream text on brown background — contrast ~4.7:1, WCAG AA pass.
+   CSS custom properties injected on the container override these defaults. */
 .dark .chord-item {
-  color: var(--brand-cream);
-  background-color: var(--brand-brown);
+  color: var(--chord-color, var(--brand-cream));
+  background-color: var(--chord-bg, var(--brand-brown));
 }
 
 /* Section header — [VERSE], [CHORUS], etc. */
