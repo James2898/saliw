@@ -8,6 +8,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- A–Z alphabet filter bar on Song Library and Setlist List pages (`TASK-039`)
+  - 27 clickable chips ("All" + A–Z) rendered above results on both `/library` and `/setlists`
+  - Server-side prefix filter: `.ilike("title", "X%")` on songs; `.ilike("name", "X%")` on setlists
+  - AND-composed with existing search term; both filters active simultaneously (AC-7/AC-8)
+  - Letter state stored in `?letter=A` URL param — bookmarkable, back/forward-restoring (AC-10)
+  - `router.replace` navigation; page resets to 1 on letter change (AC-6)
+  - Clicking active letter deselects it (AC-5); clicking "All" always clears filter (AC-3)
+  - Descriptive empty-state messages for letter-only, search-only, and combined filter cases (AC-9)
+  - Mobile layout: `flex flex-wrap` multi-row — no horizontal scroll (AC-17)
+  - All `bg-brand-*`/`text-brand-*`/`border-brand-*` utilities have explicit `dark:` pairs (BUG-004/BUG-005)
+  - `PaginationControls.buildUrl` and `PageSizeSelect.buildUrl` thread `letter` param (AC-18)
+  - `SearchBar` preserves `letter` param via full `URLSearchParams` builder — no silent drops (AM-2/AC-19)
+  - Affected files: `src/components/client/AlphabetFilter.tsx` (new), `src/app/library/page.tsx`, `src/app/setlists/page.tsx`, `src/components/client/SearchBar.tsx`, `src/components/client/PaginationControls.tsx`, `src/components/client/PageSizeSelect.tsx`
+
 - Append Songs FAB on setlist detail page (desktop-only, `lg:` breakpoint and larger) for `music_director` users (`TASK-038`)
   - Desktop-only FAB (`hidden lg:flex`, `fixed bottom-6 left-6 z-50`) opens a scrollable song-picker modal
   - Songs already in the setlist are pre-checked and disabled; new songs can be multi-selected via checkbox or row click

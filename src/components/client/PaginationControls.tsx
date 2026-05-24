@@ -15,6 +15,7 @@ interface PaginationControlsProps {
   pageSize: number;
   q?: string;
   basePath?: string;
+  letter?: string;
 }
 
 // BUG-007: buildUrl declared before useRouter hook reference below
@@ -22,12 +23,14 @@ function buildUrl(
   page: number,
   basePath: string,
   pageSize: number,
-  q?: string
+  q?: string,
+  letter?: string
 ): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   params.set("pageSize", String(pageSize));
   params.set("page", String(page));
+  if (letter) params.set("letter", letter);
   return `${basePath}?${params.toString()}`;
 }
 
@@ -37,6 +40,7 @@ export default function PaginationControls({
   pageSize,
   q,
   basePath = "/library",
+  letter,
 }: PaginationControlsProps) {
   const router = useRouter();
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -52,7 +56,9 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.replace(buildUrl(1, basePath, pageSize, q))}
+        onClick={() =>
+          router.replace(buildUrl(1, basePath, pageSize, q, letter))
+        }
         disabled={isFirst}
         aria-label="Go to first page"
         aria-disabled={isFirst}
@@ -64,7 +70,9 @@ export default function PaginationControls({
         variant="ghost"
         size="sm"
         onClick={() =>
-          router.replace(buildUrl(currentPage - 1, basePath, pageSize, q))
+          router.replace(
+            buildUrl(currentPage - 1, basePath, pageSize, q, letter)
+          )
         }
         disabled={isFirst}
         aria-label="Go to previous page"
@@ -84,7 +92,9 @@ export default function PaginationControls({
         variant="ghost"
         size="sm"
         onClick={() =>
-          router.replace(buildUrl(currentPage + 1, basePath, pageSize, q))
+          router.replace(
+            buildUrl(currentPage + 1, basePath, pageSize, q, letter)
+          )
         }
         disabled={isLast}
         aria-label="Go to next page"
@@ -97,7 +107,7 @@ export default function PaginationControls({
         variant="ghost"
         size="sm"
         onClick={() =>
-          router.replace(buildUrl(totalPages, basePath, pageSize, q))
+          router.replace(buildUrl(totalPages, basePath, pageSize, q, letter))
         }
         disabled={isLast}
         aria-label="Go to last page"
