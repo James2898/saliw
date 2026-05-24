@@ -4,6 +4,19 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-05-24
+
+### Added
+
+- Append Songs FAB on setlist detail page (desktop-only, `lg:` breakpoint and larger) for `music_director` users (`TASK-038`)
+  - Desktop-only FAB (`hidden lg:flex`, `fixed bottom-6 left-6 z-50`) opens a scrollable song-picker modal
+  - Songs already in the setlist are pre-checked and disabled; new songs can be multi-selected via checkbox or row click
+  - Save appends checked songs sequentially (no `Promise.all`) to avoid `MAX(order_index)` race condition
+  - Modal supports close via X button, backdrop click, and Escape key; focus trap and focus return to FAB on close
+  - All Artisan colors via CSS-variable arbitrary values (`bg-[var(--brand-espresso)]`) — BUG-004 safe
+  - FAB is removed from DOM for non-`music_director` users via `{isLeader && ...}` server-side guard (BUG-010 safe)
+  - Affected files: `src/components/client/AppendSongsButton.tsx` (new), `src/components/client/AppendSongsModal.tsx` (new), `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/app/setlists/[id]/page.tsx`
+
 ## [Unreleased] — 2026-05-19
 
 ### Added
