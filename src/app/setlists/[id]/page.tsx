@@ -15,9 +15,84 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: SetlistViewerPageProps) {
   const { id } = await params;
-  const { data: setlist } = await getSetlistById({ id });
+  const [
+    { data: setlist },
+    { data: songsRaw },
+    { data: lineupRaw },
+    { data: musiciansRaw },
+  ] = await Promise.all([
+    getSetlistById({ id }),
+    getSetlistWithSongs({ setlist_id: id }),
+    getSetlistLineup({ setlist_id: id }),
+    listMusicians(),
+  ]);
+
   if (!setlist) return { title: "Setlist" };
-  return { title: setlist.name };
+
+  const formattedDate = setlist.date
+    ? (() => {
+        const dt = new Date(setlist.date);
+        return new Date(
+          dt.getUTCFullYear(),
+          dt.getUTCMonth(),
+          dt.getUTCDate()
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      })()
+    : null;
+
+  const worshipLeaderName =
+    musiciansRaw?.find((m) => m.id === setlist.worship_leader_id)?.name ?? null;
+
+  const songs = (songsRaw ?? [])
+    .slice()
+    .sort((a, b) => a.order_index - b.order_index);
+
+  const songList = songs.map((s) => s.songs.title).join(", ");
+
+  const lineupParts = (lineupRaw ?? []).map(
+    (entry) => `${entry.musicians.name} (${entry.instrument})`
+  );
+
+  const descriptionParts: string[] = [];
+  if (formattedDate) descriptionParts.push(formattedDate);
+  if (worshipLeaderName)
+    descriptionParts.push(`Worship Leader: ${worshipLeaderName}`);
+  if (lineupParts.length)
+    descriptionParts.push(`Musicians: ${lineupParts.join(", ")}`);
+  if (songList) descriptionParts.push(`Songs: ${songList}`);
+
+  const description = descriptionParts.join(" · ") || "View setlist on Saliw.";
+  const pageUrl = `https://saliw.vercel.app/setlists/${id}`;
+
+  return {
+    title: setlist.name,
+    description,
+    openGraph: {
+      title: `${setlist.name} | Saliw`,
+      description,
+      url: pageUrl,
+      siteName: "Saliw",
+      images: [
+        {
+          url: `/setlists/${id}/opengraph-image`,
+          width: 1200,
+          height: 630,
+          alt: `${setlist.name} setlist`,
+        },
+      ],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${setlist.name} | Saliw`,
+      description,
+      images: [`/setlists/${id}/opengraph-image`],
+    },
+  };
 }
 
 interface SetlistViewerPageProps {
@@ -142,6 +217,7 @@ export default async function SetlistViewerPage({
   // ── Pre-process chord sheets server-side ───────────────────────────────────
   const processedSongs = songs.map((entry) => ({
     junctionId: entry.id,
+    songId: entry.song_id,
     setlistId: id,
     title: entry.songs.title,
     artist: entry.songs.artist,
