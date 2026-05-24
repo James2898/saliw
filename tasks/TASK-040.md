@@ -177,3 +177,4 @@ N/A — no API contract required for this task.
   - Section label and control button classes do use named Tailwind utilities (`text-brand-brown dark:text-brand-tan`, `text-brand-espresso dark:text-brand-cream`, `bg-brand-cream dark:bg-brand-espresso`) with explicit `dark:` pairs per BUG-004 rule.
   - Swatch button colors are applied via inline `style={{ backgroundColor: preset.value }}` (hex literals), which are not affected by the `.dark` class — borders and focus rings on swatches use named utilities with dark pairs.
   - Gear button toggle behavior: pressing it again closes the modal (aria-pressed toggle), and it also functions as the focus-return target on Escape/backdrop close.
+  - **AC-8 fix (2026-05-24):** Added missing `dark:text-brand-espresso` companion to two `text-brand-espresso` occurrences in swatch checkmark ternaries (bg-swatch line ~441 and color-swatch line ~500). BUG-004 compliance restored.
