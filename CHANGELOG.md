@@ -8,6 +8,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- Spacebar keyboard shortcut to activate, pause, and resume autoscroll (`TASK-041`)
+  - Space when inactive: calls `toggle()` to activate autoscroll and begin scrolling at the current (or default) speed
+  - Space when active+scrolling: pauses scrolling (panel stays visible)
+  - Space when active+paused: resumes scrolling
+  - Shortcut suppressed when focus is inside INPUT, TEXTAREA, SELECT, or contentEditable elements
+  - Listener registered with `{ passive: false }` on `window` to allow synchronous `preventDefault`; cleaned up on unmount
+  - Toolbar displays "Space to play/pause" keyboard hint — client-side only (SSR suppressed via lazy `useState` initializer)
+  - BUG-007 compliant: `toggle` declared before the `useEffect` that references it
+  - BUG-014/BUG-019 injection pattern preserved: no new `useAutoScroll()` calls in child components
+  - Affected files: `src/hooks/useAutoScroll.ts`, `src/components/client/AutoScrollToolbar.tsx`
+
 - Setlist viewer settings modal with gear icon, Font tab, and Chords tab for display preferences (`TASK-040`)
   - Gear/settings icon button added to setlist viewer header row (inline with date and Hide Chords button); `aria-label="Open display settings"`
   - Two-tab modal (Font / Chords) with ARIA role=dialog, tablist/tab/tabpanel semantics, focus trap, Escape + backdrop dismiss
