@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Pencil, Settings } from "lucide-react";
 import ServiceNavigator from "@/components/client/ServiceNavigator";
 import SetlistSongSection from "@/components/client/SetlistSongSection";
 import GoLiveButton from "@/components/client/GoLiveButton";
 import FollowLeaderButton from "@/components/client/FollowLeaderButton";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 import AppendSongsButton from "@/components/client/AppendSongsButton";
+import SetlistSettingsModal from "@/components/client/SetlistSettingsModal";
 import { useSetlistSync } from "@/hooks/useSetlistSync";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
+import { useFontSize } from "@/hooks/useFontSize";
+import { useChordFontSize } from "@/hooks/useChordFontSize";
+import { useChordColor } from "@/hooks/useChordColor";
 import type { ProcessedLine } from "@/utils/musicLogic";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -98,6 +102,24 @@ export default function SetlistViewerClient({
     []
   );
 
+  // ── Settings modal state ───────────────────────────────────────────────────
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const gearButtonRef = useRef<HTMLButtonElement>(null);
+
+  const toggleSettings = useCallback(
+    () => setSettingsOpen((prev) => !prev),
+    []
+  );
+
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+
+  // ── Lifted font size hooks (AM-1: single source of truth for the setlist viewer) ──
+
+  const fontSizeControls = useFontSize();
+  const chordFontSizeControls = useChordFontSize();
+  const chordColorControls = useChordColor();
+
   const autoScroll = useAutoScroll();
 
   return (
@@ -173,8 +195,38 @@ export default function SetlistViewerClient({
           >
             {globalChordsHidden ? "Show Chords" : "Hide Chords"}
           </button>
+
+          {/* ── Settings gear button (AC-1/AC-2) ──────────────────────────── */}
+          <button
+            ref={gearButtonRef}
+            type="button"
+            onClick={toggleSettings}
+            aria-pressed={settingsOpen}
+            aria-label="Open display settings"
+            className={[
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+              "text-xs font-semibold",
+              "border transition-colors duration-200",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2",
+              settingsOpen
+                ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan"
+                : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+            ].join(" ")}
+          >
+            <Settings size={13} strokeWidth={2} aria-hidden="true" />
+          </button>
         </div>
       </div>
+
+      {/* ── Settings modal (AC-3–8) ───────────────────────────────────────── */}
+      <SetlistSettingsModal
+        isOpen={settingsOpen}
+        onClose={closeSettings}
+        gearButtonRef={gearButtonRef}
+        fontSizeControls={fontSizeControls}
+        chordFontSizeControls={chordFontSizeControls}
+        chordColorControls={chordColorControls}
+      />
 
       {/* ── People block (worship leader + lineup) — read-only (AC-32) ──────── */}
       {(worshipLeaderName || lineup.length > 0) && (
@@ -240,6 +292,13 @@ export default function SetlistViewerClient({
               liveSyncState={liveSyncState}
               externalChordsHidden={globalChordsHidden}
               autoScroll={autoScroll}
+              fontSize={fontSizeControls.fontSize}
+              onIncreaseFont={fontSizeControls.increase}
+              onDecreaseFont={fontSizeControls.decrease}
+              onResetFont={fontSizeControls.reset}
+              chordFontSize={chordFontSizeControls.chordFontSize}
+              chordBg={chordColorControls.chordBg}
+              chordColor={chordColorControls.chordColor}
             />
           );
         })}

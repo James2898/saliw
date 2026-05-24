@@ -8,6 +8,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- Setlist viewer settings modal with gear icon, Font tab, and Chords tab for display preferences (`TASK-040`)
+  - Gear/settings icon button added to setlist viewer header row (inline with date and Hide Chords button); `aria-label="Open display settings"`
+  - Two-tab modal (Font / Chords) with ARIA role=dialog, tablist/tab/tabpanel semantics, focus trap, Escape + backdrop dismiss
+  - Font tab: reuses `useFontSize` hook (lifted to SetlistViewerClient — AM-1 single source of truth) + new `useChordFontSize` hook (`"saliw-chord-font-size"` localStorage key); min 12px, max 48px, step 2
+  - Chords tab: 5 Artisan palette chord background presets + "No background"; 5 high-contrast chord font color presets; all applied immediately via CSS custom properties
+  - `.chord-item` in globals.css converted to `color: var(--chord-color, #c0392b)` / `background-color: var(--chord-bg, transparent)` custom properties (AM-2); variables injected on `.chord-display` container ref
+  - All 4 preferences persisted in localStorage with BUG-001 lazy initializers; SSR-safe
+  - All named Tailwind brand utilities carry explicit `dark:` variants (BUG-004 compliant)
+  - Affected files: `src/components/client/SetlistSettingsModal.tsx` (new), `src/hooks/useChordFontSize.ts` (new), `src/hooks/useChordColor.ts` (new), `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/styles/globals.css`
+
 - A–Z alphabet filter bar on Song Library and Setlist List pages (`TASK-039`)
   - 27 clickable chips ("All" + A–Z) rendered above results on both `/library` and `/setlists`
   - Server-side prefix filter: `.ilike("title", "X%")` on songs; `.ilike("name", "X%")` on setlists
