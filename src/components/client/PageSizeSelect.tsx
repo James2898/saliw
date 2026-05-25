@@ -6,6 +6,7 @@ interface PageSizeSelectProps {
   pageSize: number;
   q?: string;
   basePath: string;
+  letter?: string;
 }
 
 const selectClass =
@@ -13,11 +14,17 @@ const selectClass =
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
-function buildUrl(basePath: string, pageSize: number, q?: string): string {
+function buildUrl(
+  basePath: string,
+  pageSize: number,
+  q?: string,
+  letter?: string
+): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   params.set("pageSize", String(pageSize));
   params.set("page", "1");
+  if (letter) params.set("letter", letter);
   return `${basePath}?${params.toString()}`;
 }
 
@@ -25,6 +32,7 @@ export default function PageSizeSelect({
   pageSize,
   q,
   basePath,
+  letter,
 }: PageSizeSelectProps) {
   const router = useRouter();
 
@@ -41,7 +49,7 @@ export default function PageSizeSelect({
         value={pageSize}
         onChange={(e) => {
           const newSize = Number(e.target.value);
-          router.replace(buildUrl(basePath, newSize, q));
+          router.replace(buildUrl(basePath, newSize, q, letter));
         }}
         className={selectClass}
       >
