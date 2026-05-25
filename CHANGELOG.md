@@ -8,6 +8,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- Spacebar keyboard shortcut to activate, pause, and resume autoscroll (`TASK-041`)
+  - Space when inactive: calls `toggle()` to activate autoscroll and begin scrolling at the current (or default) speed
+  - Space when active+scrolling: pauses scrolling (panel stays visible)
+  - Space when active+paused: resumes scrolling
+  - Shortcut suppressed when focus is inside INPUT, TEXTAREA, SELECT, or contentEditable elements
+  - Listener registered with `{ passive: false }` on `window` to allow synchronous `preventDefault`; cleaned up on unmount
+  - Toolbar displays "Space to play/pause" keyboard hint — client-side only (SSR suppressed via lazy `useState` initializer)
+  - BUG-007 compliant: `toggle` declared before the `useEffect` that references it
+  - BUG-014/BUG-019 injection pattern preserved: no new `useAutoScroll()` calls in child components
+  - Affected files: `src/hooks/useAutoScroll.ts`, `src/components/client/AutoScrollToolbar.tsx`
+
 - Setlist viewer settings modal with gear icon, Font tab, and Chords tab for display preferences (`TASK-040`)
   - Gear/settings icon button added to setlist viewer header row (inline with date and Hide Chords button); `aria-label="Open display settings"`
   - Two-tab modal (Font / Chords) with ARIA role=dialog, tablist/tab/tabpanel semantics, focus trap, Escape + backdrop dismiss
@@ -17,6 +28,20 @@ All notable changes to the Saliw Music Portal are documented here.
   - All 4 preferences persisted in localStorage with BUG-001 lazy initializers; SSR-safe
   - All named Tailwind brand utilities carry explicit `dark:` variants (BUG-004 compliant)
   - Affected files: `src/components/client/SetlistSettingsModal.tsx` (new), `src/hooks/useChordFontSize.ts` (new), `src/hooks/useChordColor.ts` (new), `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/styles/globals.css`
+
+- A–Z alphabet filter bar on Song Library and Setlist List pages (`TASK-039`)
+  - 27 clickable chips ("All" + A–Z) rendered above results on both `/library` and `/setlists`
+  - Server-side prefix filter: `.ilike("title", "X%")` on songs; `.ilike("name", "X%")` on setlists
+  - AND-composed with existing search term; both filters active simultaneously (AC-7/AC-8)
+  - Letter state stored in `?letter=A` URL param — bookmarkable, back/forward-restoring (AC-10)
+  - `router.replace` navigation; page resets to 1 on letter change (AC-6)
+  - Clicking active letter deselects it (AC-5); clicking "All" always clears filter (AC-3)
+  - Descriptive empty-state messages for letter-only, search-only, and combined filter cases (AC-9)
+  - Mobile layout: `flex flex-wrap` multi-row — no horizontal scroll (AC-17)
+  - All `bg-brand-*`/`text-brand-*`/`border-brand-*` utilities have explicit `dark:` pairs (BUG-004/BUG-005)
+  - `PaginationControls.buildUrl` and `PageSizeSelect.buildUrl` thread `letter` param (AC-18)
+  - `SearchBar` preserves `letter` param via full `URLSearchParams` builder — no silent drops (AM-2/AC-19)
+  - Affected files: `src/components/client/AlphabetFilter.tsx` (new), `src/app/library/page.tsx`, `src/app/setlists/page.tsx`, `src/components/client/SearchBar.tsx`, `src/components/client/PaginationControls.tsx`, `src/components/client/PageSizeSelect.tsx`
 
 - Append Songs FAB on setlist detail page (desktop-only, `lg:` breakpoint and larger) for `music_director` users (`TASK-038`)
   - Desktop-only FAB (`hidden lg:flex`, `fixed bottom-6 left-6 z-50`) opens a scrollable song-picker modal
