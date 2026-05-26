@@ -35,6 +35,40 @@ const toggleActiveClass =
 const toggleInactiveClass =
   "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10";
 
+// ── Capo and CAGED picker — module-level constants (BUG-019: stable array refs) ──
+
+/** Capo fret values 0–7. Declared at module scope to preserve React.memo stability. */
+const CAPO_FRETS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
+/** CAGED shape labels in display order. Declared at module scope for React.memo stability. */
+const CAGED_SHAPES = ["C", "A", "G", "E", "D"] as const;
+
+/** TypeScript union type derived from the CAGED_SHAPES tuple. */
+type CAGEDShape = (typeof CAGED_SHAPES)[number];
+
+// Capo swatch button — selected ring (BUG-004: every brand class paired with dark:)
+const capoSwatchSelectedClass =
+  "border-brand-espresso dark:border-brand-tan shadow-md";
+
+// Capo swatch button — unselected ring (BUG-004)
+const capoSwatchUnselectedClass =
+  "border-brand-brown/20 dark:border-brand-tan/20 hover:border-brand-brown/50 dark:hover:border-brand-tan/50";
+
+// Base class shared by all capo and CAGED swatch buttons (BUG-004)
+const swatchBtnBaseClass = [
+  "relative flex items-center justify-center",
+  "w-9 h-9 rounded-lg shrink-0",
+  "font-mono font-bold text-sm",
+  "text-brand-espresso dark:text-brand-cream",
+  "bg-brand-cream dark:bg-brand-espresso",
+  "border-2 transition-colors duration-200",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2",
+].join(" ");
+
+// Section label class for Capo / CAGED row headings (BUG-004)
+const pickerLabelClass =
+  "text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0";
+
 interface ChordSheetClientProps {
   processedLines: ProcessedLine[];
   originalKey: string;
@@ -144,10 +178,20 @@ export default function ChordSheetClient({
   const [chordsHidden, setChordsHidden] = useState(false);
   const [toolbarOpen, setToolbarOpen] = useState(false);
 
+  // ── Capo and CAGED local state (BUG-020: literal defaults, not window guards) ──
+  // capoOffset: 0 = no capo; 1–7 = capo at that fret (subtracts from semitoneOffset)
+  const [capoOffset, setCapoOffset] = useState(0);
+  // cagedShape: null = no shape selected; 'C'|'A'|'G'|'E'|'D' = selected shape
+  const [cagedShape, setCAGEDShape] = useState<CAGEDShape | null>(null);
+
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Apply transposition to all .chord-item spans after mount and on offset changes.
   // Also runs when chordsHidden flips to false so re-rendered spans get the correct transposed text.
+  // capoOffset is subtracted from semitoneOffset so the chord sheet shows open-position
+  // fingering shapes (the performer fingers these shapes with the capo at fret N).
+  // shiftChord returns the original chord string unchanged when semitones === 0,
+  // and handles all 12 chromatic positions via the shared NOTES array — no try/catch needed.
   useEffect(() => {
     if (chordsHidden) return;
     const container = sheetRef.current;
@@ -159,10 +203,10 @@ export default function ChordSheetClient({
     spans.forEach((span) => {
       const original = span.getAttribute("data-original-chord");
       if (original) {
-        span.innerText = shiftChord(original, semitoneOffset);
+        span.innerText = shiftChord(original, semitoneOffset - capoOffset);
       }
     });
-  }, [semitoneOffset, chordsHidden]);
+  }, [semitoneOffset, capoOffset, chordsHidden]);
 
   // Notify parent whenever the displayed key changes (e.g. for Sync button in SetlistSongSection).
   // Also fires onKeyChangeLive for Go Live auto-persist debounce (AC-18).
@@ -289,11 +333,11 @@ export default function ChordSheetClient({
             )}
           </button>
 
-          {/* Collapsible controls */}
+          {/* Collapsible controls — max-h-96 accommodates Key + Size + Hide Chords + Capo + CAGED rows (AM-1) */}
           <div
             className={[
               "overflow-hidden transition-all duration-200 chord-sheet-toolbar-panel",
-              toolbarOpen ? "max-h-40" : "max-h-0",
+              toolbarOpen ? "max-h-96" : "max-h-0",
             ].join(" ")}
             aria-label="Chord sheet controls"
           >
@@ -447,6 +491,90 @@ export default function ChordSheetClient({
               >
                 {chordsHidden ? "Show Chords" : "Hide Chords"}
               </button>
+
+              {/* ── Divider ───────────────────────────────────────────────────── */}
+              <span
+                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
+                aria-hidden="true"
+              />
+
+              {/* ── Capo selector (frets 0–7) ────────────────────────────────── */}
+              {/*
+                Capo applies an inverse transpose to the chord display only.
+                Fret N: chord sheet shows open-position shapes the performer
+                fingers (sounding key transposed DOWN by N semitones).
+                Does NOT affect performanceKey or any sync/Realtime state.
+              */}
+              <span className={pickerLabelClass}>Capo</span>
+
+              <div
+                className="flex items-center gap-1.5 flex-wrap"
+                role="group"
+                aria-label="Capo fret selector"
+              >
+                {CAPO_FRETS.map((fret) => {
+                  const isSelected = capoOffset === fret;
+                  return (
+                    <button
+                      key={fret}
+                      type="button"
+                      onClick={() => setCapoOffset(fret)}
+                      aria-label={`Capo fret ${fret}${fret === 0 ? " (no capo)" : ""}${isSelected ? " (selected)" : ""}`}
+                      aria-pressed={isSelected}
+                      className={[
+                        swatchBtnBaseClass,
+                        isSelected
+                          ? capoSwatchSelectedClass
+                          : capoSwatchUnselectedClass,
+                      ].join(" ")}
+                    >
+                      {fret}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* ── Divider ───────────────────────────────────────────────────── */}
+              <span
+                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
+                aria-hidden="true"
+              />
+
+              {/* ── CAGED shape picker ───────────────────────────────────────── */}
+              {/*
+                Visual-only performer reference aid.
+                Selecting a shape highlights it for reference only — no effect
+                on chord content, transposition, or any data store.
+                Pressing the active button deselects it (state → null).
+              */}
+              <span className={pickerLabelClass}>CAGED</span>
+
+              <div
+                className="flex items-center gap-1.5 flex-wrap"
+                role="group"
+                aria-label="CAGED shape selector"
+              >
+                {CAGED_SHAPES.map((shape) => {
+                  const isSelected = cagedShape === shape;
+                  return (
+                    <button
+                      key={shape}
+                      type="button"
+                      onClick={() => setCAGEDShape(isSelected ? null : shape)}
+                      aria-label={`CAGED shape ${shape}${isSelected ? " (selected)" : ""}`}
+                      aria-pressed={isSelected}
+                      className={[
+                        swatchBtnBaseClass,
+                        isSelected
+                          ? capoSwatchSelectedClass
+                          : capoSwatchUnselectedClass,
+                      ].join(" ")}
+                    >
+                      {shape}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
