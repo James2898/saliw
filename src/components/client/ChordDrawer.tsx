@@ -9,9 +9,11 @@ import type { GuitarFingering, PianoFingering } from "@/utils/chordLibrary";
 // Outer fixed wrapper — full-width sticky-bottom drawer below AutoScrollToolbar (z-50).
 // The chord-drawer-panel class in globals.css restores transform transition suppressed
 // by the global * rule (which only covers background-color, border-color, fill, stroke).
+// Full-opacity backgrounds: cream in light mode, darker espresso in dark mode so the
+// drawer is visually distinct from the chord cards inside (which use bg-brand-espresso).
 const drawerFixedWrapperClass = [
   "fixed bottom-0 left-0 right-0 z-40",
-  "bg-[var(--brand-card-bg)] border-t border-[var(--brand-tan-alpha)]",
+  "bg-brand-cream dark:bg-brand-darker border-t border-[var(--brand-tan-alpha)]",
   "chord-drawer-panel",
 ].join(" ");
 
@@ -85,11 +87,12 @@ const placeholderTextClass = [
 
 // Small pill/tab shown at the very bottom when drawer is closed.
 // Tapping it re-opens the drawer.
+// Full-opacity backgrounds: cream in light mode, darker espresso in dark mode (BUG-004: dark: paired).
 const closedPillClass = [
   "fixed bottom-0 left-1/2 -translate-x-1/2 z-40",
   "px-4 py-1 rounded-t-lg",
   "text-xs font-semibold",
-  "bg-[var(--brand-card-bg)] border border-b-0 border-[var(--brand-tan-alpha)]",
+  "bg-brand-cream dark:bg-brand-darker border border-b-0 border-[var(--brand-tan-alpha)]",
   "text-brand-brown dark:text-brand-tan",
   "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",

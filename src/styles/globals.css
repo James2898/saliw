@@ -112,6 +112,14 @@ body {
   font-size: var(--chord-item-font-size, inherit);
   font-weight: 600;
   font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+/* Press (active) feedback — warm tan highlight works in both light and dark mode */
+.chord-item:active {
+  color: var(--brand-tan);
+  background-color: var(--brand-tan-alpha);
+  border-radius: 2px;
 }
 
 /* Dark mode: default to cream text on brown background — contrast ~4.7:1, WCAG AA pass.
