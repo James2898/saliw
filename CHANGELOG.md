@@ -4,6 +4,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-05-26
+
+### Added
+
+- Capo selector (frets 0–7) and CAGED shape picker inside the expandable song-controls panel (`TASK-042`)
+  - Capo applies an inverse transpose to the chord display only: fret N shows open-position fingering shapes (sounding key minus N semitones via existing `shiftChord` utility); performanceKey and Go Live sync are unaffected
+  - CAGED picker (C/A/G/E/D) is a visual-only performer reference aid; single-select with deselect; no effect on chord content
+  - Both controls are pure React local state — never persisted to Supabase, localStorage, sessionStorage, or any external store
+  - Collapsible panel `max-h-40` increased to `max-h-96` to accommodate the new rows (AM-1)
+  - Module-level `CAPO_FRETS` and `CAGED_SHAPES` arrays for React.memo stability (BUG-019); all brand utilities paired with `dark:` variants (BUG-004)
+  - Affected files: `src/components/SongViewer/ChordSheetClient.tsx`
+
+---
+
 ## [Unreleased] — 2026-05-24
 
 ### Added
