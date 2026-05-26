@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import type { ProcessedLine } from "@/utils/musicLogic";
-import { NOTES, shiftChord } from "@/utils/musicLogic";
+import { NOTES, shiftChord, getSemitoneOffset } from "@/utils/musicLogic";
 import { useTranspose } from "@/hooks/useTranspose";
 import { useFontSize } from "@/hooks/useFontSize";
 import { useAutoScroll, type UseAutoScrollReturn } from "@/hooks/useAutoScroll";
@@ -46,9 +46,24 @@ const CAGED_SHAPES = ["C", "A", "G", "E", "D"] as const;
 /** TypeScript union type derived from the CAGED_SHAPES tuple. */
 type CAGEDShape = (typeof CAGED_SHAPES)[number];
 
+/**
+ * Open-position root note for each CAGED shape.
+ * Declared at module scope for React.memo stability (BUG-019).
+ */
+const CAGED_SHAPE_ROOTS: Record<CAGEDShape, string> = {
+  C: "C",
+  A: "A",
+  G: "G",
+  E: "E",
+  D: "D",
+};
+
 // Capo swatch button — selected ring (BUG-004: every brand class paired with dark:)
 const capoSwatchSelectedClass =
   "border-brand-espresso dark:border-brand-tan shadow-md";
+
+// Capo swatch button — disabled (shape out of range for current key) (BUG-004)
+const capoSwatchDisabledClass = "opacity-40 cursor-not-allowed dark:opacity-40";
 
 // Capo swatch button — unselected ring (BUG-004)
 const capoSwatchUnselectedClass =
@@ -518,7 +533,10 @@ export default function ChordSheetClient({
                     <button
                       key={fret}
                       type="button"
-                      onClick={() => setCapoOffset(fret)}
+                      onClick={() => {
+                        setCapoOffset(fret);
+                        setCAGEDShape(null);
+                      }}
                       aria-label={`Capo fret ${fret}${fret === 0 ? " (no capo)" : ""}${isSelected ? " (selected)" : ""}`}
                       aria-pressed={isSelected}
                       className={[
@@ -542,10 +560,11 @@ export default function ChordSheetClient({
 
               {/* ── CAGED shape picker ───────────────────────────────────────── */}
               {/*
-                Visual-only performer reference aid.
-                Selecting a shape highlights it for reference only — no effect
-                on chord content, transposition, or any data store.
-                Pressing the active button deselects it (state → null).
+                Functional performer aid: clicking a CAGED shape auto-sets the
+                capo to the lowest fret (0–7) that makes that open shape sound
+                like the current displayKey. Shapes requiring capo > 7 are
+                disabled (greyed out). Pressing the active shape deselects it
+                and resets capo to 0.
               */}
               <span className={pickerLabelClass}>CAGED</span>
 
@@ -555,19 +574,40 @@ export default function ChordSheetClient({
                 aria-label="CAGED shape selector"
               >
                 {CAGED_SHAPES.map((shape) => {
+                  const capoFret = getSemitoneOffset(
+                    CAGED_SHAPE_ROOTS[shape],
+                    displayKey
+                  );
+                  const isDisabled = capoFret > 7;
                   const isSelected = cagedShape === shape;
                   return (
                     <button
                       key={shape}
                       type="button"
-                      onClick={() => setCAGEDShape(isSelected ? null : shape)}
-                      aria-label={`CAGED shape ${shape}${isSelected ? " (selected)" : ""}`}
-                      aria-pressed={isSelected}
+                      disabled={isDisabled}
+                      onClick={
+                        isDisabled
+                          ? undefined
+                          : () => {
+                              if (isSelected) {
+                                setCAGEDShape(null);
+                                setCapoOffset(0);
+                              } else {
+                                setCAGEDShape(shape);
+                                setCapoOffset(capoFret);
+                              }
+                            }
+                      }
+                      aria-label={`CAGED shape ${shape}${isDisabled ? " (not available in current key)" : ""}${isSelected ? " (selected)" : ""}`}
+                      aria-pressed={isDisabled ? undefined : isSelected}
+                      aria-disabled={isDisabled ? true : undefined}
                       className={[
                         swatchBtnBaseClass,
-                        isSelected
-                          ? capoSwatchSelectedClass
-                          : capoSwatchUnselectedClass,
+                        isDisabled
+                          ? capoSwatchDisabledClass
+                          : isSelected
+                            ? capoSwatchSelectedClass
+                            : capoSwatchUnselectedClass,
                       ].join(" ")}
                     >
                       {shape}
