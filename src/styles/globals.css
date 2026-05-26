@@ -91,10 +91,14 @@ body {
   transition-property: max-height;
 }
 
-/* Chord drawer panel: same pattern as chord-sheet-toolbar-panel — restores
-   transition-property for any animated expand/collapse on the drawer container. */
+/* Chord drawer panel: restores transform/translate transition suppressed by the * rule.
+   The global * rule only covers background-color, border-color, fill, stroke —
+   which silently drops translate-y transitions on the fixed bottom drawer.
+   Slide-up/down animation uses translate-y-full (closed) → translate-y-0 (open). */
 .chord-drawer-panel {
-  transition-property: max-height;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
 }
 
 /* ── Chord sheet components ─────────────────────────────────────────────── */

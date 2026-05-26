@@ -6,17 +6,13 @@ import type { GuitarFingering, PianoFingering } from "@/utils/chordLibrary";
 
 // ── Module-level class constants — stable strings (BUG-019) ──────────────────
 
-const drawerWrapperClass =
-  "w-full border-t border-[var(--brand-tan-alpha)] bg-[var(--brand-card-bg)]";
-
-const bannerBtnClass = [
-  "w-full border-t border-[var(--brand-tan-alpha)] bg-[var(--brand-card-bg)]",
-  "py-2 text-sm font-medium",
-  "text-brand-brown dark:text-brand-tan",
-  "hover:bg-brand-brown/5 dark:hover:bg-brand-tan/5",
-  "transition-colors duration-200",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset",
-  "focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
+// Outer fixed wrapper — full-width sticky-bottom drawer below AutoScrollToolbar (z-50).
+// The chord-drawer-panel class in globals.css restores transform transition suppressed
+// by the global * rule (which only covers background-color, border-color, fill, stroke).
+const drawerFixedWrapperClass = [
+  "fixed bottom-0 left-0 right-0 z-40",
+  "bg-[var(--brand-card-bg)] border-t border-[var(--brand-tan-alpha)]",
+  "chord-drawer-panel",
 ].join(" ");
 
 const headerRowClass = [
@@ -85,6 +81,19 @@ const cardLabelClass = [
 const placeholderTextClass = [
   "text-xs text-center italic py-4",
   "text-brand-brown/60 dark:text-brand-tan/60",
+].join(" ");
+
+// Small pill/tab shown at the very bottom when drawer is closed.
+// Tapping it re-opens the drawer.
+const closedPillClass = [
+  "fixed bottom-0 left-1/2 -translate-x-1/2 z-40",
+  "px-4 py-1 rounded-t-lg",
+  "text-xs font-semibold",
+  "bg-[var(--brand-card-bg)] border border-b-0 border-[var(--brand-tan-alpha)]",
+  "text-brand-brown dark:text-brand-tan",
+  "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+  "transition-colors duration-200",
 ].join(" ");
 
 // ── Guitar SVG constants ─────────────────────────────────────────────────────
@@ -308,7 +317,6 @@ interface ChordDrawerProps {
   isOpen: boolean;
   onToggle: () => void;
   focusedChord: string | null;
-  onFocusChord?: (chord: string) => void;
   instrumentMode: "guitar" | "piano";
   onInstrumentChange: (mode: "guitar" | "piano") => void;
   uniqueChords: string[];
@@ -342,21 +350,23 @@ export default function ChordDrawer({
     container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
   }, [focusedChord, isOpen]);
 
+  // Closed state: small pill/tab at the very bottom edge so the user can re-open.
   if (!isOpen) {
     return (
       <button
         type="button"
         onClick={onToggle}
-        className={bannerBtnClass}
+        className={closedPillClass}
         aria-label="Open chord helper"
       >
-        📖 Open Chord Helper
+        Chords ↑
       </button>
     );
   }
 
+  // Open state: full fixed bottom drawer with header + scroll row.
   return (
-    <div className={drawerWrapperClass}>
+    <div className={drawerFixedWrapperClass}>
       {/* Header row */}
       <div className={headerRowClass}>
         <span className={headerTitleClass}>
@@ -402,13 +412,13 @@ export default function ChordDrawer({
           aria-label="Close chord helper"
           className={closeBtnClass}
         >
-          ✕
+          ↓
         </button>
       </div>
 
       {/* Scroll container */}
       {uniqueChords.length === 0 ? (
-        <p className={emptyStateClass}>No chords found in this song</p>
+        <p className={emptyStateClass}>No chords found in this setlist</p>
       ) : (
         <div ref={containerRef} className={scrollContainerClass}>
           {uniqueChords.map((chordName) => {
