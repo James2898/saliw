@@ -262,9 +262,9 @@ export function useAutoScroll(): UseAutoScrollReturn {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.code !== "Space") return;
-      if (!isActiveRef.current) return;
 
       // Don't intercept spacebar when user is typing in an input/textarea
+      // (AC-6: suppress with no state change and no preventDefault)
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -277,20 +277,25 @@ export function useAutoScroll(): UseAutoScrollReturn {
 
       e.preventDefault();
 
+      // BUG-014 guard: inert instances (not the toolbar-owning instance) must
+      // not activate from Space. Only the toolbar button calls toggle() to
+      // activate. Space is for pause/resume within an already-active session.
+      if (!isActiveRef.current) return;
+
       if (isScrollingRef.current) {
-        // Currently scrolling → pause
+        // Active + scrolling → pause
         cancelRaf();
         setIsScrolling(false);
         isScrollingRef.current = false;
       } else {
-        // Currently paused → resume
+        // Active + paused → resume
         setIsScrolling(true);
         isScrollingRef.current = true;
         startRaf();
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cancelRaf, startRaf]);
 

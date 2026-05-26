@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { UseAutoScrollReturn } from "@/hooks/useAutoScroll";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -81,6 +82,17 @@ const sliderClass = [
   "accent-[var(--brand-tan)]",
 ].join(" ");
 
+/**
+ * Keyboard hint — "Space to play/pause"
+ * Client-side only (mounted guard prevents SSR output — AC-10).
+ * BUG-004: explicit dark: variants required; CSS-variable colors auto-switch.
+ */
+const keyboardHintClass = [
+  "text-center select-none",
+  "font-sans text-[10px] font-medium tracking-wide",
+  "text-[var(--brand-cream)]/50",
+].join(" ");
+
 // ── AutoScrollToolbar ─────────────────────────────────────────────────────────
 
 /**
@@ -108,6 +120,17 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
     resume,
     setSpeed,
   } = scroll;
+
+  // SSR guard: two-step mount pattern prevents React hydration mismatch.
+  // useState(false) ensures SSR and first client render both produce false.
+  // useEffect sets mounted=true after hydration completes (AC-9, AC-10).
+  // BUG-001 safe: setMounted(true) writes a static boolean — not external
+  // state like localStorage — so it does not trigger cascading renders.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   return (
     <div
@@ -248,6 +271,16 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
             <path d="M6 2v8M3 7l3 3 3-3" />
           </svg>
         </button>
+
+        {/* ── Keyboard hint — client-side only (AC-9, AC-10) ──────────────── */}
+        {mounted && !cannotScroll && (
+          <div
+            className={keyboardHintClass}
+            aria-label="Keyboard shortcut: Space to play or pause auto-scroll"
+          >
+            Space to play/pause
+          </div>
+        )}
       </div>
     </div>
   );
