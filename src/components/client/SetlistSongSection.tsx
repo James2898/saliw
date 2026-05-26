@@ -1,12 +1,32 @@
 "use client";
 
-import { memo, useState, useCallback, useTransition } from "react";
+import { memo, useState, useCallback, useEffect, useTransition } from "react";
 import { RefreshCw, Check, Loader2 } from "lucide-react";
 import type { ProcessedLine } from "@/utils/musicLogic";
 import { updatePerformanceDetails } from "@/app/actions/setlistActions";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
+import ChordDrawer from "@/components/client/ChordDrawer";
 import type { SongSyncState } from "@/hooks/useSetlistSync";
 import type { UseAutoScrollReturn } from "@/hooks/useAutoScroll";
+
+// ── Chord extraction helper — declared at module scope (BUG-007, BUG-019) ───
+// Extracts unique pre-transposition chord names from pre-parsed ProcessedLine tokens.
+// Using token.isChord / token.originalChord (already parsed by preProcessChords)
+// avoids duplicating chord-detection regex logic inline in a component.
+// Only chord-type lines carry the tokens array (lyric/header/blank have tokens?: undefined).
+function extractUniqueChords(lines: ProcessedLine[]): string[] {
+  const seen = new Set<string>();
+  for (const line of lines) {
+    if (line.type === "chord") {
+      for (const token of line.tokens) {
+        if (token.isChord && token.originalChord) {
+          seen.add(token.originalChord);
+        }
+      }
+    }
+  }
+  return Array.from(seen);
+}
 
 interface SetlistSongSectionProps {
   junctionId: string;
@@ -84,6 +104,28 @@ function SetlistSongSection({
   const [syncSuccess, setSyncSuccess] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // ── Chord Drawer state (BUG-020: literal defaults, not window guards) ───────
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [focusedChord, setFocusedChord] = useState<string | null>(null);
+  const [instrumentMode, setInstrumentMode] = useState<"guitar" | "piano">(
+    "guitar"
+  );
+  const [uniqueChords, setUniqueChords] = useState<string[]>([]);
+
+  // Extract unique chords whenever processedLines changes (new song loaded).
+  // extractUniqueChords declared at module scope above (BUG-007).
+  useEffect(() => {
+    setUniqueChords(extractUniqueChords(processedLines));
+  }, [processedLines]);
+
+  // Stable callback: clicking a chord opens the drawer and focuses that chord.
+  // useCallback deps: [] because setFocusedChord and setIsDrawerOpen are stable
+  // dispatch functions from useState (BUG-017: stable ref, no re-creation per render).
+  const handleChordClick = useCallback((chordName: string) => {
+    setFocusedChord(chordName);
+    setIsDrawerOpen(true);
+  }, []);
 
   const handleKeyChange = useCallback((key: string) => {
     setCurrentKey(key);
@@ -253,6 +295,7 @@ function SetlistSongSection({
         originalKey={originalKey}
         initialKey={performanceKey}
         onKeyChange={isLeader ? handleKeyChange : undefined}
+        onChordClick={handleChordClick}
         externalKey={overrideKey}
         onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
         externalChordsHidden={externalChordsHidden}
@@ -264,6 +307,16 @@ function SetlistSongSection({
         chordFontSize={chordFontSize}
         chordBg={chordBg}
         chordColor={chordColor}
+      />
+
+      {/* ── Chord Drawer — inline at song card bottom (AC-34) ──────────────── */}
+      <ChordDrawer
+        isOpen={isDrawerOpen}
+        onToggle={() => setIsDrawerOpen((prev) => !prev)}
+        focusedChord={focusedChord}
+        instrumentMode={instrumentMode}
+        onInstrumentChange={setInstrumentMode}
+        uniqueChords={uniqueChords}
       />
     </section>
   );

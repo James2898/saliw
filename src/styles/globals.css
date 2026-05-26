@@ -91,6 +91,12 @@ body {
   transition-property: max-height;
 }
 
+/* Chord drawer panel: same pattern as chord-sheet-toolbar-panel — restores
+   transition-property for any animated expand/collapse on the drawer container. */
+.chord-drawer-panel {
+  transition-property: max-height;
+}
+
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
