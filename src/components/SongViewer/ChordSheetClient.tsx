@@ -212,6 +212,9 @@ export default function ChordSheetClient({
   // Uses a named function so it can be cleanly removed on unmount.
   // Handler is a stable closure over onChordClick; the useEffect re-registers
   // whenever onChordClick changes.
+  // Fires the TRANSPOSED chord name (span.innerText) rather than the original
+  // chord name (data-original-chord), so the drawer always receives the chord
+  // name as the performer sees it in the sheet.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function handleChordClick(e: MouseEvent) {
     if (!onChordClick) return;
@@ -220,9 +223,9 @@ export default function ChordSheetClient({
       ".chord-item[data-original-chord]"
     );
     if (chordSpan) {
-      const originalChord = chordSpan.getAttribute("data-original-chord");
-      if (originalChord) {
-        onChordClick(originalChord);
+      const displayedChord = chordSpan.innerText.trim();
+      if (displayedChord) {
+        onChordClick(displayedChord);
       }
     }
   }

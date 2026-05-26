@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Pencil, Settings } from "lucide-react";
 import ServiceNavigator from "@/components/client/ServiceNavigator";
 import SetlistSongSection from "@/components/client/SetlistSongSection";
+import ChordDrawer from "@/components/client/ChordDrawer";
 import GoLiveButton from "@/components/client/GoLiveButton";
 import FollowLeaderButton from "@/components/client/FollowLeaderButton";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
@@ -16,6 +17,7 @@ import { useFontSize } from "@/hooks/useFontSize";
 import { useChordFontSize } from "@/hooks/useChordFontSize";
 import { useChordColor } from "@/hooks/useChordColor";
 import type { ProcessedLine } from "@/utils/musicLogic";
+import { getSemitoneOffset, shiftChord } from "@/utils/musicLogic";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +103,73 @@ export default function SetlistViewerClient({
     () => setGlobalChordsHidden((prev) => !prev),
     []
   );
+
+  // ── Global chord drawer state (BUG-020: literal defaults, not window guards) ─
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [focusedChord, setFocusedChord] = useState<string | null>(null);
+  const [instrumentMode, setInstrumentMode] = useState<"guitar" | "piano">(
+    "guitar"
+  );
+
+  // Track per-song semitone offsets so transposed chord names can be computed.
+  // Initialised from getSemitoneOffset(originalKey, performanceKey) for each song.
+  // Updated whenever a song's key is transposed via onOffsetChange.
+  const [songOffsets, setSongOffsets] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    for (const song of songs) {
+      initial[song.junctionId] = getSemitoneOffset(
+        song.originalKey,
+        song.performanceKey ?? song.originalKey
+      );
+    }
+    return initial;
+  });
+
+  // Compute all unique transposed chord names across every song in the setlist.
+  // Derived value via useMemo (NOT useEffect + setState) — recomputes whenever
+  // songs or songOffsets changes. Uses token.isChord / token.originalChord from
+  // the pre-parsed ProcessedLine structure (tokens already derived from chordRegex
+  // via preProcessChords — no inline regex here per Musical Integrity rule).
+  const uniqueChords = useMemo(() => {
+    const seen = new Set<string>();
+    for (const song of songs) {
+      const offset = songOffsets[song.junctionId] ?? 0;
+      for (const line of song.processedLines) {
+        if (line.type === "chord") {
+          for (const token of line.tokens) {
+            if (token.isChord && token.originalChord) {
+              const transposed =
+                offset === 0
+                  ? token.originalChord
+                  : shiftChord(token.originalChord, offset);
+              seen.add(transposed);
+            }
+          }
+        }
+      }
+    }
+    return Array.from(seen);
+  }, [songs, songOffsets]);
+
+  // Stable callback: clicking a chord in any song opens the global drawer and
+  // focuses that chord. Receives the transposed chord name from ChordSheetClient.
+  const handleChordClick = useCallback((chordName: string) => {
+    setFocusedChord(chordName);
+    setIsDrawerOpen(true);
+  }, []);
+
+  // Stable callback: called by SetlistSongSection when a song's key changes.
+  // Updates the corresponding entry in songOffsets so uniqueChords recomputes.
+  const handleKeyChangeForDrawer = useCallback(
+    (junctionId: string, newOffset: number) => {
+      setSongOffsets((prev) => ({ ...prev, [junctionId]: newOffset }));
+    },
+    []
+  );
+
+  // Stable callback for the drawer toggle.
+  const handleDrawerToggle = useCallback(() => setIsDrawerOpen((v) => !v), []);
 
   // ── Settings modal state ───────────────────────────────────────────────────
 
@@ -299,10 +368,22 @@ export default function SetlistViewerClient({
               chordFontSize={chordFontSizeControls.chordFontSize}
               chordBg={chordColorControls.chordBg}
               chordColor={chordColorControls.chordColor}
+              onChordClick={handleChordClick}
+              onOffsetChange={handleKeyChangeForDrawer}
             />
           );
         })}
       </div>
+
+      {/* ── Global chord drawer — fixed bottom, full width, z-40 (below AutoScrollToolbar z-50) */}
+      <ChordDrawer
+        isOpen={isDrawerOpen}
+        onToggle={handleDrawerToggle}
+        focusedChord={focusedChord}
+        instrumentMode={instrumentMode}
+        onInstrumentChange={setInstrumentMode}
+        uniqueChords={uniqueChords}
+      />
 
       {/* ── Bottom spacer — prevents toolbar from obscuring last song content (AC 20) */}
       {autoScroll.isActive && (
