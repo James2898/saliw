@@ -4,6 +4,25 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-05-27
+
+### Added
+
+- Global interactive chord drawer with guitar fretboard and piano keyboard diagrams (`TASK-043`)
+  - Single page-level fixed-bottom `ChordDrawer` mounted in `SetlistViewerClient` (not per-song inline)
+  - Covers all songs in the setlist; `uniqueChords` computed via `useMemo` from all songs' transposed chord tokens (no `useEffect + setState`)
+  - Per-song semitone offsets tracked in `songOffsets` state; initialised from `getSemitoneOffset(originalKey, performanceKey)` and updated on every transpose via `onOffsetChange` prop
+  - Clicking any chord token fires the displayed (transposed) chord name via `span.innerText.trim()` and opens the drawer to the matching card
+  - Guitar (6-string SVG, `0 0 100 120` viewBox) and piano (14 white + 10 black keys SVG, `0 0 140 60` viewBox) diagram modes; toggle in open drawer header
+  - Auto-scrolls focused chord card to center using `offsetLeft - clientWidth/2 + cardWidth/2`
+  - Closed state: small `Chords ↑` pill at bottom edge; open state: full-width slide-up drawer
+  - `chord-drawer-panel` CSS class in `globals.css` restores `transform` transition suppressed by global `*` rule
+  - `CHORD_REGISTRY` exports 18 worship chords including all required base chords (`C`, `C/E`, `G`, `G/B`, `D`, `D/F#`, `Em`, `Am`, `Bm`, `F`)
+  - All BUG-002/004/007/019/020 prevention rules applied; zero Supabase imports in any changed file
+  - Affected files: `src/utils/chordLibrary.ts`, `src/components/client/ChordDrawer.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/styles/globals.css`
+
+---
+
 ## [Unreleased] — 2026-05-26
 
 ### Added
