@@ -91,6 +91,16 @@ body {
   transition-property: max-height;
 }
 
+/* Chord drawer panel: restores transform/translate transition suppressed by the * rule.
+   The global * rule only covers background-color, border-color, fill, stroke —
+   which silently drops translate-y transitions on the fixed bottom drawer.
+   Slide-up/down animation uses translate-y-full (closed) → translate-y-0 (open). */
+.chord-drawer-panel {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */
@@ -102,6 +112,14 @@ body {
   font-size: var(--chord-item-font-size, inherit);
   font-weight: 600;
   font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+/* Press (active) feedback — warm tan highlight works in both light and dark mode */
+.chord-item:active {
+  color: var(--brand-tan);
+  background-color: var(--brand-tan-alpha);
+  border-radius: 2px;
 }
 
 /* Dark mode: default to cream text on brown background — contrast ~4.7:1, WCAG AA pass.
