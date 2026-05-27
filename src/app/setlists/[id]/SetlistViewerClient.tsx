@@ -110,7 +110,21 @@ export default function SetlistViewerClient({
   const [focusedChord, setFocusedChord] = useState<string | null>(null);
   const [instrumentMode, setInstrumentMode] = useState<
     "guitar" | "piano" | "bass"
-  >("guitar");
+  >(() => {
+    if (typeof window === "undefined") return "guitar";
+    const stored = localStorage.getItem("saliw:instrumentMode");
+    if (stored === "guitar" || stored === "piano" || stored === "bass")
+      return stored;
+    return "guitar";
+  });
+
+  const handleInstrumentChange = useCallback(
+    (mode: "guitar" | "piano" | "bass") => {
+      setInstrumentMode(mode);
+      localStorage.setItem("saliw:instrumentMode", mode);
+    },
+    []
+  );
 
   // Track per-song semitone offsets so transposed chord names can be computed.
   // Initialised from getSemitoneOffset(originalKey, performanceKey) for each song.
@@ -381,7 +395,7 @@ export default function SetlistViewerClient({
         onToggle={handleDrawerToggle}
         focusedChord={focusedChord}
         instrumentMode={instrumentMode}
-        onInstrumentChange={setInstrumentMode}
+        onInstrumentChange={handleInstrumentChange}
         uniqueChords={uniqueChords}
       />
 
