@@ -3,6 +3,7 @@
 import { memo, useState, useCallback, useTransition } from "react";
 import { RefreshCw, Check, Loader2 } from "lucide-react";
 import type { ProcessedLine } from "@/utils/musicLogic";
+import { getSemitoneOffset } from "@/utils/musicLogic";
 import { updatePerformanceDetails } from "@/app/actions/setlistActions";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
 import type { SongSyncState } from "@/hooks/useSetlistSync";
@@ -42,6 +43,18 @@ interface SetlistSongSectionProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
+  /**
+   * Callback fired when a chord token is clicked in the chord sheet.
+   * Receives the transposed (displayed) chord name as the performer sees it.
+   * Owned by SetlistViewerClient and passed down through SetlistSongSection.
+   */
+  onChordClick?: (chordName: string) => void;
+  /**
+   * Callback fired when this song's semitone offset changes (transpose or key change).
+   * Receives the junctionId and the new absolute semitone offset from originalKey.
+   * Used by SetlistViewerClient to keep songOffsets map in sync for uniqueChords.
+   */
+  onOffsetChange?: (junctionId: string, newOffset: number) => void;
 }
 
 // Wrap ChordSheetClient in React.memo to prevent re-renders triggered
@@ -78,6 +91,8 @@ function SetlistSongSection({
   chordFontSize,
   chordBg,
   chordColor,
+  onChordClick,
+  onOffsetChange,
 }: SetlistSongSectionProps) {
   // Track the current display key as reported by ChordSheetClient via onKeyChange
   const [currentKey, setCurrentKey] = useState<string>(performanceKey);
@@ -85,9 +100,16 @@ function SetlistSongSection({
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleKeyChange = useCallback((key: string) => {
-    setCurrentKey(key);
-  }, []);
+  // handleKeyChange: lift the current display key back to this component
+  // (for Sync button) and also notify parent of the new semitone offset (for drawer).
+  // getSemitoneOffset imported from musicLogic (read-only, BUG-007: declared before hooks).
+  const handleKeyChange = useCallback(
+    (key: string) => {
+      setCurrentKey(key);
+      onOffsetChange?.(junctionId, getSemitoneOffset(originalKey, key));
+    },
+    [junctionId, originalKey, onOffsetChange]
+  );
 
   const handleKeyChangeLive = useCallback(
     (key: string) => {
@@ -246,13 +268,16 @@ function SetlistSongSection({
 
         onKeyChange lifts the current displayKey back to this component
         so the Sync button can capture it without breaking ChordSheetClient's
-        internal encapsulation of useTranspose.
+        internal encapsulation of useTranspose. It also notifies the parent
+        (SetlistViewerClient) of the new offset via onOffsetChange for the
+        global chord drawer's uniqueChords recomputation.
       */}
       <MemoChordSheetClient
         processedLines={processedLines}
         originalKey={originalKey}
         initialKey={performanceKey}
-        onKeyChange={isLeader ? handleKeyChange : undefined}
+        onKeyChange={handleKeyChange}
+        onChordClick={onChordClick}
         externalKey={overrideKey}
         onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
         externalChordsHidden={externalChordsHidden}

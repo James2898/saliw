@@ -92,6 +92,12 @@ interface ChordSheetClientProps {
   /** Optional callback fired whenever the displayed (transposed) key changes. */
   onKeyChange?: (key: string) => void;
   /**
+   * Optional callback fired when the user clicks a chord token in the sheet.
+   * Receives the pre-transposition chord name from data-original-chord.
+   * When undefined, chord clicks are a no-op (no error thrown).
+   */
+  onChordClick?: (chordName: string) => void;
+  /**
    * Optional key injected by Follow Leader mode.
    * RF-2 guard: effect must NOT call setTargetKey when externalKey === displayKey.
    */
@@ -152,6 +158,7 @@ export default function ChordSheetClient({
   originalKey,
   initialKey,
   onKeyChange,
+  onChordClick,
   externalKey,
   onKeyChangeLive,
   externalChordsHidden,
@@ -200,6 +207,42 @@ export default function ChordSheetClient({
   const [cagedShape, setCAGEDShape] = useState<CAGEDShape | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
+
+  // ── Delegated chord-click handler — declared before useEffect (BUG-007) ───
+  // Uses a named function so it can be cleanly removed on unmount.
+  // Handler is a stable closure over onChordClick; the useEffect re-registers
+  // whenever onChordClick changes.
+  // Fires the TRANSPOSED chord name (span.innerText) rather than the original
+  // chord name (data-original-chord), so the drawer always receives the chord
+  // name as the performer sees it in the sheet.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  function handleChordClick(e: MouseEvent) {
+    if (!onChordClick) return;
+    const target = e.target as HTMLElement;
+    const chordSpan = target.closest<HTMLElement>(
+      ".chord-item[data-original-chord]"
+    );
+    if (chordSpan) {
+      const displayedChord = chordSpan.innerText.trim();
+      if (displayedChord) {
+        onChordClick(displayedChord);
+      }
+    }
+  }
+
+  // Attach delegated click listener on the container div.
+  // DOM mutation renders chord spans dynamically; inline onClick on spans
+  // would not persist after transposition re-renders. Delegated listener
+  // on the stable container ref handles all clicks correctly (AC-28).
+  useEffect(() => {
+    const container = sheetRef.current;
+    if (!container) return;
+    container.addEventListener("click", handleChordClick);
+    return () => {
+      container.removeEventListener("click", handleChordClick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChordClick]);
 
   // Apply transposition to all .chord-item spans after mount and on offset changes.
   // Also runs when chordsHidden flips to false so re-rendered spans get the correct transposed text.
