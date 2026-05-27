@@ -368,9 +368,9 @@ function BassSVG({ chordName }: { chordName: string }) {
   return (
     <svg
       viewBox={`0 0 ${svgW} ${svgH}`}
-      width={svgW}
-      height={svgH}
+      width="100%"
       aria-hidden="true"
+      preserveAspectRatio="xMidYMid meet"
       style={{ display: "block" }}
     >
       {/* Fret number labels (0–12) */}
@@ -598,8 +598,12 @@ export default function ChordDrawer({
         </button>
       </div>
 
-      {/* Scroll container */}
-      {uniqueChords.length === 0 ? (
+      {/* Bass mode: single full-neck fretboard spanning the full drawer width */}
+      {instrumentMode === "bass" ? (
+        <div className="w-full px-2 py-3">
+          <BassSVG chordName={focusedChord ?? ""} />
+        </div>
+      ) : uniqueChords.length === 0 ? (
         <p className={emptyStateClass}>No chords found in this setlist</p>
       ) : (
         <div ref={containerRef} className={scrollContainerClass}>
@@ -614,9 +618,7 @@ export default function ChordDrawer({
             return (
               <div key={chordName} data-chord={chordName} className={cardClass}>
                 <span className={cardLabelClass}>{chordName}</span>
-                {instrumentMode === "bass" ? (
-                  <BassSVG chordName={chordName} />
-                ) : entry ? (
+                {entry ? (
                   instrumentMode === "guitar" ? (
                     <GuitarSVG
                       fingering={entry.guitar}
