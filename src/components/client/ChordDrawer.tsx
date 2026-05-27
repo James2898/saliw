@@ -12,7 +12,7 @@ import type { GuitarFingering, PianoFingering } from "@/utils/chordLibrary";
 // Full-opacity backgrounds: cream in light mode, darker espresso in dark mode so the
 // drawer is visually distinct from the chord cards inside (which use bg-brand-espresso).
 const drawerFixedWrapperClass = [
-  "fixed bottom-0 left-0 right-0 z-40",
+  "fixed bottom-0 left-0 right-0 z-60",
   "bg-brand-cream dark:bg-brand-darker border-t border-[var(--brand-tan-alpha)]",
   "chord-drawer-panel",
 ].join(" ");
@@ -89,7 +89,7 @@ const placeholderTextClass = [
 // Tapping it re-opens the drawer.
 // Full-opacity backgrounds: cream in light mode, darker espresso in dark mode (BUG-004: dark: paired).
 const closedPillClass = [
-  "fixed bottom-0 left-1/2 -translate-x-1/2 z-40",
+  "fixed bottom-0 left-1/2 -translate-x-1/2 z-60",
   "px-4 py-1 rounded-t-lg",
   "text-xs font-semibold",
   "bg-brand-cream dark:bg-brand-darker border border-b-0 border-[var(--brand-tan-alpha)]",
@@ -595,7 +595,19 @@ export default function ChordDrawer({
           aria-label="Close chord helper"
           className={closeBtnClass}
         >
-          ↓
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 6l4 4 4-4" />
+          </svg>
         </button>
       </div>
 
