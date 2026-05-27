@@ -2,11 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { CHORD_REGISTRY } from "@/utils/chordLibrary";
-import type {
-  GuitarFingering,
-  PianoFingering,
-  BassFingering,
-} from "@/utils/chordLibrary";
+import type { GuitarFingering, PianoFingering } from "@/utils/chordLibrary";
 
 // ── Module-level class constants — stable strings (BUG-019) ──────────────────
 
@@ -114,8 +110,38 @@ const FRET_Y = [20, 40, 60, 80, 100] as const;
 /** Y center of each fret slot (between two fret lines). */
 const FRET_CENTER_Y = [30, 50, 70, 90] as const;
 
-/** X positions for 4 vertical bass string lines (E A D G, low to high). */
-const BASS_STRING_X = [14, 34, 54, 74] as const;
+// ── Bass neck diagram constants ──────────────────────────────────────────────
+
+/** Open string notes for bass guitar: low E, A, D, G (index 0 = low E). */
+const BASS_OPEN_NOTES = ["E", "A", "D", "G"] as const;
+
+/** Number of fretted positions shown (frets 1–12; plus open = 13 columns total). */
+const BASS_FRET_COUNT = 12;
+
+/** Chromatic scale for note-at-fret computation. */
+const CHROMATIC = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+] as const;
+
+/** Maps flat note names to their sharp equivalents for root extraction. */
+const FLAT_TO_SHARP: Record<string, string> = {
+  Bb: "A#",
+  Eb: "D#",
+  Ab: "G#",
+  Db: "C#",
+  Gb: "F#",
+};
 
 // ── Piano SVG constants ──────────────────────────────────────────────────────
 
@@ -312,91 +338,136 @@ function PianoSVG({ fingering }: { fingering: PianoFingering }) {
   );
 }
 
-function BassSVG({ fingering }: { fingering: BassFingering }) {
+// ── Bass neck helpers — declared before BassSVG (BUG-007) ───────────────────
+
+function getNoteAtFret(openNote: string, fret: number): string {
+  const startIdx = CHROMATIC.indexOf(openNote as (typeof CHROMATIC)[number]);
+  return CHROMATIC[(startIdx + fret) % 12];
+}
+
+function getChordRoot(chordName: string): string {
+  const match = chordName.match(/^([A-G][#b]?)/);
+  if (!match) return "";
+  const raw = match[1];
+  return FLAT_TO_SHARP[raw] ?? raw;
+}
+
+// ── BassSVG — full neck diagram (4 strings × 13 fret columns) ───────────────
+
+function BassSVG({ chordName }: { chordName: string }) {
+  const root = getChordRoot(chordName);
+  const COL_W = 28;
+  const ROW_H = 26;
+  const CIRCLE_R = 10;
+  const LEFT = 8;
+  const TOP = 16;
+  const totalCols = BASS_FRET_COUNT + 1; // columns 0..12
+  const svgW = LEFT + totalCols * COL_W;
+  const svgH = TOP + 4 * ROW_H;
+
   return (
     <svg
-      viewBox="0 0 88 120"
-      width={88}
-      height={120}
+      viewBox={`0 0 ${svgW} ${svgH}`}
+      width={svgW}
+      height={svgH}
       aria-hidden="true"
       style={{ display: "block" }}
     >
-      {/* Fret lines */}
-      {FRET_Y.map((y, i) => (
+      {/* Fret number labels (0–12) */}
+      {Array.from({ length: totalCols }, (_, col) => (
+        <text
+          key={`flabel-${col}`}
+          x={LEFT + col * COL_W + COL_W / 2}
+          y={TOP - 4}
+          textAnchor="middle"
+          fontSize={7}
+          fill="var(--brand-brown)"
+        >
+          {col}
+        </text>
+      ))}
+
+      {/* String labels (E A D G) — left of diagram */}
+      {BASS_OPEN_NOTES.map((note, i) => (
+        <text
+          key={`slabel-${i}`}
+          x={LEFT - 2}
+          y={TOP + (3 - i) * ROW_H + ROW_H / 2 + 3}
+          textAnchor="end"
+          fontSize={7}
+          fontWeight="bold"
+          fill="var(--brand-brown)"
+        >
+          {note}
+        </text>
+      ))}
+
+      {/* Nut line — right edge of open column */}
+      <line
+        x1={LEFT + COL_W}
+        y1={TOP}
+        x2={LEFT + COL_W}
+        y2={TOP + 4 * ROW_H}
+        stroke="var(--brand-brown)"
+        strokeWidth={3}
+      />
+
+      {/* Fret lines (frets 1–12) */}
+      {Array.from({ length: BASS_FRET_COUNT }, (_, i) => (
         <line
-          key={`bfret-${i}`}
-          x1={BASS_STRING_X[0]}
-          y1={y}
-          x2={BASS_STRING_X[3]}
-          y2={y}
+          key={`fline-${i}`}
+          x1={LEFT + (i + 1) * COL_W}
+          y1={TOP}
+          x2={LEFT + (i + 1) * COL_W}
+          y2={TOP + 4 * ROW_H}
           stroke="var(--brand-brown)"
-          strokeWidth={i === 0 ? 3 : 1}
+          strokeWidth={0.5}
+          opacity={0.4}
         />
       ))}
 
-      {/* String lines */}
-      {BASS_STRING_X.map((x, i) => (
+      {/* String lines (horizontal) */}
+      {BASS_OPEN_NOTES.map((_, i) => (
         <line
-          key={`bstring-${i}`}
-          x1={x}
-          y1={FRET_Y[0]}
-          x2={x}
-          y2={FRET_Y[4]}
+          key={`sline-${i}`}
+          x1={LEFT}
+          y1={TOP + (3 - i) * ROW_H + ROW_H / 2}
+          x2={LEFT + totalCols * COL_W}
+          y2={TOP + (3 - i) * ROW_H + ROW_H / 2}
           stroke="var(--brand-brown)"
-          strokeWidth={1}
+          strokeWidth={0.75}
         />
       ))}
 
-      {/* Per-string indicators above nut */}
-      {BASS_STRING_X.map((x, i) => {
-        const fret = fingering.strings[i];
-        if (fret === -1) {
+      {/* Note circles — all 4 strings × 13 columns */}
+      {BASS_OPEN_NOTES.map((openNote, stringIdx) =>
+        Array.from({ length: totalCols }, (_, col) => {
+          const note = getNoteAtFret(openNote, col);
+          const isRoot = note === root;
+          const cx = LEFT + col * COL_W + COL_W / 2;
+          const cy = TOP + (3 - stringIdx) * ROW_H + ROW_H / 2;
           return (
-            <text
-              key={`bmute-${i}`}
-              x={x}
-              y={14}
-              textAnchor="middle"
-              fontSize={9}
-              fill="var(--brand-brown)"
-              fontWeight="bold"
-            >
-              ×
-            </text>
+            <g key={`note-${stringIdx}-${col}`}>
+              <circle
+                cx={cx}
+                cy={cy}
+                r={CIRCLE_R}
+                fill={isRoot ? "var(--brand-tan)" : "var(--brand-espresso)"}
+              />
+              <text
+                x={cx}
+                y={cy + 3.5}
+                textAnchor="middle"
+                fontSize={7}
+                fontWeight={isRoot ? "bold" : "normal"}
+                fill={isRoot ? "var(--brand-espresso)" : "var(--brand-cream)"}
+              >
+                {note}
+              </text>
+            </g>
           );
-        }
-        if (fret === 0) {
-          return (
-            <circle
-              key={`bopen-${i}`}
-              cx={x}
-              cy={12}
-              r={4}
-              fill="none"
-              stroke="var(--brand-brown)"
-              strokeWidth={1.5}
-            />
-          );
-        }
-        return null;
-      })}
-
-      {/* Finger circles — fretted notes */}
-      {BASS_STRING_X.map((x, i) => {
-        const fret = fingering.strings[i];
-        if (fret > 0 && fret <= 4) {
-          return (
-            <circle
-              key={`bfinger-${i}`}
-              cx={x}
-              cy={FRET_CENTER_Y[fret - 1]}
-              r={7}
-              fill="var(--brand-tan)"
-            />
-          );
-        }
-        return null;
-      })}
+        })
+      )}
     </svg>
   );
 }
@@ -543,21 +614,17 @@ export default function ChordDrawer({
             return (
               <div key={chordName} data-chord={chordName} className={cardClass}>
                 <span className={cardLabelClass}>{chordName}</span>
-                {entry ? (
-                  (() => {
-                    if (instrumentMode === "guitar") {
-                      return (
-                        <GuitarSVG
-                          fingering={entry.guitar}
-                          capoOffsetProp={capoOffset}
-                        />
-                      );
-                    } else if (instrumentMode === "piano") {
-                      return <PianoSVG fingering={entry.piano} />;
-                    } else {
-                      return <BassSVG fingering={entry.bass} />;
-                    }
-                  })()
+                {instrumentMode === "bass" ? (
+                  <BassSVG chordName={chordName} />
+                ) : entry ? (
+                  instrumentMode === "guitar" ? (
+                    <GuitarSVG
+                      fingering={entry.guitar}
+                      capoOffsetProp={capoOffset}
+                    />
+                  ) : (
+                    <PianoSVG fingering={entry.piano} />
+                  )
                 ) : (
                   <p className={placeholderTextClass}>No diagram available</p>
                 )}
