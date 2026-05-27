@@ -108,9 +108,9 @@ export default function SetlistViewerClient({
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [focusedChord, setFocusedChord] = useState<string | null>(null);
-  const [instrumentMode, setInstrumentMode] = useState<"guitar" | "piano">(
-    "guitar"
-  );
+  const [instrumentMode, setInstrumentMode] = useState<
+    "guitar" | "piano" | "bass"
+  >("guitar");
 
   // Track per-song semitone offsets so transposed chord names can be computed.
   // Initialised from getSemitoneOffset(originalKey, performanceKey) for each song.

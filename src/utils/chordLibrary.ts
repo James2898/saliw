@@ -32,9 +32,14 @@ export interface PianoFingering {
   blackKeyIndices: number[];
 }
 
+export interface BassFingering {
+  /** Fret numbers for each bass string [E, A, D, G]. -1 = muted, 0 = open. */
+  strings: [number, number, number, number];
+}
+
 export type ChordRegistry = Record<
   string,
-  { guitar: GuitarFingering; piano: PianoFingering }
+  { guitar: GuitarFingering; piano: PianoFingering; bass: BassFingering }
 >;
 
 /**
@@ -53,6 +58,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [0, 2, 4],
       blackKeyIndices: [],
     },
+    bass: {
+      // C(A3) G(D2) E(G0) — root C on A string
+      strings: [-1, 3, 2, 0],
+    },
   },
 
   "C/E": {
@@ -69,6 +78,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [0, 2, 4],
       blackKeyIndices: [],
     },
+    bass: {
+      // E(E0) open bass, C shape on upper strings
+      strings: [0, 3, 2, 0],
+    },
   },
 
   G: {
@@ -82,6 +95,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // G B D  (white keys 4, 6, 1 of octave 2 = index 8)
       whiteKeyIndices: [4, 6, 8],
       blackKeyIndices: [],
+    },
+    bass: {
+      // G(E3), D(A2), G(D0)
+      strings: [3, 2, 0, 0],
     },
   },
 
@@ -99,6 +116,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [4, 6, 8],
       blackKeyIndices: [],
     },
+    bass: {
+      // B(A2), G(D0), G open
+      strings: [-1, 2, 0, 0],
+    },
   },
 
   D: {
@@ -112,6 +133,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // D F# A  (white keys 1, 3, 5)  F# = black key index 2
       whiteKeyIndices: [1, 5],
       blackKeyIndices: [2],
+    },
+    bass: {
+      // A(A0), D(D0), F#(G2)
+      strings: [-1, 0, 0, 2],
     },
   },
 
@@ -129,6 +154,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [1, 5],
       blackKeyIndices: [2],
     },
+    bass: {
+      // F#(E2), A(A0), D(D0)
+      strings: [2, 0, 0, 2],
+    },
   },
 
   Em: {
@@ -142,6 +171,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // E G B  (white keys 2, 4, 6)
       whiteKeyIndices: [2, 4, 6],
       blackKeyIndices: [],
+    },
+    bass: {
+      // E(E0) open, B(A2) — root and fifth
+      strings: [0, 2, -1, -1],
     },
   },
 
@@ -157,6 +190,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [5, 7, 9],
       blackKeyIndices: [],
     },
+    bass: {
+      // A(A0), E(D2), A(G2) — root position
+      strings: [-1, 0, 2, 2],
+    },
   },
 
   Bm: {
@@ -170,6 +207,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // B D F#  (white keys 6, 8, black key 7 = F# of second octave)
       whiteKeyIndices: [6, 8],
       blackKeyIndices: [7],
+    },
+    bass: {
+      // B(A2), F#(D4), B(G4)
+      strings: [-1, 2, 4, 4],
     },
   },
 
@@ -185,6 +226,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [3, 5, 7],
       blackKeyIndices: [],
     },
+    bass: {
+      // F(E1), C(A3), F(D3)
+      strings: [1, 3, 3, -1],
+    },
   },
 
   Dm: {
@@ -198,6 +243,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // D F A  (white keys 1, 3, 5)
       whiteKeyIndices: [1, 3, 5],
       blackKeyIndices: [],
+    },
+    bass: {
+      // A(A0) fifth, D(D0) root, F(G1)
+      strings: [-1, 0, 0, 1],
     },
   },
 
@@ -213,6 +262,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [5, 9],
       blackKeyIndices: [4],
     },
+    bass: {
+      // A(A0), E(D2), A(G2)
+      strings: [-1, 0, 2, 2],
+    },
   },
 
   E: {
@@ -226,6 +279,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // E G# B  (white keys 2, black key 3 = G#, white key 6)
       whiteKeyIndices: [2, 6],
       blackKeyIndices: [3],
+    },
+    bass: {
+      // E(E0), B(A2), E(D2)
+      strings: [0, 2, 2, -1],
     },
   },
 
@@ -241,6 +298,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [0, 1, 2, 4],
       blackKeyIndices: [],
     },
+    bass: {
+      // same root as C — C(A3), G(D2), E(G0)
+      strings: [-1, 3, 2, 0],
+    },
   },
 
   Dsus2: {
@@ -254,6 +315,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // D E A  — D=1, E=2, A=5
       whiteKeyIndices: [1, 2, 5],
       blackKeyIndices: [],
+    },
+    bass: {
+      // same root as D — A(A0), D(D0), F#(G2)... use plain D root position
+      strings: [-1, 0, 0, 2],
     },
   },
 
@@ -269,6 +334,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [4, 5, 8],
       blackKeyIndices: [],
     },
+    bass: {
+      // same root as G — G(E3), D(A2), G(D0)
+      strings: [3, 2, 0, 0],
+    },
   },
 
   Fsus2: {
@@ -282,6 +351,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // F G C  — F=3, G=4, C=7 (C in second octave)
       whiteKeyIndices: [3, 4, 7],
       blackKeyIndices: [],
+    },
+    bass: {
+      // same root as F — F(E1), C(A3), F(D3)
+      strings: [1, 3, 3, -1],
     },
   },
 
@@ -297,6 +370,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [5, 7, 9, 11],
       blackKeyIndices: [],
     },
+    bass: {
+      // A(A0), E(D2), G(G0) open
+      strings: [-1, 0, 2, 0],
+    },
   },
 
   G7: {
@@ -310,6 +387,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // G B D F  — G=4, B=6, D=8, F=10
       whiteKeyIndices: [4, 6, 8, 10],
       blackKeyIndices: [],
+    },
+    bass: {
+      // same root as G — G(E3), D(A2), G(D0)
+      strings: [3, 2, 0, 0],
     },
   },
 
@@ -327,6 +408,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [],
       blackKeyIndices: [2, 4, 5],
     },
+    bass: {
+      // F#(E2), C#(A4), F#(D4)
+      strings: [2, 4, 4, -1],
+    },
   },
 
   "F#m": {
@@ -340,6 +425,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // F# A C# — black keys 2(F#) 5(C# oct2), white key 5(A)
       whiteKeyIndices: [5],
       blackKeyIndices: [2, 5],
+    },
+    bass: {
+      // same shape as F# — F#(E2), C#(A4), F#(D4)
+      strings: [2, 4, 4, -1],
     },
   },
 
@@ -355,6 +444,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [2],
       blackKeyIndices: [0, 3],
     },
+    bass: {
+      // C#(A4), G#(D2)
+      strings: [-1, 4, 2, -1],
+    },
   },
 
   B: {
@@ -368,6 +461,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // B D# F# — white key 6(B), black key 1(D#), black key 2(F#)
       whiteKeyIndices: [6],
       blackKeyIndices: [1, 2],
+    },
+    bass: {
+      // B(A2), F#(D4), B(G4)
+      strings: [-1, 2, 4, 4],
     },
   },
 
@@ -383,6 +480,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [2, 5, 6],
       blackKeyIndices: [0],
     },
+    bass: {
+      // same root as A — A(A0), E(D2), A(G2)
+      strings: [-1, 0, 2, 2],
+    },
   },
 
   "E/G#": {
@@ -396,6 +497,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // E G# B — white keys 2(E) 7(B), black key 3(G#)
       whiteKeyIndices: [2, 7],
       blackKeyIndices: [3],
+    },
+    bass: {
+      // G#(E4), B(A2), E(D2)
+      strings: [4, 2, 2, -1],
     },
   },
 
@@ -413,6 +518,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [1, 3],
       blackKeyIndices: [4],
     },
+    bass: {
+      // Bb(E1), F(A1), Bb(D3), F(G3)
+      strings: [1, 1, 3, 3],
+    },
   },
 
   Eb: {
@@ -426,6 +535,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // Eb G Bb — black key 9(Eb=D# oct2), white key 4(G), black key 4(Bb)
       whiteKeyIndices: [4],
       blackKeyIndices: [4, 9],
+    },
+    bass: {
+      // Eb(A1), Bb(D1), G(G3)
+      strings: [-1, 1, 1, 3],
     },
   },
 
@@ -441,6 +554,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [0],
       blackKeyIndices: [3, 9],
     },
+    bass: {
+      // Ab(E4), Eb(D1), Ab(G1)
+      strings: [4, -1, 1, 1],
+    },
   },
 
   Db: {
@@ -454,6 +571,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // Db F Ab — black key 0(C#=Db), white key 3(F), black key 3(Ab=G#)
       whiteKeyIndices: [3],
       blackKeyIndices: [0, 3],
+    },
+    bass: {
+      // Db(A4), Ab(D3)
+      strings: [-1, 4, 3, -1],
     },
   },
 
@@ -471,6 +592,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [2, 4, 6, 8],
       blackKeyIndices: [],
     },
+    bass: {
+      // E(E0), B(A2), G(D0) open
+      strings: [0, 2, 0, -1],
+    },
   },
 
   Dm7: {
@@ -484,6 +609,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // D F A C — white keys 1(D) 3(F) 5(A) 7(B=no, C=0 oct2)
       whiteKeyIndices: [1, 3, 5, 7],
       blackKeyIndices: [],
+    },
+    bass: {
+      // same as Dm — A(A0) fifth, D(D0) root, F(G1)
+      strings: [-1, 0, 0, 1],
     },
   },
 
@@ -499,6 +628,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [0, 2, 4, 6],
       blackKeyIndices: [],
     },
+    bass: {
+      // same root as C — C(A3), G(D2), E(G0)
+      strings: [-1, 3, 2, 0],
+    },
   },
 
   Gmaj7: {
@@ -512,6 +645,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // G B D F# — white keys 4(G) 6(B) 8(D), black key 2(F#)
       whiteKeyIndices: [4, 6, 8],
       blackKeyIndices: [2],
+    },
+    bass: {
+      // same root as G — G(E3), D(A2), G(D0)
+      strings: [3, 2, 0, 0],
     },
   },
 
@@ -527,6 +664,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [2, 5],
       blackKeyIndices: [0, 3],
     },
+    bass: {
+      // same root as A — A(A0), E(D2), A(G2)
+      strings: [-1, 0, 2, 2],
+    },
   },
 
   Bm7: {
@@ -540,6 +681,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // B D F# A — white keys 6(B) 1(D) 5(A), black key 2(F#)
       whiteKeyIndices: [1, 5, 6],
       blackKeyIndices: [2],
+    },
+    bass: {
+      // B(A2), F#(D4), A(G2)
+      strings: [-1, 2, 4, 2],
     },
   },
 
@@ -555,6 +700,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [2, 7, 8],
       blackKeyIndices: [3],
     },
+    bass: {
+      // same as E — E(E0), B(A2), E(D2)
+      strings: [0, 2, 2, -1],
+    },
   },
 
   A7: {
@@ -568,6 +717,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // A C# E G — white keys 5(A) 2(E) 4(G), black key 0(C#)
       whiteKeyIndices: [2, 4, 5],
       blackKeyIndices: [0],
+    },
+    bass: {
+      // same root as A — A(A0), E(D2), A(G2)
+      strings: [-1, 0, 2, 2],
     },
   },
 
@@ -583,6 +736,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [1, 5, 7],
       blackKeyIndices: [2],
     },
+    bass: {
+      // same root as D — A(A0), D(D0), F#(G2)
+      strings: [-1, 0, 0, 2],
+    },
   },
 
   B7: {
@@ -596,6 +753,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // B D# F# A — white keys 6(B) 1(D) 5(A), black keys 1(D#) 2(F#)
       whiteKeyIndices: [1, 5, 6],
       blackKeyIndices: [1, 2],
+    },
+    bass: {
+      // B(A2), F#(D4), A(G2)
+      strings: [-1, 2, 4, 2],
     },
   },
 
@@ -613,6 +774,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [1, 4, 5],
       blackKeyIndices: [],
     },
+    bass: {
+      // A(A0), D(D0), G(G3)
+      strings: [-1, 0, 0, 3],
+    },
   },
 
   Asus2: {
@@ -626,6 +791,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // A B E — white keys 5(A) 6(B) 2(E)
       whiteKeyIndices: [2, 5, 6],
       blackKeyIndices: [],
+    },
+    bass: {
+      // same root as A — A(A0), E(D2), A(G2)
+      strings: [-1, 0, 2, 2],
     },
   },
 
@@ -641,6 +810,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [1, 2, 5],
       blackKeyIndices: [],
     },
+    bass: {
+      // A(A0), E(D2), D(G3)
+      strings: [-1, 0, 2, 3],
+    },
   },
 
   Esus4: {
@@ -654,6 +827,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // E A B — white keys 2(E) 5(A) 6(B)
       whiteKeyIndices: [2, 5, 6],
       blackKeyIndices: [],
+    },
+    bass: {
+      // same as E — E(E0), B(A2), E(D2)
+      strings: [0, 2, 2, -1],
     },
   },
 
@@ -671,6 +848,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [3, 7],
       blackKeyIndices: [3],
     },
+    bass: {
+      // same root as F — F(E1), C(A3), F(D3)
+      strings: [1, 3, 3, -1],
+    },
   },
 
   Gm: {
@@ -684,6 +865,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // G Bb D — white keys 4(G) 1(D oct2=8), black key 4(Bb)
       whiteKeyIndices: [4, 8],
       blackKeyIndices: [4],
+    },
+    bass: {
+      // G(E3), Bb(A1)
+      strings: [3, 1, -1, -1],
     },
   },
 
@@ -699,6 +884,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [0, 4],
       blackKeyIndices: [9],
     },
+    bass: {
+      // C(A3), G(D1)
+      strings: [-1, 3, 1, -1],
+    },
   },
 
   Bbm: {
@@ -712,6 +901,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // Bb Db F — black key 4(Bb) 0(C#=Db), white key 3(F)
       whiteKeyIndices: [3],
       blackKeyIndices: [0, 4],
+    },
+    bass: {
+      // Bb(E1), F(A1), Bb(D3)
+      strings: [1, 1, 3, -1],
     },
   },
 
@@ -729,6 +922,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [1, 4, 6],
       blackKeyIndices: [],
     },
+    bass: {
+      // D(D0) open, G(G0) open
+      strings: [-1, -1, 0, 0],
+    },
   },
 
   "D/A": {
@@ -742,6 +939,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // D F# A — white keys 1(D) 5(A), black key 2(F#)
       whiteKeyIndices: [1, 5],
       blackKeyIndices: [2],
+    },
+    bass: {
+      // A(A0) open bass, same as D root
+      strings: [-1, 0, 0, 2],
     },
   },
 
@@ -757,6 +958,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [2, 5],
       blackKeyIndices: [0],
     },
+    bass: {
+      // C#(A4) bass note, E(D2), A(G2)
+      strings: [-1, 4, 2, 2],
+    },
   },
 
   "F/A": {
@@ -770,6 +975,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // F A C — white keys 3(F) 5(A) 7(C oct2)
       whiteKeyIndices: [3, 5, 7],
       blackKeyIndices: [],
+    },
+    bass: {
+      // A(A0) open bass, F(D3)
+      strings: [-1, 0, 3, -1],
     },
   },
 
@@ -785,6 +994,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       whiteKeyIndices: [3, 5, 7],
       blackKeyIndices: [],
     },
+    bass: {
+      // C(A3) bass note, F(D3)
+      strings: [-1, 3, 3, -1],
+    },
   },
 
   "C/G": {
@@ -798,6 +1011,10 @@ export const CHORD_REGISTRY: ChordRegistry = {
       // C E G — white keys 0(C) 2(E) 4(G)
       whiteKeyIndices: [0, 2, 4],
       blackKeyIndices: [],
+    },
+    bass: {
+      // G(E3) bass note, C(A3), G(D0) open
+      strings: [3, 3, 2, 0],
     },
   },
 };

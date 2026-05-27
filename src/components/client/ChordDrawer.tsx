@@ -2,7 +2,11 @@
 
 import { useRef, useEffect } from "react";
 import { CHORD_REGISTRY } from "@/utils/chordLibrary";
-import type { GuitarFingering, PianoFingering } from "@/utils/chordLibrary";
+import type {
+  GuitarFingering,
+  PianoFingering,
+  BassFingering,
+} from "@/utils/chordLibrary";
 
 // ── Module-level class constants — stable strings (BUG-019) ──────────────────
 
@@ -109,6 +113,9 @@ const FRET_Y = [20, 40, 60, 80, 100] as const;
 
 /** Y center of each fret slot (between two fret lines). */
 const FRET_CENTER_Y = [30, 50, 70, 90] as const;
+
+/** X positions for 4 vertical bass string lines (E A D G, low to high). */
+const BASS_STRING_X = [14, 34, 54, 74] as const;
 
 // ── Piano SVG constants ──────────────────────────────────────────────────────
 
@@ -305,6 +312,95 @@ function PianoSVG({ fingering }: { fingering: PianoFingering }) {
   );
 }
 
+function BassSVG({ fingering }: { fingering: BassFingering }) {
+  return (
+    <svg
+      viewBox="0 0 88 120"
+      width={88}
+      height={120}
+      aria-hidden="true"
+      style={{ display: "block" }}
+    >
+      {/* Fret lines */}
+      {FRET_Y.map((y, i) => (
+        <line
+          key={`bfret-${i}`}
+          x1={BASS_STRING_X[0]}
+          y1={y}
+          x2={BASS_STRING_X[3]}
+          y2={y}
+          stroke="var(--brand-brown)"
+          strokeWidth={i === 0 ? 3 : 1}
+        />
+      ))}
+
+      {/* String lines */}
+      {BASS_STRING_X.map((x, i) => (
+        <line
+          key={`bstring-${i}`}
+          x1={x}
+          y1={FRET_Y[0]}
+          x2={x}
+          y2={FRET_Y[4]}
+          stroke="var(--brand-brown)"
+          strokeWidth={1}
+        />
+      ))}
+
+      {/* Per-string indicators above nut */}
+      {BASS_STRING_X.map((x, i) => {
+        const fret = fingering.strings[i];
+        if (fret === -1) {
+          return (
+            <text
+              key={`bmute-${i}`}
+              x={x}
+              y={14}
+              textAnchor="middle"
+              fontSize={9}
+              fill="var(--brand-brown)"
+              fontWeight="bold"
+            >
+              ×
+            </text>
+          );
+        }
+        if (fret === 0) {
+          return (
+            <circle
+              key={`bopen-${i}`}
+              cx={x}
+              cy={12}
+              r={4}
+              fill="none"
+              stroke="var(--brand-brown)"
+              strokeWidth={1.5}
+            />
+          );
+        }
+        return null;
+      })}
+
+      {/* Finger circles — fretted notes */}
+      {BASS_STRING_X.map((x, i) => {
+        const fret = fingering.strings[i];
+        if (fret > 0 && fret <= 4) {
+          return (
+            <circle
+              key={`bfinger-${i}`}
+              cx={x}
+              cy={FRET_CENTER_Y[fret - 1]}
+              r={7}
+              fill="var(--brand-tan)"
+            />
+          );
+        }
+        return null;
+      })}
+    </svg>
+  );
+}
+
 // ── Scroll helper — declared before the useEffect that references it (BUG-007) ─
 
 function computeScrollTarget(
@@ -320,8 +416,8 @@ interface ChordDrawerProps {
   isOpen: boolean;
   onToggle: () => void;
   focusedChord: string | null;
-  instrumentMode: "guitar" | "piano";
-  onInstrumentChange: (mode: "guitar" | "piano") => void;
+  instrumentMode: "guitar" | "piano" | "bass";
+  onInstrumentChange: (mode: "guitar" | "piano" | "bass") => void;
   uniqueChords: string[];
   capoOffset?: number;
 }
@@ -406,6 +502,18 @@ export default function ChordDrawer({
           >
             Piano
           </button>
+          <button
+            type="button"
+            onClick={() => onInstrumentChange("bass")}
+            aria-pressed={instrumentMode === "bass"}
+            className={
+              instrumentMode === "bass"
+                ? instrBtnActiveClass
+                : instrBtnInactiveClass
+            }
+          >
+            Bass
+          </button>
         </div>
 
         {/* Close button */}
@@ -436,14 +544,20 @@ export default function ChordDrawer({
               <div key={chordName} data-chord={chordName} className={cardClass}>
                 <span className={cardLabelClass}>{chordName}</span>
                 {entry ? (
-                  instrumentMode === "guitar" ? (
-                    <GuitarSVG
-                      fingering={entry.guitar}
-                      capoOffsetProp={capoOffset}
-                    />
-                  ) : (
-                    <PianoSVG fingering={entry.piano} />
-                  )
+                  (() => {
+                    if (instrumentMode === "guitar") {
+                      return (
+                        <GuitarSVG
+                          fingering={entry.guitar}
+                          capoOffsetProp={capoOffset}
+                        />
+                      );
+                    } else if (instrumentMode === "piano") {
+                      return <PianoSVG fingering={entry.piano} />;
+                    } else {
+                      return <BassSVG fingering={entry.bass} />;
+                    }
+                  })()
                 ) : (
                   <p className={placeholderTextClass}>No diagram available</p>
                 )}
