@@ -369,6 +369,7 @@ function BassSVG({ chordName }: { chordName: string }) {
     <svg
       viewBox={`0 0 ${svgW} ${svgH}`}
       width="100%"
+      height="100%"
       aria-hidden="true"
       preserveAspectRatio="xMidYMid meet"
       style={{ display: "block" }}
@@ -600,7 +601,7 @@ export default function ChordDrawer({
 
       {/* Bass mode: single full-neck fretboard spanning the full drawer width */}
       {instrumentMode === "bass" ? (
-        <div className="w-full px-2 py-3">
+        <div className="w-full h-[25vh] px-2 py-2">
           <BassSVG chordName={focusedChord ?? ""} />
         </div>
       ) : uniqueChords.length === 0 ? (
