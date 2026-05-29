@@ -8,6 +8,39 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- Global interactive chord drawer with guitar fretboard and piano keyboard diagrams (`TASK-043`)
+  - Single page-level fixed-bottom `ChordDrawer` mounted in `SetlistViewerClient` (not per-song inline)
+  - Covers all songs in the setlist; `uniqueChords` computed via `useMemo` from all songs' transposed chord tokens (no `useEffect + setState`)
+  - Per-song semitone offsets tracked in `songOffsets` state; initialised from `getSemitoneOffset(originalKey, performanceKey)` and updated on every transpose via `onOffsetChange` prop
+  - Clicking any chord token fires the displayed (transposed) chord name via `span.innerText.trim()` and opens the drawer to the matching card
+  - Guitar (6-string SVG, `0 0 100 120` viewBox) and piano (14 white + 10 black keys SVG, `0 0 140 60` viewBox) diagram modes; toggle in open drawer header
+  - Auto-scrolls focused chord card to center using `offsetLeft - clientWidth/2 + cardWidth/2`
+  - Closed state: small `Chords ↑` pill at bottom edge; open state: full-width slide-up drawer
+  - `chord-drawer-panel` CSS class in `globals.css` restores `transform` transition suppressed by global `*` rule
+  - `CHORD_REGISTRY` exports 18 worship chords including all required base chords (`C`, `C/E`, `G`, `G/B`, `D`, `D/F#`, `Em`, `Am`, `Bm`, `F`)
+  - All BUG-002/004/007/019/020 prevention rules applied; zero Supabase imports in any changed file
+  - Affected files: `src/utils/chordLibrary.ts`, `src/components/client/ChordDrawer.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/styles/globals.css`
+
+---
+
+## [Unreleased] — 2026-05-26
+
+### Added
+
+- Capo selector (frets 0–7) and CAGED shape picker inside the expandable song-controls panel (`TASK-042`)
+  - Capo applies an inverse transpose to the chord display only: fret N shows open-position fingering shapes (sounding key minus N semitones via existing `shiftChord` utility); performanceKey and Go Live sync are unaffected
+  - CAGED picker (C/A/G/E/D) is a visual-only performer reference aid; single-select with deselect; no effect on chord content
+  - Both controls are pure React local state — never persisted to Supabase, localStorage, sessionStorage, or any external store
+  - Collapsible panel `max-h-40` increased to `max-h-96` to accommodate the new rows (AM-1)
+  - Module-level `CAPO_FRETS` and `CAGED_SHAPES` arrays for React.memo stability (BUG-019); all brand utilities paired with `dark:` variants (BUG-004)
+  - Affected files: `src/components/SongViewer/ChordSheetClient.tsx`
+
+---
+
+## [Unreleased] — 2026-05-24
+
+### Added
+
 - One-click Section Navigator Deck for the setlist song viewer (`TASK-045`)
   - Floating badge deck: vertical fixed column on desktop (≥768 px, `z-[45]`, right margin, vertically centered); horizontally-scrollable fixed row on mobile (below sticky navbar at `top-16`)
   - Badges derived from `processedLines` `type: "header"` objects via `deriveSections()`; abbreviated per section type (IN, V1/V2, CH, BR, PC, IL, TAG, CODA, OUT; unrecognized → first 3 chars uppercased)
