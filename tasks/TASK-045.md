@@ -304,3 +304,9 @@ CSS-variable arbitrary values auto-switch in dark mode without explicit `dark:` 
   - The mobile deck sits at `top-16` (fixed), which is the same vertical position as the sticky `ServiceNavigator` (`sticky top-16`). The deck has `z-[45]` vs. navigator's `z-40`, so the deck renders on top. This is intentional per the task spec.
   - Section occurrence counting is global across all songs in the setlist (e.g., Verse 1 in Song A and Verse 1 in Song B are counted as V1 and V2 respectively). This matches the "parse order" spec (AC-4).
   - `deriveSections` is exported as a pure module-scope function so `SetlistViewerClient` can call it inside `useMemo` without adding it to deps.
+
+### Post-implementation fixes (2026-05-29)
+
+**AC-19 fix — double-number aria-labels:** `computeAriaLabel` previously used the raw stripped label (e.g., `"Verse 1"`) as the base and appended the occurrence index, producing `"Verse 1 1"`. Fixed by reconstructing the label from `normalizeType()` output → title-case `baseName` + `occurrenceIndex + 1`. Result: `[Verse 1]` → `"Verse 1"`, `[Chorus]` → `"Chorus"`, `[Bridge]` → `"Bridge"`.
+
+**AC-22 fix — IO-absent badges dimmed instead of full opacity:** Two sub-issues: (1) `activeSectionId` was initialized to `sections[0].id` so IO-absent state left first badge highlighted and rest at 0.4 opacity; (2) `renderBadge` tested `section.id === activeSectionId` so `null` never matched. Fixed by: initializing `activeSectionId` to `null` always (IO sets it once it runs); and changing `isActive` to `activeSectionId === null || section.id === activeSectionId` so that `null` state renders all badges at full opacity.
