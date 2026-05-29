@@ -43,6 +43,8 @@ interface SetlistSongSectionProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
+  /** 0-based position of this song in the setlist — used for alternating background. */
+  songIndex?: number;
   /**
    * Callback fired when a chord token is clicked in the chord sheet.
    * Receives the transposed (displayed) chord name as the performer sees it.
@@ -91,6 +93,7 @@ function SetlistSongSection({
   chordFontSize,
   chordBg,
   chordColor,
+  songIndex = 0,
   onChordClick,
   onOffsetChange,
 }: SetlistSongSectionProps) {
@@ -141,10 +144,18 @@ function SetlistSongSection({
     });
   };
 
+  const isEven = songIndex % 2 === 0;
+
   return (
     <section
       id={`song-${junctionId}`}
-      className="scroll-mt-16 lg:scroll-mt-0"
+      className={[
+        "scroll-mt-16 lg:scroll-mt-0",
+        "rounded-xl px-4 py-5",
+        isEven
+          ? "bg-brand-cream dark:bg-brand-espresso/40"
+          : "bg-brand-tan/20 dark:bg-brand-brown/30",
+      ].join(" ")}
       aria-label={title}
     >
       {/* ── Song header ──────────────────────────────────────────────────────── */}
@@ -289,6 +300,7 @@ function SetlistSongSection({
         chordFontSize={chordFontSize}
         chordBg={chordBg}
         chordColor={chordColor}
+        sectionIdPrefix={junctionId}
       />
     </section>
   );

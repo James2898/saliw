@@ -4,7 +4,7 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
-## [Unreleased] — 2026-05-27
+## [Unreleased] — 2026-05-29
 
 ### Added
 
@@ -40,6 +40,21 @@ All notable changes to the Saliw Music Portal are documented here.
 ## [Unreleased] — 2026-05-24
 
 ### Added
+
+- One-click Section Navigator Deck for the setlist song viewer (`TASK-045`)
+  - Floating badge deck: vertical fixed column on desktop (≥768 px, `z-[45]`, right margin, vertically centered); horizontally-scrollable fixed row on mobile (below sticky navbar at `top-16`)
+  - Badges derived from `processedLines` `type: "header"` objects via `deriveSections()`; abbreviated per section type (IN, V1/V2, CH, BR, PC, IL, TAG, CODA, OUT; unrecognized → first 3 chars uppercased)
+  - Repeated-section numbering: each occurrence counted by parse order across all songs (AC-4)
+  - Deck suppressed when fewer than 2 sections detected or when viewer is in edit mode
+  - IntersectionObserver tracks topmost-visible section header; active badge highlighted (full opacity / `bg-[var(--brand-tan)]`); inactive badges at 0.4 opacity
+  - Click-to-scroll: `targetY = el.getBoundingClientRect().top + window.scrollY − navbarHeight − 8`; `behavior: "smooth"`
+  - Auto-scroll interplay: `pause()` on `onPointerDown` (BUG-013); resume via 3-frame stable-scrollY settle-detector, not IO (BUG-015)
+  - Shared auto-scroll instance received as prop from `SetlistViewerClient` — no new `useAutoScroll()` calls (BUG-014)
+  - All fixed-element surfaces use CSS-variable arbitrary values (`bg-[var(--brand-espresso)]`) for automatic dark-mode switching (BUG-004/BUG-021)
+  - SSR-safe: `mounted` guard renders `null` on server and first hydration (AC-16)
+  - Accessibility: `aria-label` on each badge (e.g. `"Verse 1"`); `aria-current="true"` on active badge; IO-absent fallback renders all badges at full opacity (AC-22)
+  - Stable `id="section-{junctionId}-{lineIndex}"` added to each section header span in `ChordSheetClient.tsx` for scroll targeting
+  - Affected files: `src/components/client/SectionNavDeck.tsx` (new), `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`
 
 - Spacebar keyboard shortcut to activate, pause, and resume autoscroll (`TASK-041`)
   - Space when inactive: calls `toggle()` to activate autoscroll and begin scrolling at the current (or default) speed
