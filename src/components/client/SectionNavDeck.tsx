@@ -128,11 +128,19 @@ function computeBadge(label: string, occurrenceIndex: number): string {
 /**
  * Derives the full aria-label for a section from its label and occurrence index.
  * Examples: "Verse 1", "Chorus 2", "Bridge"
+ *
+ * AC-19 fix: reconstruct from the normalized base name + occurrence index rather
+ * than appending to the raw label, which would produce "Verse 1 1" double-numbers.
  */
 function computeAriaLabel(label: string, occurrenceIndex: number): string {
   const normalized = normalizeType(label);
-  const isNumbered = NUMBERED_TYPES.has(normalized) || occurrenceIndex > 0;
-  return isNumbered ? `${label} ${occurrenceIndex + 1}` : label;
+  const isNumbered = NUMBERED_TYPES.has(normalized);
+  if (!isNumbered) return stripBrackets(label);
+  const baseName = normalized
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return `${baseName} ${occurrenceIndex + 1}`;
 }
 
 /**
@@ -257,9 +265,10 @@ export default function SectionNavDeck({
   }, []);
 
   // Active section ID — the section header currently closest to the top of the viewport.
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(
-    sections.length > 0 ? sections[0].id : null
-  );
+  // AC-22: initialize to null so that when IO is absent (activeSectionId stays null),
+  // all badges render at full opacity rather than dimming all-but-first.
+  // When IO runs, it sets a real section id and only the matching badge is highlighted.
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   // rAF id for the settle-detector so we can cancel on unmount or new click.
   const settleRafIdRef = useRef<number | null>(null);
@@ -419,7 +428,9 @@ export default function SectionNavDeck({
   // ── Badge button renderer (extracted to avoid BUG-017 inline arrow wrapping) ─
 
   const renderBadge = (section: SectionTarget) => {
-    const isActive = section.id === activeSectionId;
+    // AC-22: when activeSectionId is null (IO unsupported), treat all badges as
+    // active so they render at full opacity rather than 0.4 dimmed.
+    const isActive = activeSectionId === null || section.id === activeSectionId;
 
     const handlePointerDown = () => {
       // BUG-013: pause on pointerDown so the page is stationary before click fires.
