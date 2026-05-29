@@ -237,10 +237,12 @@ const badgeBtnBase = [
 ].join(" ");
 
 const badgeActiveClass = `${badgeBtnBase} opacity-100 bg-[var(--brand-tan)] text-[var(--brand-espresso)]`;
-// Inactive badges alternate per song: even songs are slightly lighter, odd songs are darker.
-// Both remain visually subordinate (opacity-50/40) so the active highlight always reads first.
-const badgeInactiveEven = `${badgeBtnBase} opacity-50 hover:opacity-80 bg-[var(--brand-brown)]/40 text-[var(--brand-cream)]`;
-const badgeInactiveOdd = `${badgeBtnBase} opacity-40 hover:opacity-70 bg-[var(--brand-espresso)] text-[var(--brand-tan)]`;
+// Inactive badges alternate per song for clear visual grouping.
+// Even songs: cream background + espresso text — high contrast "light" tile.
+// Odd songs:  muted tan text on the panel background — subordinate "dark" tile.
+// Both are dimmer than the active tan highlight so the active badge always reads first.
+const badgeInactiveEven = `${badgeBtnBase} bg-[var(--brand-cream)] text-[var(--brand-espresso)] opacity-75 hover:opacity-100`;
+const badgeInactiveOdd = `${badgeBtnBase} bg-transparent text-[var(--brand-tan)] opacity-50 hover:opacity-80`;
 
 // ── SectionNavDeck ─────────────────────────────────────────────────────────────
 
