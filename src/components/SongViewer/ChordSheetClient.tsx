@@ -145,12 +145,6 @@ interface ChordSheetClientProps {
    * When absent (standalone song viewer), no `id` is emitted.
    */
   sectionIdPrefix?: string;
-  /**
-   * Optional callback fired when the user clicks a chord token in the sheet.
-   * Receives the pre-transposition chord name from data-original-chord.
-   * When undefined, chord clicks are a no-op (no error thrown).
-   */
-  onChordClick?: (chordName: string) => void;
 }
 
 /**
