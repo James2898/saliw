@@ -157,11 +157,11 @@ export function deriveSections(
   }>
 ): SectionTarget[] {
   const targets: SectionTarget[] = [];
-  // Track occurrence count per normalized type across ALL songs in the setlist.
-  const occurrenceCounts: Record<string, number> = {};
 
   for (let songIndex = 0; songIndex < songs.length; songIndex++) {
     const song = songs[songIndex];
+    // Reset counts per song so V1/V2 restart for each song in the setlist.
+    const occurrenceCounts: Record<string, number> = {};
     for (
       let lineIndex = 0;
       lineIndex < song.processedLines.length;
@@ -274,10 +274,11 @@ export default function SectionNavDeck({
   }, []);
 
   // Active section ID — the section header currently closest to the top of the viewport.
-  // AC-22: initialize to null so that when IO is absent (activeSectionId stays null),
-  // all badges render at full opacity rather than dimming all-but-first.
-  // When IO runs, it sets a real section id and only the matching badge is highlighted.
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  // Initialize to the first section so exactly one badge is highlighted on load.
+  // IO will update this as the user scrolls. If IO is unavailable it stays on the first section.
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(
+    () => sections[0]?.id ?? null
+  );
 
   // rAF id for the settle-detector so we can cancel on unmount or new click.
   const settleRafIdRef = useRef<number | null>(null);
@@ -446,9 +447,7 @@ export default function SectionNavDeck({
   // ── Badge button renderer (extracted to avoid BUG-017 inline arrow wrapping) ─
 
   const renderBadge = (section: SectionTarget) => {
-    // AC-22: when activeSectionId is null (IO unsupported), treat all badges as
-    // active so they render at full opacity rather than 0.4 dimmed.
-    const isActive = activeSectionId === null || section.id === activeSectionId;
+    const isActive = section.id === activeSectionId;
     const inactiveClass =
       section.songIndex % 2 === 0 ? badgeInactiveEven : badgeInactiveOdd;
 
