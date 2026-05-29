@@ -282,13 +282,14 @@ export default function SetlistViewerClient({
 
       {/* ── Song sections ──────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-10">
-        {songs.map((song) => {
+        {songs.map((song, songIndex) => {
           const overrideKey = sync.overrideKeys.get(song.junctionId);
           const liveSyncState = sync.songSyncStates.get(song.junctionId);
 
           return (
             <SetlistSongSection
               key={song.junctionId}
+              songIndex={songIndex}
               junctionId={song.junctionId}
               setlistId={song.setlistId}
               title={song.title}

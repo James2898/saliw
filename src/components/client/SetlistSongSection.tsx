@@ -42,6 +42,8 @@ interface SetlistSongSectionProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
+  /** 0-based position of this song in the setlist — used for alternating background. */
+  songIndex?: number;
 }
 
 // Wrap ChordSheetClient in React.memo to prevent re-renders triggered
@@ -78,6 +80,7 @@ function SetlistSongSection({
   chordFontSize,
   chordBg,
   chordColor,
+  songIndex = 0,
 }: SetlistSongSectionProps) {
   // Track the current display key as reported by ChordSheetClient via onKeyChange
   const [currentKey, setCurrentKey] = useState<string>(performanceKey);
@@ -119,10 +122,18 @@ function SetlistSongSection({
     });
   };
 
+  const isEven = songIndex % 2 === 0;
+
   return (
     <section
       id={`song-${junctionId}`}
-      className="scroll-mt-16 lg:scroll-mt-0"
+      className={[
+        "scroll-mt-16 lg:scroll-mt-0",
+        "rounded-xl px-4 py-5",
+        isEven
+          ? "bg-brand-cream dark:bg-brand-espresso/40"
+          : "bg-brand-tan/20 dark:bg-brand-brown/30",
+      ].join(" ")}
       aria-label={title}
     >
       {/* ── Song header ──────────────────────────────────────────────────────── */}
