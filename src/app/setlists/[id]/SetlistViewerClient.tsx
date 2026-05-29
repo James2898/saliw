@@ -10,6 +10,9 @@ import FollowLeaderButton from "@/components/client/FollowLeaderButton";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 import AppendSongsButton from "@/components/client/AppendSongsButton";
 import SetlistSettingsModal from "@/components/client/SetlistSettingsModal";
+import SectionNavDeck, {
+  deriveSections,
+} from "@/components/client/SectionNavDeck";
 import { useSetlistSync } from "@/hooks/useSetlistSync";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useFontSize } from "@/hooks/useFontSize";
@@ -122,10 +125,19 @@ export default function SetlistViewerClient({
 
   const autoScroll = useAutoScroll();
 
+  // ── Section Navigator Deck — derive section targets from processedLines ───────
+  // deriveSections is a pure function at module scope (no closure), so the
+  // useMemo dep is just `songs`. Recomputes only when songs array changes.
+  const navSections = useMemo(() => deriveSections(songs), [songs]);
+
   return (
     <>
       {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
       <AutoScrollToolbar scroll={autoScroll} />
+
+      {/* ── Section Navigator Deck — fixed floating badge column (TASK-045) ──── */}
+      {/* BUG-014: passes shared autoScroll instance, does not call useAutoScroll() */}
+      <SectionNavDeck sections={navSections} autoScroll={autoScroll} />
 
       {/* ── Append Songs FAB — desktop-only, fixed bottom-left (TASK-038 AC-1–7) */}
       {isLeader && (
