@@ -264,6 +264,7 @@ function SetlistSongSection({
         chordFontSize={chordFontSize}
         chordBg={chordBg}
         chordColor={chordColor}
+        sectionIdPrefix={junctionId}
       />
     </section>
   );

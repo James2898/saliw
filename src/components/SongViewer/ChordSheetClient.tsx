@@ -82,6 +82,20 @@ interface ChordSheetClientProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
+  /**
+   * Optional stable prefix for section header `id` attributes.
+   * When provided, each `type: "header"` span receives
+   * `id="{sectionIdPrefix}-{lineIndex}"` so the SectionNavDeck can
+   * target them via `document.getElementById()`.
+   * When absent (standalone song viewer), no `id` is emitted.
+   */
+  sectionIdPrefix?: string;
+  /**
+   * Optional callback fired when the user clicks a chord token in the sheet.
+   * Receives the pre-transposition chord name from data-original-chord.
+   * When undefined, chord clicks are a no-op (no error thrown).
+   */
+  onChordClick?: (chordName: string) => void;
 }
 
 /**
@@ -103,6 +117,7 @@ export default function ChordSheetClient({
   originalKey,
   initialKey,
   onKeyChange,
+  onChordClick,
   externalKey,
   onKeyChangeLive,
   externalChordsHidden,
@@ -114,6 +129,7 @@ export default function ChordSheetClient({
   chordFontSize,
   chordBg,
   chordColor,
+  sectionIdPrefix,
 }: ChordSheetClientProps) {
   const {
     semitoneOffset,
@@ -464,7 +480,15 @@ export default function ChordSheetClient({
 
             if (line.type === "header") {
               return (
-                <span key={lineIndex} className="section-title">
+                <span
+                  key={lineIndex}
+                  id={
+                    sectionIdPrefix
+                      ? `section-${sectionIdPrefix}-${lineIndex}`
+                      : undefined
+                  }
+                  className="section-title"
+                >
                   {line.raw}
                 </span>
               );
