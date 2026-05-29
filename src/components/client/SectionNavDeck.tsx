@@ -14,6 +14,8 @@ export interface SectionTarget {
   badge: string;
   /** Full accessible label (e.g. "Verse 1"). */
   ariaLabel: string;
+  /** 0-based index of the song this section belongs to — used for inactive badge color alternation. */
+  songIndex: number;
 }
 
 interface SectionNavDeckProps {
@@ -158,7 +160,8 @@ export function deriveSections(
   // Track occurrence count per normalized type across ALL songs in the setlist.
   const occurrenceCounts: Record<string, number> = {};
 
-  for (const song of songs) {
+  for (let songIndex = 0; songIndex < songs.length; songIndex++) {
+    const song = songs[songIndex];
     for (
       let lineIndex = 0;
       lineIndex < song.processedLines.length;
@@ -177,6 +180,7 @@ export function deriveSections(
         label: line.raw,
         badge: computeBadge(label, occurrenceIndex),
         ariaLabel: computeAriaLabel(label, occurrenceIndex),
+        songIndex,
       });
     }
   }
@@ -233,7 +237,10 @@ const badgeBtnBase = [
 ].join(" ");
 
 const badgeActiveClass = `${badgeBtnBase} opacity-100 bg-[var(--brand-tan)] text-[var(--brand-espresso)]`;
-const badgeInactiveClass = `${badgeBtnBase} opacity-40 hover:opacity-70 text-[var(--brand-cream)]`;
+// Inactive badges alternate per song: even songs are slightly lighter, odd songs are darker.
+// Both remain visually subordinate (opacity-50/40) so the active highlight always reads first.
+const badgeInactiveEven = `${badgeBtnBase} opacity-50 hover:opacity-80 bg-[var(--brand-brown)]/40 text-[var(--brand-cream)]`;
+const badgeInactiveOdd = `${badgeBtnBase} opacity-40 hover:opacity-70 bg-[var(--brand-espresso)] text-[var(--brand-tan)]`;
 
 // ── SectionNavDeck ─────────────────────────────────────────────────────────────
 
@@ -440,6 +447,8 @@ export default function SectionNavDeck({
     // AC-22: when activeSectionId is null (IO unsupported), treat all badges as
     // active so they render at full opacity rather than 0.4 dimmed.
     const isActive = activeSectionId === null || section.id === activeSectionId;
+    const inactiveClass =
+      section.songIndex % 2 === 0 ? badgeInactiveEven : badgeInactiveOdd;
 
     const handlePointerDown = () => {
       // BUG-013: pause on pointerDown so the page is stationary before click fires.
@@ -458,7 +467,7 @@ export default function SectionNavDeck({
         onClick={handleClick}
         aria-label={section.ariaLabel}
         aria-current={isActive ? "true" : undefined}
-        className={isActive ? badgeActiveClass : badgeInactiveClass}
+        className={isActive ? badgeActiveClass : inactiveClass}
       >
         {section.badge}
       </button>
