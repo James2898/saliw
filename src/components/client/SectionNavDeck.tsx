@@ -387,14 +387,23 @@ export default function SectionNavDeck({
       const el = document.getElementById(sectionId);
       if (!el) return; // AC-21: no-op if target missing
 
-      // Measure navbar height at scroll time (AC-8).
+      // Measure total sticky header height at scroll time (AC-8).
+      // Accounts for: main navbar (top-16 = 64px) + ServiceNavigator song selector bar.
       const navbar =
         document.querySelector<HTMLElement>("[data-navbar]") ??
         document.querySelector<HTMLElement>("nav");
       const navbarHeight = navbar?.offsetHeight ?? 64;
+      const songBar = document.querySelector<HTMLElement>(
+        '[aria-label="Setlist song navigator"]'
+      );
+      const songBarHeight = songBar?.offsetHeight ?? 0;
 
       const targetY =
-        el.getBoundingClientRect().top + window.scrollY - navbarHeight - 8;
+        el.getBoundingClientRect().top +
+        window.scrollY -
+        navbarHeight -
+        songBarHeight -
+        8;
 
       window.scrollTo({ top: targetY, behavior: "smooth" });
 
