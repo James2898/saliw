@@ -4,6 +4,23 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-05-30
+
+### Added
+
+- Worship leader selector and musician lineup fields on the `/setlists/new` creation form (`TASK-046`)
+  - New `SetlistPeopleLocalSection` controlled component (CREATE mode only; zero Server Action imports; callback props only; mirrors `SetlistPeopleSection` class constants)
+  - Worship leader select (populated from `allMusicians`; defaults to neutral "— None —"; no DB write until Save)
+  - Musician lineup: musician select + instrument input + Add button; appends `PendingLineupEntry` locally; each entry shows name, instrument, and Remove; empty state "No musicians added yet."
+  - Add button disabled when instrument is empty/whitespace or no musician selected or roster is empty (AC-13/14/16); duplicate musician allowed (AC-20)
+  - On Save (CREATE branch): `createSetlist` → `setSetlistWorshipLeader` (if selected) → `addSetlistMusician` loop → `router.push(/setlists/${newId})`; save button disabled with loading indicator for entire sequence
+  - Error paths halt at each step: worship leader failure stops before lineup write; lineup failure shown with user-friendly message; raw Supabase errors never surfaced
+  - `listMusicians()` result mapped to `{ id, name }` only — `notes` excluded (BUG-011); lazy `useState` initializers (BUG-001); handlers declared before JSX (BUG-007); BUG-008 separate error checks in people flush; all new brand utilities carry `dark:` pairs (BUG-004); no `bg-[var(--brand-card-bg)]` (BUG-021)
+  - Visible only to `music_director` users (`isMusicDirector` derived server-side in `new/page.tsx` via `profiles.role`); not rendered in EDIT mode
+  - Affected files: `src/app/setlists/new/page.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/components/client/SetlistBuilder/SetlistPeopleLocalSection.tsx` (new)
+
+---
+
 ## [Unreleased] — 2026-05-29
 
 ### Added
