@@ -58,7 +58,7 @@ export default function SongYouTubeSection({
   };
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 mb-4">
       {youtubeUrl ? (
         /* ── YouTube link present: show toggle + optional edit button ───────── */
         <>
