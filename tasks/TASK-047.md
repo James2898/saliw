@@ -211,3 +211,7 @@ N/A — no API contract required for this task. `youtube_url` is a simple text f
   - The autoscroll CSS-hide (AC-23–27) uses `invisible pointer-events-none` on the wrapper div, which uses `visibility: hidden` semantics and preserves the `<iframe>` DOM node so in-progress audio continues.
   - Empty-state placeholder text uses `text-brand-espresso/50 dark:text-brand-cream/40` which is WCAG-compliant against the card background (avoiding the low-contrast `--brand-tan` on `--brand-cream` pair per AC-22).
   - `normaliseYouTubeUrl` is exported from `YouTubeLinkModal.tsx` and imported by both `SongEditorClient` and `NewSongFormClient` to avoid duplicating the normalization logic.
+
+### AC-10 Fix (2026-05-30) — Transient "Saved!" Indicator
+
+Previously the modal closed silently with no user feedback. Fixed by adding a `saveSuccess` boolean state to both `SongYouTubeSection.tsx` and `SetlistSongSection.tsx`. In each component's `handleYtSaveSuccess` callback, `setSaveSuccess(true)` fires immediately after the optimistic URL update, then `setTimeout(() => setSaveSuccess(false), 2000)` auto-clears after 2 s. A `<span aria-live="polite">Saved!</span>` with `text-green-700 dark:text-green-400` renders conditionally adjacent to each trigger button. The `isMusicDirector` branch (Add button) was wrapped in `<>...</>` fragment to allow the sibling indicator. No changes to `YouTubeLinkModal.tsx`.
