@@ -158,6 +158,13 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
           </div>
         </div>
 
+        {/* ── YouTube section — embed toggle, add/edit (music_director), empty state ── */}
+        <SongYouTubeSection
+          songId={id}
+          initialYoutubeUrl={song.youtube_url ?? null}
+          isMusicDirector={isMusicDirector}
+        />
+
         {/* ── Chord sheet — Client island ───────────────────────────────────── */}
         <Card padding="lg">
           <ChordSheetClient
@@ -165,13 +172,6 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
             originalKey={song.original_key}
           />
         </Card>
-
-        {/* ── YouTube section — embed toggle, add/edit (music_director), empty state ── */}
-        <SongYouTubeSection
-          songId={id}
-          initialYoutubeUrl={song.youtube_url ?? null}
-          isMusicDirector={isMusicDirector}
-        />
       </div>
     </main>
   );
