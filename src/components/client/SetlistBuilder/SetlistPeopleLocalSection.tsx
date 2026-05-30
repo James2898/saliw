@@ -31,7 +31,7 @@ interface SetlistPeopleLocalSectionProps {
 // ── Class constants — mirror SetlistPeopleSection (BUG-004: dark: pairs kept) ─
 
 const selectClass =
-  "text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso";
+  "text-sm font-medium px-4 py-2.5 rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso";
 
 const inputClass = [
   "w-full rounded-xl border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso",
