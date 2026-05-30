@@ -11,12 +11,17 @@ import {
   createSetlist,
   updateSetlist,
   cloneSetlist,
+  setSetlistWorshipLeader,
+  addSetlistMusician,
 } from "@/app/actions/setlistActions";
 import Button from "@/components/client/button";
 import ErrorBanner from "./ErrorBanner";
 import SetlistPanel from "./SetlistPanel";
 import LibraryPanel from "./LibraryPanel";
 import CloneSetlistDialog from "./CloneSetlistDialog";
+import SetlistPeopleLocalSection, {
+  type PendingLineupEntry,
+} from "./SetlistPeopleLocalSection";
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
@@ -39,6 +44,12 @@ export interface SongLibraryItem {
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
+// Minimal musician shape passed to create form — notes excluded (BUG-011)
+export interface MusicianOption {
+  id: string;
+  name: string;
+}
+
 export interface SetlistBuilderClientProps {
   setlistId: string | null; // null = create mode
   setlistName: string; // empty string in create mode
@@ -47,6 +58,8 @@ export interface SetlistBuilderClientProps {
   libraryError?: string | null;
   initialDate?: string; // empty string in create mode
   initialIsPublic?: boolean;
+  allMusicians?: MusicianOption[]; // CREATE mode only — empty in edit mode
+  isMusicDirector?: boolean; // derived server-side; false = hide people section
 }
 
 // ── Pure helper ────────────────────────────────────────────────────────────────
@@ -72,6 +85,8 @@ export default function SetlistBuilderClient({
   libraryError,
   initialDate,
   initialIsPublic = false,
+  allMusicians = [],
+  isMusicDirector = false,
 }: SetlistBuilderClientProps) {
   const router = useRouter();
 
@@ -87,6 +102,14 @@ export default function SetlistBuilderClient({
   const [query, setQuery] = useState("");
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
+
+  // CREATE mode — pending people assignment (flushed to DB in handleSave after createSetlist)
+  const [pendingWorshipLeaderId, setPendingWorshipLeaderId] = useState<
+    string | null
+  >(() => null);
+  const [pendingLineup, setPendingLineup] = useState<PendingLineupEntry[]>(
+    () => []
+  );
 
   // Dirty: compare local vs initial (name, date, isPublic, songs)
   const isDirty =
@@ -131,6 +154,16 @@ export default function SetlistBuilderClient({
 
   function handleReorder(newSongs: SortableSong[]) {
     setLocalSongs(newSongs);
+  }
+
+  // ── Pending people handlers (CREATE mode) — declared before handleSave (BUG-007) ──
+
+  function handlePendingWorshipLeaderChange(id: string | null) {
+    setPendingWorshipLeaderId(id);
+  }
+
+  function handlePendingLineupChange(lineup: PendingLineupEntry[]) {
+    setPendingLineup(lineup);
   }
 
   async function handleSave() {
@@ -186,6 +219,34 @@ export default function SetlistBuilderClient({
               performance_key: song.performanceKey,
             });
             if (keyErr) throw new Error(keyErr);
+          }
+        }
+
+        // ── Flush pending people (CREATE mode only) ──────────────────────────
+        // Worship leader — only if selected (BUG-008: separate error check)
+        if (pendingWorshipLeaderId !== null) {
+          const { error: wlError } = await setSetlistWorshipLeader({
+            setlist_id: newId,
+            worship_leader_id: pendingWorshipLeaderId,
+          });
+          if (wlError) {
+            throw new Error(
+              "Setlist created, but worship leader could not be saved."
+            );
+          }
+        }
+
+        // Lineup — loop; stop on first failure (BUG-008: separate error check)
+        for (const entry of pendingLineup) {
+          const { error: musicianError } = await addSetlistMusician({
+            setlist_id: newId,
+            musician_id: entry.musician_id,
+            instrument: entry.instrument,
+          });
+          if (musicianError) {
+            throw new Error(
+              "Setlist created, but one or more musicians could not be saved."
+            );
           }
         }
 
@@ -375,6 +436,18 @@ export default function SetlistBuilderClient({
           </button>
         </div>
       </div>
+
+      {/* People section — CREATE mode only, MD only (AC-1, AC-2, AC-3, AC-4) */}
+      {setlistId === null && isMusicDirector && (
+        <SetlistPeopleLocalSection
+          allMusicians={allMusicians}
+          worshipLeaderId={pendingWorshipLeaderId}
+          lineup={pendingLineup}
+          onWorshipLeaderChange={handlePendingWorshipLeaderChange}
+          onLineupChange={handlePendingLineupChange}
+          isMusicDirector={isMusicDirector}
+        />
+      )}
 
       {/* Error banner */}
       {error && (
