@@ -4,6 +4,7 @@ import { createClient } from "@/services/supabase/server";
 import { preProcessChords } from "@/utils/musicLogic";
 import Card from "@/components/server/card";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
+import SongYouTubeSection from "@/components/client/SongYouTubeSection";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
   // ── Fetch song ──────────────────────────────────────────────────────────────
   const songResult = await supabase
     .from("songs")
-    .select("id, title, artist, original_key, content")
+    .select("id, title, artist, original_key, content, youtube_url")
     .eq("id", id)
     .single();
 
@@ -156,6 +157,13 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
             </span>
           </div>
         </div>
+
+        {/* ── YouTube section — embed toggle, add/edit (music_director), empty state ── */}
+        <SongYouTubeSection
+          songId={id}
+          initialYoutubeUrl={song.youtube_url ?? null}
+          isMusicDirector={isMusicDirector}
+        />
 
         {/* ── Chord sheet — Client island ───────────────────────────────────── */}
         <Card padding="lg">

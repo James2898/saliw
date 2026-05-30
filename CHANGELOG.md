@@ -8,6 +8,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added
 
+- YouTube link attachment and collapsible embed player for library songs (`TASK-047`)
+  - New nullable `youtube_url` column on `songs` table via Supabase migration; RLS restricts writes to `music_director` role, reads remain public
+  - URL normalisation accepts watch (`/watch?v=`), shortlink (`youtu.be/`), and embed formats; all canonicalised to `https://www.youtube.com/embed/<ID>` before persisting; blank submission clears the field
+  - `YouTubeLinkModal` — shared add/edit modal with inline URL validation error, server-action error display, and focus trap; modal pre-filled with current URL on reopen
+  - `SongYouTubeSection` (song viewer) and `SetlistSongSection` (setlist viewer) both implement: optimistic URL state update on save, 2-second transient "Saved!" indicator with `aria-live="polite"`, embed toggle button (Show/Hide video), responsive 16:9 `<iframe>`, and neutral "No video available" placeholder for non-directors
+  - Embed collapse uses CSS `display:none` (not React unmounting) preserving the `<iframe>` DOM node; `<iframe>` hidden but not destroyed when auto-scroll is active (`visibility: hidden / pointer-events-none`) so in-progress audio continues
+  - Add/edit trigger server-side role-guarded (`isMusicDirector` derived in Server Component); Server Action enforces `music_director` via RLS as defence-in-depth
+  - All new UI elements carry explicit `dark:` Tailwind variant classes; named Artisan brand utilities used throughout (no `bg-[var(--brand-card-bg)]`, BUG-021)
+  - Affected files: `src/app/actions/songActions.ts`, `src/components/client/YouTubeLinkModal.tsx` (new), `src/components/client/SongYouTubeSection.tsx` (new), `src/components/client/SetlistSongSection.tsx`, `src/app/library/[id]/page.tsx`, `supabase/migrations/YYYYMMDD_add_youtube_url_to_songs.sql` (new)
+
 - Worship leader selector and musician lineup fields on the `/setlists/new` creation form (`TASK-046`)
   - New `SetlistPeopleLocalSection` controlled component (CREATE mode only; zero Server Action imports; callback props only; mirrors `SetlistPeopleSection` class constants)
   - Worship leader select (populated from `allMusicians`; defaults to neutral "— None —"; no DB write until Save)
