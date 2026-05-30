@@ -4,6 +4,15 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-05-30
+
+### Changed
+
+- Post-create redirect in New Setlist form now lands on the edit page (`TASK-046`)
+  - After `createSetlist` succeeds, `router.push` navigates to `/setlists/{id}/edit` instead of `/setlists/{id}`, so a music director can immediately assign a worship leader and lineup without an extra navigation step
+  - Non-music-directors reaching `/setlists/{id}/edit` are redirected to the view page by the existing role guard — no change to guard logic
+  - Affected files: `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`
+
 ## [Unreleased] — 2026-05-24
 
 ### Added
