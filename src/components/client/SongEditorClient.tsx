@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { preProcessChords, NOTES } from "@/utils/musicLogic";
 import { updateSong } from "@/app/actions/songActions";
+import { normaliseYouTubeUrl } from "@/components/client/YouTubeLinkModal";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
 import type { Song } from "@/types/Song";
 
@@ -57,13 +58,20 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   const [artist, setArtist] = useState(() => song.artist);
   const [savedArtist, setSavedArtist] = useState(() => song.artist);
 
-  // isDirty: true if content, singer, original key, title, or artist diverge from last saved state
+  // ── YouTube URL state — lazy initializer avoids setState-in-effect (BUG-001) ──
+  const [youtubeUrl, setYoutubeUrl] = useState(() => song.youtube_url ?? "");
+  const [savedYoutubeUrl, setSavedYoutubeUrl] = useState(
+    () => song.youtube_url ?? ""
+  );
+
+  // isDirty: true if content, singer, original key, title, artist, or youtube_url diverge from last saved state
   const isDirty =
     currentContent !== savedBaseline ||
     singer !== savedSinger ||
     originalKey !== savedOriginalKey ||
     title !== savedTitle ||
-    artist !== savedArtist;
+    artist !== savedArtist ||
+    youtubeUrl !== savedYoutubeUrl;
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>("edit");
@@ -148,6 +156,20 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     setSaveError(null);
     setSaveSuccess(false);
 
+    // Normalise youtube_url before saving (AC-4/5/6)
+    let normalisedYoutubeUrl: string | null = null;
+    let youtubeUrlChanged = false;
+    if (youtubeUrl !== savedYoutubeUrl) {
+      const normalised = normaliseYouTubeUrl(youtubeUrl);
+      if (!normalised.ok) {
+        setIsSaving(false);
+        setSaveError(normalised.error);
+        return;
+      }
+      normalisedYoutubeUrl = normalised.embedUrl ?? null;
+      youtubeUrlChanged = true;
+    }
+
     const result = await updateSong({
       id: song.id,
       title,
@@ -155,6 +177,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       original_key: originalKey,
       content: currentContent,
       singer: singer || undefined,
+      ...(youtubeUrlChanged ? { youtube_url: normalisedYoutubeUrl } : {}),
     });
 
     setIsSaving(false);
@@ -167,6 +190,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       setSavedOriginalKey(originalKey);
       setSavedTitle(title);
       setSavedArtist(artist);
+      setSavedYoutubeUrl(youtubeUrl);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     }
@@ -290,6 +314,27 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* YouTube URL — spans full width on sm+ (sm:col-span-2) */}
+        <div className="sm:col-span-2">
+          <label htmlFor="editor-youtube-url" className={labelClass}>
+            YouTube URL
+          </label>
+          <input
+            id="editor-youtube-url"
+            type="url"
+            value={youtubeUrl}
+            onChange={(e) => {
+              setYoutubeUrl(e.target.value);
+              if (saveError) setSaveError(null);
+            }}
+            placeholder="https://www.youtube.com/watch?v=... (optional)"
+            className={inputBaseClass}
+          />
+          <p className="mt-1 text-xs text-brand-brown/60 dark:text-brand-tan/60">
+            Leave blank to remove. Saved as a canonical embed URL.
+          </p>
         </div>
       </div>
 

@@ -34,6 +34,8 @@ interface ClientSong {
   originalKey: string;
   processedLines: ProcessedLine[];
   performanceKey: string;
+  /** YouTube embed URL stored on the library song (null if not set). */
+  youtubeUrl: string | null;
 }
 
 interface NavigatorSong {
@@ -47,6 +49,7 @@ interface SetlistViewerClientProps {
   setlistId: string;
   isLeader: boolean;
   isAuthenticated: boolean;
+  isMusicDirector: boolean;
   setlistName: string;
   formattedDate: string | null;
   worshipLeaderName: string | null;
@@ -70,6 +73,7 @@ export default function SetlistViewerClient({
   setlistId,
   isLeader,
   isAuthenticated,
+  isMusicDirector,
   setlistName,
   formattedDate,
   worshipLeaderName,
@@ -374,6 +378,7 @@ export default function SetlistViewerClient({
               key={song.junctionId}
               songIndex={songIndex}
               junctionId={song.junctionId}
+              songId={song.songId}
               setlistId={song.setlistId}
               title={song.title}
               artist={song.artist}
@@ -381,6 +386,8 @@ export default function SetlistViewerClient({
               processedLines={song.processedLines}
               performanceKey={song.performanceKey}
               isLeader={isLeader}
+              youtubeUrl={song.youtubeUrl}
+              isMusicDirector={isMusicDirector}
               overrideKey={overrideKey}
               onKeyChangeLive={
                 isLeader && sync.isLive ? sync.notifyKeyChange : undefined

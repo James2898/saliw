@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { NOTES } from "@/utils/musicLogic";
 import { createSong } from "@/app/actions/songActions";
+import { normaliseYouTubeUrl } from "@/components/client/YouTubeLinkModal";
 
 const inputBaseClass = [
   "w-full px-3 py-2 rounded-xl",
@@ -35,6 +36,7 @@ export default function NewSongFormClient() {
   const [artist, setArtist] = useState("");
   const [originalKey, setOriginalKey] = useState<string>(NOTES[0] as string);
   const [singer, setSinger] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,12 +47,25 @@ export default function NewSongFormClient() {
     setIsSaving(true);
 
     try {
+      // Normalise youtube_url before saving (AC-4/5/6)
+      let normalisedYoutubeUrl: string | null = null;
+      if (youtubeUrl.trim() !== "") {
+        const normalised = normaliseYouTubeUrl(youtubeUrl);
+        if (!normalised.ok) {
+          setError(normalised.error);
+          setIsSaving(false);
+          return;
+        }
+        normalisedYoutubeUrl = normalised.embedUrl ?? null;
+      }
+
       const result = await createSong({
         title: title.trim(),
         artist: artist.trim(),
         original_key: originalKey,
         content,
         singer: singer.trim() || undefined,
+        youtube_url: normalisedYoutubeUrl,
       });
 
       if (result.error) {
@@ -125,6 +140,27 @@ export default function NewSongFormClient() {
             placeholder="Vocalist name"
             className={inputBaseClass}
           />
+        </div>
+
+        {/* ── YouTube URL ────────────────────────────────────────────────────── */}
+        <div>
+          <label htmlFor="song-youtube-url" className={labelClass}>
+            YouTube URL
+          </label>
+          <input
+            id="song-youtube-url"
+            type="url"
+            value={youtubeUrl}
+            onChange={(e) => {
+              setYoutubeUrl(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="https://www.youtube.com/watch?v=... (optional)"
+            className={inputBaseClass}
+          />
+          <p className="mt-1 text-xs text-brand-brown/60 dark:text-brand-tan/60">
+            Optional. Saved as a canonical embed URL.
+          </p>
         </div>
 
         {/* ── Original Key ───────────────────────────────────────────────────── */}

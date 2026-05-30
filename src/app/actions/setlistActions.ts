@@ -447,6 +447,7 @@ export async function getSetlistWithSongs(input: {
       artist: string;
       original_key: string;
       content: string;
+      youtube_url: string | null;
     };
   }> | null;
   error: string | null;
@@ -457,7 +458,7 @@ export async function getSetlistWithSongs(input: {
     const { data, error } = await supabase
       .from("setlist_songs")
       .select(
-        "id, song_id, order_index, performance_key, songs(id, title, artist, original_key, content)"
+        "id, song_id, order_index, performance_key, songs(id, title, artist, original_key, content, youtube_url)"
       )
       .eq("setlist_id", input.setlist_id)
       .order("order_index", { ascending: true });
@@ -481,6 +482,7 @@ export async function getSetlistWithSongs(input: {
           artist: string;
           original_key: string;
           content: string;
+          youtube_url: string | null;
         };
       }>,
       error: null,
