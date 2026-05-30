@@ -18,6 +18,7 @@ export type DbSong = {
   content: string;
   created_by: string | null;
   singer: string | null;
+  youtube_url: string | null;
   created_at: string;
   updated_at: string;
 };

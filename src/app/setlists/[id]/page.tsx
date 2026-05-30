@@ -224,6 +224,7 @@ export default async function SetlistViewerPage({
     originalKey: entry.songs.original_key,
     performanceKey: entry.performance_key,
     processedLines: preProcessChords(entry.songs.content),
+    youtubeUrl: entry.songs.youtube_url ?? null,
   }));
 
   // ── Navigator song list ─────────────────────────────────────────────────────
@@ -278,6 +279,7 @@ export default async function SetlistViewerPage({
                 setlistId={id}
                 isLeader={isLeader}
                 isAuthenticated={isAuthenticated}
+                isMusicDirector={isMusicDirector}
                 setlistName={setlist.name}
                 formattedDate={formattedDate}
                 worshipLeaderName={worshipLeaderName}
@@ -297,6 +299,7 @@ export default async function SetlistViewerPage({
               setlistId={id}
               isLeader={isLeader}
               isAuthenticated={isAuthenticated}
+              isMusicDirector={isMusicDirector}
               setlistName={setlist.name}
               formattedDate={formattedDate}
               worshipLeaderName={worshipLeaderName}
