@@ -30,6 +30,7 @@ export async function createSong(input: {
   original_key: string;
   content: string;
   singer?: string;
+  youtube_url?: string | null;
 }): Promise<{ data: DbSong | null; error: string | null }> {
   try {
     const supabase = await createClient();
@@ -67,8 +68,11 @@ export async function createSong(input: {
         content: input.content,
         created_by: user.id,
         singer: input.singer ?? null,
+        youtube_url: input.youtube_url ?? null,
       })
-      .select("id, title, artist, original_key, content, created_by, singer")
+      .select(
+        "id, title, artist, original_key, content, created_by, singer, youtube_url"
+      )
       .single();
 
     if (error) {
@@ -106,6 +110,7 @@ export async function updateSong(input: {
   original_key?: string;
   content?: string;
   singer?: string;
+  youtube_url?: string | null;
 }): Promise<{ data: DbSong | null; error: string | null }> {
   try {
     const supabase = await createClient();
@@ -143,7 +148,9 @@ export async function updateSong(input: {
       .from("songs")
       .update(updatePayload)
       .eq("id", id)
-      .select("id, title, artist, original_key, content, created_by, singer")
+      .select(
+        "id, title, artist, original_key, content, created_by, singer, youtube_url"
+      )
       .single();
 
     if (error) {
@@ -151,6 +158,13 @@ export async function updateSong(input: {
         return {
           data: null,
           error: "You do not have permission to perform this action.",
+        };
+      }
+      if (error.code === "23502") {
+        // PostgreSQL NOT NULL violation — column cannot be set to null
+        return {
+          data: null,
+          error: "Unable to update song: a required field is missing.",
         };
       }
       if (error.code === "PGRST116") {

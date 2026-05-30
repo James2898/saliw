@@ -13,4 +13,5 @@ export type Song = {
   original_key: string;
   content: string;
   singer?: string;
+  youtube_url?: string | null;
 };
