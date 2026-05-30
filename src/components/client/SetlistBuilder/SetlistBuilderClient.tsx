@@ -189,7 +189,7 @@ export default function SetlistBuilderClient({
           }
         }
 
-        router.push(`/setlists/${newId}`);
+        router.push(`/setlists/${newId}/edit`);
       } else {
         // ── EDIT MODE ─────────────────────────────────────────────────────────
 
