@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/services/supabase/server";
 import { getAllSongs } from "@/app/actions/songActions";
+import { listMusicians } from "@/app/actions/musicianActions";
 import Card from "@/components/server/card";
 import SetlistBuilderClient from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 import type { SongLibraryItem } from "@/components/client/SetlistBuilder/SetlistBuilderClient";
@@ -42,14 +43,21 @@ export default async function NewSetlistPage() {
     redirect("/setlists");
   }
 
-  // ── Fetch all songs for the library panel ──────────────────────────────────
-  const { data: allSongsRaw, error: libraryError } = await getAllSongs();
+  // ── Parallel fetch: all songs + musicians ──────────────────────────────────
+  const [{ data: allSongsRaw, error: libraryError }, { data: musiciansRaw }] =
+    await Promise.all([getAllSongs(), listMusicians()]);
 
   const allSongs: SongLibraryItem[] = (allSongsRaw ?? []).map((s) => ({
     id: s.id,
     title: s.title,
     artist: s.artist,
     original_key: s.original_key,
+  }));
+
+  // Map musicians to { id, name } only — notes excluded (BUG-011 guard)
+  const allMusicians = (musiciansRaw ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
   }));
 
   const backLinkClass = [
@@ -88,6 +96,8 @@ export default async function NewSetlistPage() {
             allSongs={allSongs}
             libraryError={libraryError}
             initialDate=""
+            allMusicians={allMusicians}
+            isMusicDirector={isMusicDirector}
           />
         </Card>
       </div>
