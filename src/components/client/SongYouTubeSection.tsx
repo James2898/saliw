@@ -39,6 +39,8 @@ export default function SongYouTubeSection({
   const [isYtModalOpen, setIsYtModalOpen] = useState(false);
   // Ref for the "Add/Edit YouTube link" trigger button — focus returns here on modal close
   const ytTriggerRef = useRef<HTMLButtonElement>(null);
+  // Transient success indicator (AC-10)
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleYtModalOpen = () => setIsYtModalOpen(true);
   const handleYtModalClose = () => setIsYtModalOpen(false);
@@ -46,6 +48,8 @@ export default function SongYouTubeSection({
   // Optimistic update: update local URL state immediately on save success (AC-10)
   const handleYtSaveSuccess = (newUrl: string | null) => {
     setYoutubeUrl(newUrl);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
     if (newUrl) {
       setIsEmbedOpen(true);
     } else {
@@ -111,6 +115,16 @@ export default function SongYouTubeSection({
                 Edit YouTube link
               </button>
             )}
+
+            {/* Transient save success indicator (AC-10) */}
+            {saveSuccess && (
+              <span
+                className="text-xs font-medium text-green-700 dark:text-green-400"
+                aria-live="polite"
+              >
+                Saved!
+              </span>
+            )}
           </div>
 
           {/*
@@ -136,36 +150,48 @@ export default function SongYouTubeSection({
         </>
       ) : isMusicDirector ? (
         /* ── No YouTube link, viewer is music_director: show Add button (AC-7) ── */
-        <button
-          ref={ytTriggerRef}
-          type="button"
-          onClick={handleYtModalOpen}
-          className={[
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-            "text-xs font-semibold",
-            "border transition-colors duration-200",
-            "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30",
-            "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
-          ].join(" ")}
-        >
-          {/* Plus icon */}
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        <>
+          <button
+            ref={ytTriggerRef}
+            type="button"
+            onClick={handleYtModalOpen}
+            className={[
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+              "text-xs font-semibold",
+              "border transition-colors duration-200",
+              "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30",
+              "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+            ].join(" ")}
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add YouTube link
-        </button>
+            {/* Plus icon */}
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add YouTube link
+          </button>
+
+          {/* Transient save success indicator (AC-10) */}
+          {saveSuccess && (
+            <span
+              className="ml-2 text-xs font-medium text-green-700 dark:text-green-400"
+              aria-live="polite"
+            >
+              Saved!
+            </span>
+          )}
+        </>
       ) : (
         /* ── No YouTube link, viewer is not music_director: neutral placeholder (AC-21/22) ── */
         <p className="text-xs text-brand-espresso/50 dark:text-brand-cream/40">
