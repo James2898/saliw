@@ -48,7 +48,7 @@ export default async function SetlistsPage({
   // ── Resolve search params ───────────────────────────────────────────────────
   const params = await searchParams;
   // Strip PostgREST filter metacharacters to prevent filter-clause injection
-  const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%]/g, "");
+  const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%_]/g, "");
 
   // Sanitize letter param — accept only a single uppercase A–Z letter
   const rawLetter = params.letter?.trim().toUpperCase() ?? "";
@@ -92,38 +92,103 @@ export default async function SetlistsPage({
   let count: number | null = null;
 
   try {
-    let query = supabase
-      .from("setlists")
-      .select(
-        "id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))",
-        {
-          count: "exact",
-          head: false,
-        }
-      )
-      .order("date", { ascending: false });
+    const offset = (requestedPage - 1) * pageSize;
 
     if (q) {
-      query = query.ilike("name", `%${q}%`);
-    }
+      // ── Two-query union: OR-match setlist name OR any contained song title ──
+      // createClient() is session-aware (cookies-based) — RLS correctly gates private setlist rows for unauthenticated users
 
-    // Letter filter: prefix match on name column (AC-16), AND-composed with q filter (AC-7)
-    if (letter) {
-      query = query.ilike("name", `${letter}%`);
-    }
+      // Arm 1: setlists whose name matches q
+      const { data: nameMatches } = await supabase
+        .from("setlists")
+        .select("id")
+        .ilike("name", `%${q}%`);
 
-    const offset = (requestedPage - 1) * pageSize;
-    const {
-      data,
-      error,
-      count: rowCount,
-    } = await query.range(offset, offset + pageSize - 1);
+      // Arm 2: setlists that contain at least one song whose title matches q
+      const { data: matchingSongs } = await supabase
+        .from("songs")
+        .select("id")
+        .ilike("title", `%${q}%`)
+        .limit(500);
 
-    if (error) {
-      fetchError = true;
+      const matchingSongIds = (matchingSongs ?? []).map((s) => s.id);
+
+      let songMatchSetlistIds: string[] = [];
+      if (matchingSongIds.length > 0) {
+        const { data: junctionRows } = await supabase
+          .from("setlist_songs")
+          .select("setlist_id")
+          .in("song_id", matchingSongIds);
+        songMatchSetlistIds = (junctionRows ?? []).map((r) => r.setlist_id);
+      }
+
+      // Union and deduplicate (AC-3)
+      const nameMatchIds = (nameMatches ?? []).map((r) => r.id);
+      const unionIds = [...new Set([...nameMatchIds, ...songMatchSetlistIds])];
+
+      if (unionIds.length === 0) {
+        // No matches in either arm — skip final fetch
+        setlists = [];
+        count = 0;
+      } else {
+        // Final fetch with full select, applying letter filter (AC-7) and pagination
+        let finalQuery = supabase
+          .from("setlists")
+          .select(
+            "id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))",
+            { count: "exact", head: false }
+          )
+          .in("id", unionIds)
+          .order("date", { ascending: false });
+
+        // Letter filter: prefix match on name column only (AC-7), AND-composed with union
+        if (letter) {
+          finalQuery = finalQuery.ilike("name", `${letter}%`);
+        }
+
+        const {
+          data,
+          error,
+          count: rowCount,
+        } = await finalQuery.range(offset, offset + pageSize - 1);
+
+        if (error) {
+          fetchError = true;
+        } else {
+          setlists = (data ?? []) as unknown as SetlistRow[];
+          count = rowCount;
+        }
+      }
     } else {
-      setlists = (data ?? []) as unknown as SetlistRow[];
-      count = rowCount;
+      // ── No search query: single-query path (unchanged) ─────────────────────
+      let query = supabase
+        .from("setlists")
+        .select(
+          "id, name, date, leader_id, is_public, setlist_songs(order_index, songs(title))",
+          {
+            count: "exact",
+            head: false,
+          }
+        )
+        .order("date", { ascending: false });
+
+      // Letter filter: prefix match on name column (AC-7)
+      if (letter) {
+        query = query.ilike("name", `${letter}%`);
+      }
+
+      const {
+        data,
+        error,
+        count: rowCount,
+      } = await query.range(offset, offset + pageSize - 1);
+
+      if (error) {
+        fetchError = true;
+      } else {
+        setlists = (data ?? []) as unknown as SetlistRow[];
+        count = rowCount;
+      }
     }
   } catch {
     fetchError = true;
@@ -139,11 +204,11 @@ export default async function SetlistsPage({
   const emptyMessage = fetchError
     ? "Unable to load setlists. Please try again."
     : letter && q
-      ? `No setlists starting with '${letter}' matching "${q}".`
+      ? `No setlists starting with '${letter}' matching "${q}" in name or songs.`
       : letter
         ? `No setlists starting with '${letter}'.`
         : q
-          ? "No setlists match your search."
+          ? `No setlists matching "${q}" in name or songs.`
           : "No setlists yet.";
 
   return (
