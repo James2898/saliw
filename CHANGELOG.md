@@ -4,6 +4,18 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-06-01
+
+### Changed
+
+- Extended setlist search to OR-match against song titles in addition to setlist names (`TASK-048`)
+  - Two-query union approach: name-matching arm (`.ilike("name", ...)`) + song-matching arm (`songs` → `setlist_songs` junction) merged via `[...new Set([...])]`; no N+1 query pattern
+  - Alphabet filter (`letter=` param) continues to apply to setlist names only; independent of song-title OR logic
+  - Empty-state message updated to "No setlists matching '…' in name or songs." to reflect extended OR semantics
+  - Affected files: `src/app/setlists/page.tsx`
+
+---
+
 ## [Unreleased] — 2026-05-30
 
 ### Added
