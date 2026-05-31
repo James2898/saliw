@@ -95,9 +95,20 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const bottomPadding = 32; // matches py-8 on <main>
-    el.style.height = `${window.innerHeight - rect.top - bottomPadding}px`;
+
+    const setHeight = () => {
+      const rect = el.getBoundingClientRect();
+      const bottomPadding = 32; // matches py-8 on <main>
+      el.style.height = `${window.innerHeight - rect.top - bottomPadding}px`;
+    };
+
+    // rAF ensures layout is fully settled before measuring
+    const raf = requestAnimationFrame(setHeight);
+    window.addEventListener("resize", setHeight);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", setHeight);
+    };
   }, []);
 
   // ── beforeunload — browser-level guard ─────────────────────────────────────
