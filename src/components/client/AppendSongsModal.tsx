@@ -114,6 +114,19 @@ const retryButtonClass = [
   "transition-colors duration-200",
 ].join(" ");
 
+const searchInputClass = [
+  "w-full",
+  "rounded-xl",
+  "border border-brand-tan",
+  "bg-brand-cream dark:bg-brand-espresso",
+  "text-brand-espresso dark:text-brand-cream",
+  "placeholder:text-brand-tan",
+  "px-4 py-2",
+  "text-sm",
+  "mb-1",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-0",
+].join(" ");
+
 // ── AppendSongsModal ──────────────────────────────────────────────────────────
 
 /**
@@ -155,6 +168,7 @@ export default function AppendSongsModal({
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ── Refs ───────────────────────────────────────────────────────────────────
 
@@ -167,6 +181,7 @@ export default function AppendSongsModal({
   const resetSelectionState = useCallback(() => {
     setChecked(new Set());
     setSaveError(null);
+    setSearchQuery("");
   }, []);
 
   /** Toggle a song's checked state (only for non-existing songs, AC-22). */
@@ -184,6 +199,14 @@ export default function AppendSongsModal({
       });
     },
     [existingSongIds]
+  );
+
+  /** Update search query on every keystroke. */
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+    },
+    []
   );
 
   /** Handle Save: sequentially append checked songs (AC-28, anti-race BUG). */
@@ -262,6 +285,7 @@ export default function AppendSongsModal({
         const focusableSelectors = [
           "button:not([disabled])",
           'input[type="checkbox"]:not([disabled])',
+          'input[type="search"]:not([disabled])',
         ].join(", ");
         const focusables = Array.from(
           panelRef.current.querySelectorAll<HTMLElement>(focusableSelectors)
@@ -296,6 +320,16 @@ export default function AppendSongsModal({
   const hasNewChecked =
     checked.size > 0 && [...checked].some((id) => !existingSongIds.has(id));
   const isEmpty = !isFetchingSongs && !fetchError && songs.length === 0;
+
+  const lowerQuery = searchQuery.toLowerCase();
+  const filteredSongs =
+    lowerQuery.trim() === ""
+      ? songs
+      : songs.filter(
+          (s) =>
+            s.title.toLowerCase().includes(lowerQuery) ||
+            s.artist.toLowerCase().includes(lowerQuery)
+        );
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -342,6 +376,16 @@ export default function AppendSongsModal({
 
         {/* Body */}
         <div className={bodyClass}>
+          {/* Search input */}
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search songs…"
+            className={searchInputClass}
+            aria-label="Search songs"
+          />
+
           {/* Loading state (AC-33) */}
           {isFetchingSongs && (
             <div className="flex items-center justify-center py-10 gap-3 text-[var(--brand-brown)]">
@@ -379,7 +423,13 @@ export default function AppendSongsModal({
           {/* Song list (AC-17–24) */}
           {!isFetchingSongs && !fetchError && songs.length > 0 && (
             <div className="flex flex-col gap-2">
-              {songs.map((song) => {
+              {/* No-results message when search yields nothing */}
+              {filteredSongs.length === 0 && lowerQuery.trim() !== "" && (
+                <p className="text-brand-brown dark:text-brand-tan text-sm py-4 text-center">
+                  No songs match your search.
+                </p>
+              )}
+              {filteredSongs.map((song) => {
                 const isExisting = existingSongIds.has(song.id);
                 const isChecked = isExisting || checked.has(song.id);
 
