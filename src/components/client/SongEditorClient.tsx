@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { preProcessChords, NOTES } from "@/utils/musicLogic";
@@ -88,28 +88,6 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Focus trap refs for modal ───────────────────────────────────────────────
   const modalStayRef = useRef<HTMLButtonElement>(null);
   const modalLeaveRef = useRef<HTMLButtonElement>(null);
-
-  // ── Textarea ref for viewport-fill height ───────────────────────────────────
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useLayoutEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    const setHeight = () => {
-      const rect = el.getBoundingClientRect();
-      const bottomPadding = 32; // matches py-8 on <main>
-      el.style.height = `${window.innerHeight - rect.top - bottomPadding}px`;
-    };
-
-    // rAF ensures layout is fully settled before measuring
-    const raf = requestAnimationFrame(setHeight);
-    window.addEventListener("resize", setHeight);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", setHeight);
-    };
-  }, []);
 
   // ── beforeunload — browser-level guard ─────────────────────────────────────
   useEffect(() => {
@@ -225,7 +203,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   const panelClasses = [
     "rounded-2xl border border-brand-brown/20 dark:border-brand-tan/20",
     "bg-brand-cream dark:bg-brand-espresso",
-    "p-4",
+    "p-4 min-h-0",
   ].join(" ");
 
   const tabButtonBase = [
@@ -236,7 +214,6 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Shared textarea element (reused in both mobile and desktop views) ───────
   const textareaEl = (
     <textarea
-      ref={textareaRef}
       value={currentContent}
       onChange={(e) => {
         setCurrentContent(e.target.value);
@@ -245,7 +222,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       aria-label="Song chord sheet editor"
       spellCheck={false}
       className={[
-        "w-full resize-none rounded-xl p-3",
+        "w-full h-full resize-none rounded-xl p-3",
         "font-mono text-sm leading-relaxed",
         "text-brand-espresso dark:text-brand-cream",
         "bg-brand-cream dark:bg-brand-espresso",
@@ -268,7 +245,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   );
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0">
       {/* ── Metadata fields — Title, Artist, Singer, Original Key ─────────── */}
       <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
         {/* Title */}
@@ -476,7 +453,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         Desktop (lg+): two-column grid, both panels always visible.
         Mobile/tablet (<lg): only the active tab panel is rendered.
       */}
-      <div className="lg:grid lg:grid-cols-2 lg:gap-6">
+      <div className="flex-1 min-h-0 lg:grid lg:grid-cols-2 lg:gap-6">
         {/* Editor panel */}
         <div
           id="panel-edit"
@@ -484,8 +461,9 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           aria-labelledby="tab-edit"
           className={[
             panelClasses,
-            activeTab === "edit" ? "block" : "hidden",
-            "lg:block",
+            "flex flex-col",
+            activeTab === "edit" ? "flex" : "hidden",
+            "lg:flex",
           ].join(" ")}
         >
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-2">
@@ -574,6 +552,6 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

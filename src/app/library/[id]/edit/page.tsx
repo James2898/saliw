@@ -103,8 +103,8 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
-      <div className="max-w-5xl mx-auto">
+    <main className="h-screen overflow-hidden flex flex-col bg-brand-cream dark:bg-brand-darker px-4 pt-8 pb-8 sm:px-8 font-sans">
+      <div className="max-w-5xl w-full mx-auto flex flex-col flex-1 min-h-0">
         {/* ── Breadcrumb ────────────────────────────────────────────────────── */}
         <SongEditorBreadcrumb songId={id} songTitle={song.title} />
 
