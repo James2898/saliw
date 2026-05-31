@@ -123,7 +123,8 @@ const searchInputClass = [
   "placeholder:text-brand-tan",
   "px-4 py-2",
   "text-sm",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
+  "mb-1",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-0",
 ].join(" ");
 
 // ── AppendSongsModal ──────────────────────────────────────────────────────────
