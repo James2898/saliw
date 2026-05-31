@@ -48,7 +48,7 @@ export default async function SetlistsPage({
   // ── Resolve search params ───────────────────────────────────────────────────
   const params = await searchParams;
   // Strip PostgREST filter metacharacters to prevent filter-clause injection
-  const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%]/g, "");
+  const q = (params.q?.trim() ?? "").slice(0, 100).replace(/[(),%_]/g, "");
 
   // Sanitize letter param — accept only a single uppercase A–Z letter
   const rawLetter = params.letter?.trim().toUpperCase() ?? "";
@@ -96,6 +96,7 @@ export default async function SetlistsPage({
 
     if (q) {
       // ── Two-query union: OR-match setlist name OR any contained song title ──
+      // createClient() is session-aware (cookies-based) — RLS correctly gates private setlist rows for unauthenticated users
 
       // Arm 1: setlists whose name matches q
       const { data: nameMatches } = await supabase
@@ -107,7 +108,8 @@ export default async function SetlistsPage({
       const { data: matchingSongs } = await supabase
         .from("songs")
         .select("id")
-        .ilike("title", `%${q}%`);
+        .ilike("title", `%${q}%`)
+        .limit(500);
 
       const matchingSongIds = (matchingSongs ?? []).map((s) => s.id);
 
