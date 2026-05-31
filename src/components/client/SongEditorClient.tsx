@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { preProcessChords, NOTES } from "@/utils/musicLogic";
@@ -92,7 +92,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Textarea ref for viewport-fill height ───────────────────────────────────
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
