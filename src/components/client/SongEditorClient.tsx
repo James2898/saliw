@@ -203,7 +203,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   const panelClasses = [
     "rounded-2xl border border-brand-brown/20 dark:border-brand-tan/20",
     "bg-brand-cream dark:bg-brand-espresso",
-    "p-4 min-h-0",
+    "p-4",
   ].join(" ");
 
   const tabButtonBase = [
@@ -211,18 +211,22 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
   ].join(" ");
 
-  // ── Shared textarea element (reused in both mobile and desktop views) ───────
+  // ── Shared textarea element — auto-grows to fit content, no scrollbar ───────
   const textareaEl = (
     <textarea
       value={currentContent}
       onChange={(e) => {
         setCurrentContent(e.target.value);
         if (saveError) setSaveError(null);
+        // Auto-resize: reset to auto so shrinking works, then expand to scrollHeight
+        e.target.style.height = "auto";
+        e.target.style.height = `${e.target.scrollHeight}px`;
       }}
       aria-label="Song chord sheet editor"
       spellCheck={false}
+      rows={1}
       className={[
-        "w-full h-full resize-none rounded-xl p-3",
+        "w-full resize-none overflow-hidden rounded-xl p-3",
         "font-mono text-sm leading-relaxed",
         "text-brand-espresso dark:text-brand-cream",
         "bg-brand-cream dark:bg-brand-espresso",
@@ -231,6 +235,12 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         "transition-colors duration-200",
       ].join(" ")}
       style={{ whiteSpace: "pre" }}
+      ref={(el) => {
+        if (el) {
+          el.style.height = "auto";
+          el.style.height = `${el.scrollHeight}px`;
+        }
+      }}
     />
   );
 
@@ -245,7 +255,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   );
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <>
       {/* ── Metadata fields — Title, Artist, Singer, Original Key ─────────── */}
       <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
         {/* Title */}
@@ -453,7 +463,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         Desktop (lg+): two-column grid, both panels always visible.
         Mobile/tablet (<lg): only the active tab panel is rendered.
       */}
-      <div className="flex-1 min-h-0 lg:grid lg:grid-cols-2 lg:gap-6">
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6">
         {/* Editor panel */}
         <div
           id="panel-edit"
@@ -461,9 +471,8 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           aria-labelledby="tab-edit"
           className={[
             panelClasses,
-            "flex flex-col",
-            activeTab === "edit" ? "flex" : "hidden",
-            "lg:flex",
+            activeTab === "edit" ? "block" : "hidden",
+            "lg:block",
           ].join(" ")}
         >
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-2">
@@ -552,6 +561,6 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
