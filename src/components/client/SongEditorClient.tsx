@@ -89,6 +89,17 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   const modalStayRef = useRef<HTMLButtonElement>(null);
   const modalLeaveRef = useRef<HTMLButtonElement>(null);
 
+  // ── Textarea ref for viewport-fill height ───────────────────────────────────
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const bottomPadding = 32; // matches py-8 on <main>
+    el.style.height = `${window.innerHeight - rect.top - bottomPadding}px`;
+  }, []);
+
   // ── beforeunload — browser-level guard ─────────────────────────────────────
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -214,6 +225,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   // ── Shared textarea element (reused in both mobile and desktop views) ───────
   const textareaEl = (
     <textarea
+      ref={textareaRef}
       value={currentContent}
       onChange={(e) => {
         setCurrentContent(e.target.value);
@@ -222,7 +234,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       aria-label="Song chord sheet editor"
       spellCheck={false}
       className={[
-        "w-full min-h-[480px] resize-y rounded-xl p-3",
+        "w-full resize-none rounded-xl p-3",
         "font-mono text-sm leading-relaxed",
         "text-brand-espresso dark:text-brand-cream",
         "bg-brand-cream dark:bg-brand-espresso",
