@@ -226,7 +226,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       spellCheck={false}
       rows={1}
       className={[
-        "w-full resize-none overflow-hidden rounded-xl p-3",
+        "w-full resize-none overflow-x-auto overflow-y-hidden rounded-xl p-3",
         "font-mono text-sm leading-relaxed",
         "text-brand-espresso dark:text-brand-cream",
         "bg-brand-cream dark:bg-brand-espresso",

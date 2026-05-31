@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/services/supabase/server";
-import Card from "@/components/server/card";
 import NewSongFormClient from "@/components/client/NewSongFormClient";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +43,7 @@ export default async function NewSongPage() {
 
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* ── Back link ─────────────────────────────────────────────────────── */}
         <Link
           href="/library"
@@ -71,9 +70,7 @@ export default async function NewSongPage() {
         </div>
 
         {/* ── New song form — Client island ─────────────────────────────────── */}
-        <Card padding="lg">
-          <NewSongFormClient />
-        </Card>
+        <NewSongFormClient />
       </div>
     </main>
   );
