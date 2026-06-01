@@ -678,16 +678,6 @@ export default function ChordSheetClient({
           aria-label="Chord sheet"
         >
           {(() => {
-            // ── Alternating row stripe (AC-1 through AC-7) ──────────────────
-            // rowCounter increments per content row (chord or lyric type).
-            // It resets to 0 at each section header (AC-7: stripe resets per section).
-            // blank lines do not increment (they are spacers, not content rows).
-            // Even rows (counter % 2 === 0): bg-brand-cream dark:bg-brand-espresso/40
-            // Odd rows: bg-brand-tan/20 dark:bg-brand-brown/30
-            // Named Tailwind utilities used throughout — no CSS variable arbitrary values
-            // to avoid BUG-021 semi-transparent issue. All bg-brand-X paired with dark:.
-            let rowCounter = 0;
-
             return processedLines.map((line, lineIndex) => {
               if (line.type === "blank") {
                 return (
@@ -696,9 +686,6 @@ export default function ChordSheetClient({
               }
 
               if (line.type === "header") {
-                // Section boundary — reset stripe counter so first row of each
-                // section always starts at "even" (AC-7).
-                rowCounter = 0;
                 return (
                   <span
                     key={lineIndex}
@@ -715,17 +702,10 @@ export default function ChordSheetClient({
               }
 
               if (line.type === "lyric") {
-                const isEven = rowCounter % 2 === 0;
-                rowCounter++;
                 return (
                   <div
                     key={lineIndex}
-                    className={[
-                      "text-brand-espresso dark:text-brand-cream leading-snug",
-                      isEven
-                        ? "bg-brand-cream dark:bg-brand-espresso/40"
-                        : "bg-brand-tan/20 dark:bg-brand-brown/30",
-                    ].join(" ")}
+                    className="text-brand-espresso dark:text-brand-cream leading-snug"
                   >
                     {line.raw}
                   </div>
@@ -734,25 +714,11 @@ export default function ChordSheetClient({
 
               // type === 'chord' — omit entire row when chords are hidden
               if (chordsHidden) {
-                // Still increment the counter so lyric rows pair correctly
-                // even when chord rows are hidden (AC-4: stripe is cosmetic only).
-                rowCounter++;
                 return null;
               }
 
-              const isEven = rowCounter % 2 === 0;
-              rowCounter++;
-
               return (
-                <div
-                  key={lineIndex}
-                  className={[
-                    "chord-row leading-snug",
-                    isEven
-                      ? "bg-brand-cream dark:bg-brand-espresso/40"
-                      : "bg-brand-tan/20 dark:bg-brand-brown/30",
-                  ].join(" ")}
-                >
+                <div key={lineIndex} className="chord-row leading-snug">
                   {line.tokens.map((token, tokenIndex) => {
                     if (token.isChord && token.originalChord !== null) {
                       return (
