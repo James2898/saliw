@@ -342,6 +342,29 @@ export default function SectionNavDeck({
   // rAF id for the settle-detector so we can cancel on unmount or new click.
   const settleRafIdRef = useRef<number | null>(null);
 
+  // Refs to the scrollable badge containers (desktop column + mobile drawer).
+  const desktopListRef = useRef<HTMLDivElement>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
+
+  // Map of sectionId → badge button element for scroll-to-active.
+  const badgeRefsMap = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  // Scroll the active badge into the center of its container whenever it changes.
+  useEffect(() => {
+    if (!activeSectionId) return;
+    const badgeEl = badgeRefsMap.current.get(activeSectionId);
+    if (!badgeEl) return;
+    for (const container of [desktopListRef.current, mobileListRef.current]) {
+      if (!container) continue;
+      const containerMid = container.scrollTop + container.offsetHeight / 2;
+      const badgeMid = badgeEl.offsetTop + badgeEl.offsetHeight / 2;
+      container.scrollTo({
+        top: badgeMid - containerMid + container.scrollTop,
+        behavior: "smooth",
+      });
+    }
+  }, [activeSectionId]);
+
   // Latest autoScroll stored in a ref so the settle-detector closure always
   // reads the current value without re-creating the callback.
   const autoScrollRef = useRef(autoScroll);
@@ -522,6 +545,10 @@ export default function SectionNavDeck({
     return (
       <button
         key={section.id}
+        ref={(el) => {
+          if (el) badgeRefsMap.current.set(section.id, el);
+          else badgeRefsMap.current.delete(section.id);
+        }}
         type="button"
         onPointerDown={handlePointerDown}
         onClick={handleClick}
@@ -542,6 +569,7 @@ export default function SectionNavDeck({
     <>
       {/* ── Desktop: fixed right column, vertically centered (AC-6) ──────────── */}
       <div
+        ref={desktopListRef}
         className={desktopDeckClass}
         style={desktopStyle}
         role="navigation"
@@ -595,8 +623,9 @@ export default function SectionNavDeck({
         {/* Drawer contents — removed from tab order when closed (AC-21).
             inert as boolean per React 19+ / @types/react >=18.3 */}
         <div
+          ref={mobileListRef}
           tabIndex={isMobileOpen ? undefined : -1}
-          className="flex flex-col items-center gap-1.5 w-full"
+          className="flex flex-col items-center gap-1.5 w-full overflow-y-auto"
           inert={!isMobileOpen || undefined}
         >
           {sections.map(renderBadge)}
