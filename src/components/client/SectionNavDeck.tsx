@@ -252,6 +252,9 @@ const mobileToggleBtnClass = [
   "transition-[right] duration-300 ease-in-out",
 ].join(" ");
 
+const TOGGLE_OPEN_STYLE: React.CSSProperties = { right: 56 };
+const TOGGLE_CLOSED_STYLE: React.CSSProperties = { right: 0 };
+
 /** Badge button — base styles shared between active and inactive states. */
 const badgeBtnBase = [
   "min-w-[44px] min-h-[44px]",
@@ -521,7 +524,6 @@ export default function SectionNavDeck({
   // ── Mobile drawer right offset — toggle button sits to the left of the panel ──
   // When open: panel is at right-0 (w-14 = 56px), toggle button sits just left of it.
   // When closed: panel is off-screen (translate-x-full), toggle button sits at right-0.
-  const toggleBtnRight = isMobileOpen ? 56 : 0;
 
   return (
     <>
@@ -541,7 +543,7 @@ export default function SectionNavDeck({
       <button
         type="button"
         className={mobileToggleBtnClass}
-        style={{ right: toggleBtnRight }}
+        style={isMobileOpen ? TOGGLE_OPEN_STYLE : TOGGLE_CLOSED_STYLE}
         onClick={handleToggle}
         aria-expanded={isMobileOpen}
         aria-label={
