@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Exclude non-source directories from Tailwind's class scanner to prevent
+   documentation strings (e.g. "bg-brand-*" in task files) from being
+   interpreted as class names and generating invalid CSS. */
+@source not "../../tasks";
+@source not "../../docs";
+
 /*
  * Override Tailwind v4's default dark-mode strategy from `prefers-color-scheme`
  * to class-based toggling. This ensures `dark:` utility variants only activate
@@ -96,6 +102,23 @@ body {
    which silently drops translate-y transitions on the fixed bottom drawer.
    Slide-up/down animation uses translate-y-full (closed) → translate-y-0 (open). */
 .chord-drawer-panel {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Section nav drawer panel: restores transform transition suppressed by the * rule.
+   The global * rule only covers background-color, border-color, fill, stroke —
+   which silently drops translate-x transitions on the fixed right-side drawer.
+   Slide-in/out animation uses translate-x-full (closed) → translate-x-0 (open). */
+/* Content wrapper padding transition when section nav drawer opens/closes */
+.section-nav-content-wrapper {
+  transition-property: padding-right;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.section-nav-drawer-panel {
   transition-property: transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;

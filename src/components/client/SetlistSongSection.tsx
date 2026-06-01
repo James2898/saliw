@@ -192,18 +192,10 @@ function SetlistSongSection({
   // Use whole autoScroll object in deps per BUG-002.
   const isAutoScrollActive = autoScroll?.isActive ?? false;
 
-  const isEven = songIndex % 2 === 0;
-
   return (
     <section
       id={`song-${junctionId}`}
-      className={[
-        "scroll-mt-16 lg:scroll-mt-0",
-        "rounded-xl px-4 py-5",
-        isEven
-          ? "bg-brand-cream dark:bg-brand-espresso/40"
-          : "bg-brand-tan/20 dark:bg-brand-brown/30",
-      ].join(" ")}
+      className="scroll-mt-16 lg:scroll-mt-0 rounded-xl px-4 py-5"
       aria-label={title}
     >
       {/* ── Song header ──────────────────────────────────────────────────────── */}
