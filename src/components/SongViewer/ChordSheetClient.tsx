@@ -677,68 +677,108 @@ export default function ChordSheetClient({
           className={chordDisplayClass}
           aria-label="Chord sheet"
         >
-          {processedLines.map((line, lineIndex) => {
-            if (line.type === "blank") {
-              return <div key={lineIndex} className="h-4" aria-hidden="true" />;
-            }
+          {(() => {
+            // ── Alternating row stripe (AC-1 through AC-7) ──────────────────
+            // rowCounter increments per content row (chord or lyric type).
+            // It resets to 0 at each section header (AC-7: stripe resets per section).
+            // blank lines do not increment (they are spacers, not content rows).
+            // Even rows (counter % 2 === 0): bg-brand-cream dark:bg-brand-espresso/40
+            // Odd rows: bg-brand-tan/20 dark:bg-brand-brown/30
+            // Named Tailwind utilities used throughout — no CSS variable arbitrary values
+            // to avoid BUG-021 semi-transparent issue. All bg-brand-* paired with dark:.
+            let rowCounter = 0;
 
-            if (line.type === "header") {
-              return (
-                <span
-                  key={lineIndex}
-                  id={
-                    sectionIdPrefix
-                      ? `section-${sectionIdPrefix}-${lineIndex}`
-                      : undefined
-                  }
-                  className="section-title"
-                >
-                  {line.raw}
-                </span>
-              );
-            }
+            return processedLines.map((line, lineIndex) => {
+              if (line.type === "blank") {
+                return (
+                  <div key={lineIndex} className="h-4" aria-hidden="true" />
+                );
+              }
 
-            if (line.type === "lyric") {
+              if (line.type === "header") {
+                // Section boundary — reset stripe counter so first row of each
+                // section always starts at "even" (AC-7).
+                rowCounter = 0;
+                return (
+                  <span
+                    key={lineIndex}
+                    id={
+                      sectionIdPrefix
+                        ? `section-${sectionIdPrefix}-${lineIndex}`
+                        : undefined
+                    }
+                    className="section-title"
+                  >
+                    {line.raw}
+                  </span>
+                );
+              }
+
+              if (line.type === "lyric") {
+                const isEven = rowCounter % 2 === 0;
+                rowCounter++;
+                return (
+                  <div
+                    key={lineIndex}
+                    className={[
+                      "text-brand-espresso dark:text-brand-cream leading-snug",
+                      isEven
+                        ? "bg-brand-cream dark:bg-brand-espresso/40"
+                        : "bg-brand-tan/20 dark:bg-brand-brown/30",
+                    ].join(" ")}
+                  >
+                    {line.raw}
+                  </div>
+                );
+              }
+
+              // type === 'chord' — omit entire row when chords are hidden
+              if (chordsHidden) {
+                // Still increment the counter so lyric rows pair correctly
+                // even when chord rows are hidden (AC-4: stripe is cosmetic only).
+                rowCounter++;
+                return null;
+              }
+
+              const isEven = rowCounter % 2 === 0;
+              rowCounter++;
+
               return (
                 <div
                   key={lineIndex}
-                  className="text-brand-espresso dark:text-brand-cream leading-snug"
+                  className={[
+                    "chord-row leading-snug",
+                    isEven
+                      ? "bg-brand-cream dark:bg-brand-espresso/40"
+                      : "bg-brand-tan/20 dark:bg-brand-brown/30",
+                  ].join(" ")}
                 >
-                  {line.raw}
-                </div>
-              );
-            }
-
-            // type === 'chord' — omit entire row when chords are hidden
-            if (chordsHidden) return null;
-
-            return (
-              <div key={lineIndex} className="chord-row leading-snug">
-                {line.tokens.map((token, tokenIndex) => {
-                  if (token.isChord && token.originalChord !== null) {
+                  {line.tokens.map((token, tokenIndex) => {
+                    if (token.isChord && token.originalChord !== null) {
+                      return (
+                        <span
+                          key={tokenIndex}
+                          className="chord-item"
+                          data-original-chord={token.originalChord}
+                        >
+                          {token.text}
+                        </span>
+                      );
+                    }
+                    // Non-chord token (lyric text on a chord line, or whitespace padding)
                     return (
                       <span
                         key={tokenIndex}
-                        className="chord-item"
-                        data-original-chord={token.originalChord}
+                        className="text-brand-espresso dark:text-brand-cream"
                       >
                         {token.text}
                       </span>
                     );
-                  }
-                  // Non-chord token (lyric text on a chord line, or whitespace padding)
-                  return (
-                    <span
-                      key={tokenIndex}
-                      className="text-brand-espresso dark:text-brand-cream"
-                    >
-                      {token.text}
-                    </span>
-                  );
-                })}
-              </div>
-            );
-          })}
+                  })}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* ── Bottom spacer — prevents toolbar from obscuring chord content (AC 20) */}
