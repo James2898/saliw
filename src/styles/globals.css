@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Exclude non-source directories from Tailwind's class scanner to prevent
+   documentation strings (e.g. "bg-brand-*" in task files) from being
+   interpreted as class names and generating invalid CSS. */
+@source not "../../tasks";
+@source not "../../docs";
+
 /*
  * Override Tailwind v4's default dark-mode strategy from `prefers-color-scheme`
  * to class-based toggling. This ensures `dark:` utility variants only activate
