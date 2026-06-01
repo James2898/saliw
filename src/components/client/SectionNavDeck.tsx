@@ -37,6 +37,12 @@ interface SectionNavDeckProps {
    * AC-14: do not render the Deck when edit mode is active.
    */
   isEditMode?: boolean;
+  /**
+   * Called whenever the mobile drawer open state changes.
+   * Parent uses this to add padding-right to the content area so the drawer
+   * pushes content rather than overlaying it.
+   */
+  onMobileOpenChange?: (isOpen: boolean) => void;
 }
 
 // ── Module-scope constants (AC-18: static data at module scope, not inline) ──
@@ -300,6 +306,7 @@ export default function SectionNavDeck({
   autoScroll,
   isDrawerOpen = false,
   isEditMode = false,
+  onMobileOpenChange,
 }: SectionNavDeckProps) {
   // AC-16: SSR safety — render null on server and first hydration.
   const [mounted, setMounted] = useState(false);
@@ -312,12 +319,18 @@ export default function SectionNavDeck({
   // ── Drawer handlers declared above useEffect (BUG-007: React Compiler forward reference) ──
 
   const handleToggle = useCallback(() => {
-    setIsMobileOpen((prev) => !prev);
-  }, []); // no external deps — setIsMobileOpen is stable (BUG-002: whole object deps)
+    setIsMobileOpen((prev) => {
+      const next = !prev;
+      onMobileOpenChange?.(next);
+      return next;
+    });
+  }, [onMobileOpenChange]); // BUG-002: whole object dep
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // Notify parent of initial open state so it can apply padding on first render.
+    onMobileOpenChange?.(true);
+  }, [onMobileOpenChange]);
 
   // Active section ID — the section header currently closest to the top of the viewport.
   // Initialize to the first section so exactly one badge is highlighted on load.
