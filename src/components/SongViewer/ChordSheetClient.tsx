@@ -685,7 +685,7 @@ export default function ChordSheetClient({
             // Even rows (counter % 2 === 0): bg-brand-cream dark:bg-brand-espresso/40
             // Odd rows: bg-brand-tan/20 dark:bg-brand-brown/30
             // Named Tailwind utilities used throughout — no CSS variable arbitrary values
-            // to avoid BUG-021 semi-transparent issue. All bg-brand-* paired with dark:.
+            // to avoid BUG-021 semi-transparent issue. All bg-brand-X paired with dark:.
             let rowCounter = 0;
 
             return processedLines.map((line, lineIndex) => {
