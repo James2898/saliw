@@ -677,68 +677,74 @@ export default function ChordSheetClient({
           className={chordDisplayClass}
           aria-label="Chord sheet"
         >
-          {processedLines.map((line, lineIndex) => {
-            if (line.type === "blank") {
-              return <div key={lineIndex} className="h-4" aria-hidden="true" />;
-            }
+          {(() => {
+            return processedLines.map((line, lineIndex) => {
+              if (line.type === "blank") {
+                return (
+                  <div key={lineIndex} className="h-4" aria-hidden="true" />
+                );
+              }
 
-            if (line.type === "header") {
+              if (line.type === "header") {
+                return (
+                  <span
+                    key={lineIndex}
+                    id={
+                      sectionIdPrefix
+                        ? `section-${sectionIdPrefix}-${lineIndex}`
+                        : undefined
+                    }
+                    className="section-title"
+                  >
+                    {line.raw}
+                  </span>
+                );
+              }
+
+              if (line.type === "lyric") {
+                return (
+                  <div
+                    key={lineIndex}
+                    className="text-brand-espresso dark:text-brand-cream leading-snug"
+                  >
+                    {line.raw}
+                  </div>
+                );
+              }
+
+              // type === 'chord' — omit entire row when chords are hidden
+              if (chordsHidden) {
+                return null;
+              }
+
               return (
-                <span
-                  key={lineIndex}
-                  id={
-                    sectionIdPrefix
-                      ? `section-${sectionIdPrefix}-${lineIndex}`
-                      : undefined
-                  }
-                  className="section-title"
-                >
-                  {line.raw}
-                </span>
-              );
-            }
-
-            if (line.type === "lyric") {
-              return (
-                <div
-                  key={lineIndex}
-                  className="text-brand-espresso dark:text-brand-cream leading-snug"
-                >
-                  {line.raw}
-                </div>
-              );
-            }
-
-            // type === 'chord' — omit entire row when chords are hidden
-            if (chordsHidden) return null;
-
-            return (
-              <div key={lineIndex} className="chord-row leading-snug">
-                {line.tokens.map((token, tokenIndex) => {
-                  if (token.isChord && token.originalChord !== null) {
+                <div key={lineIndex} className="chord-row leading-snug">
+                  {line.tokens.map((token, tokenIndex) => {
+                    if (token.isChord && token.originalChord !== null) {
+                      return (
+                        <span
+                          key={tokenIndex}
+                          className="chord-item"
+                          data-original-chord={token.originalChord}
+                        >
+                          {token.text}
+                        </span>
+                      );
+                    }
+                    // Non-chord token (lyric text on a chord line, or whitespace padding)
                     return (
                       <span
                         key={tokenIndex}
-                        className="chord-item"
-                        data-original-chord={token.originalChord}
+                        className="text-brand-espresso dark:text-brand-cream"
                       >
                         {token.text}
                       </span>
                     );
-                  }
-                  // Non-chord token (lyric text on a chord line, or whitespace padding)
-                  return (
-                    <span
-                      key={tokenIndex}
-                      className="text-brand-espresso dark:text-brand-cream"
-                    >
-                      {token.text}
-                    </span>
-                  );
-                })}
-              </div>
-            );
-          })}
+                  })}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* ── Bottom spacer — prevents toolbar from obscuring chord content (AC 20) */}

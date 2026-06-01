@@ -6,6 +6,19 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-06-01
 
+### Added
+
+- Chord sheet alternating row stripe backgrounds + Section Nav right-side mobile drawer (`TASK-049`)
+  - Alternating `bg-brand-cream dark:bg-brand-espresso/40` / `bg-brand-tan/20 dark:bg-brand-brown/30` stripe applied to all chord and lyric rows in `ChordSheetClient`; uses named Tailwind brand utilities only (BUG-021 safe); all classes include explicit `dark:` pairs (BUG-004)
+  - Row counter resets to 0 at each section header (`type: "header"` in `ProcessedLine`) so the first row of every verse/chorus/bridge is always the "even" background (AC-7 / AM-1)
+  - Hidden chord rows still increment the counter so adjacent lyric rows maintain correct even/odd pairing when chords are toggled off
+  - `SectionNavDeck` mobile layout refactored from horizontal sticky bar to right-side overlay drawer (`fixed right-0 top-16 bottom-0 w-14`); floats above content with no page reflow; `z-[45]` preserves existing z-index hierarchy
+  - Drawer open state: `useState(true)` plain literal — SSR-safe, no localStorage, no hydration mismatch (BUG-020)
+  - Toggle button (`md:hidden fixed top-[72px] z-[46]`) remains visible in both open and closed states; animates `right` offset alongside drawer panel; does not overlap `ServiceNavigator` (`sticky top-16 z-40`)
+  - Full accessibility: `<nav role="navigation" aria-label="Section navigation">`, `aria-expanded` + dynamic `aria-label` on toggle button, `aria-hidden` + `inert` + `tabIndex={-1}` on contents when closed; no focus trap on open
+  - `.section-nav-drawer-panel` CSS class added to `globals.css` restoring `transform` transition suppressed by the global `*` rule (same pattern as `#mobile-sidebar` and `.chord-drawer-panel`)
+  - Affected files: `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SectionNavDeck.tsx`, `src/styles/globals.css`
+
 ### Changed
 
 - Extended setlist search to OR-match against song titles in addition to setlist names (`TASK-048`)
