@@ -101,6 +101,16 @@ body {
   transition-duration: 300ms;
 }
 
+/* Section nav drawer panel: restores transform transition suppressed by the * rule.
+   The global * rule only covers background-color, border-color, fill, stroke —
+   which silently drops translate-x transitions on the fixed right-side drawer.
+   Slide-in/out animation uses translate-x-full (closed) → translate-x-0 (open). */
+.section-nav-drawer-panel {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
 /* ── Chord sheet components ─────────────────────────────────────────────── */
 
 /* Chord token — wrap chords in <span class="chord-item"> */

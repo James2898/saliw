@@ -207,18 +207,49 @@ const desktopDeckClass = [
 ].join(" ");
 
 /**
- * Mobile deck — horizontally-scrollable row below sticky navbar.
- * Positioned below top-16 (navbar) using top-16; clear of auto-scroll FAB.
+ * Mobile drawer panel — right-side overlay drawer on mobile.
+ * Fixed to right edge, full height below navbar (top-16), hidden on md+.
+ * translate-x-0 when open, translate-x-full when closed.
+ * The `section-nav-drawer-panel` CSS class in globals.css restores the
+ * transform transition suppressed by the global * rule (same pattern as
+ * #mobile-sidebar and .chord-drawer-panel).
+ * AC-11, AC-12: fixed right-0, floats above content, no reflow.
+ * AC-16: no backdrop/scrim.
  */
-const mobileDeckClass = [
-  "md:hidden fixed top-16 left-0 right-0",
+const mobileDrawerPanelBase = [
+  "md:hidden fixed right-0 top-16 bottom-0",
   DECK_Z_CLASS,
-  "flex flex-row items-center gap-1.5",
-  "overflow-x-auto",
+  "w-14",
+  "section-nav-drawer-panel",
+  "transition-transform duration-300 ease-in-out",
   "bg-[var(--brand-espresso)]",
-  "border-b border-[var(--brand-tan)]/30",
-  "px-3 py-1.5",
-  "shadow-sm",
+  "border-l border-[var(--brand-tan)]/30",
+  "flex flex-col items-center gap-1.5",
+  "py-3 px-2",
+  "overflow-y-auto",
+  "shadow-lg",
+].join(" ");
+
+/**
+ * Toggle button for the mobile drawer — floats at the left edge of the drawer.
+ * Visible in both open and closed states.
+ * Positioned just below the navbar (top-16) to avoid overlapping ServiceNavigator (sticky top-16 z-40).
+ * The toggle button sits at z-[46] (one above the deck panel) so it remains
+ * clickable even when the panel is open.
+ */
+const mobileToggleBtnClass = [
+  "md:hidden fixed",
+  "z-[46]",
+  "top-[72px]",
+  "w-7 h-10",
+  "flex items-center justify-center",
+  "bg-[var(--brand-espresso)]",
+  "border border-[var(--brand-tan)]/30",
+  "rounded-l-lg",
+  "text-[var(--brand-cream)]",
+  "shadow-md",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-tan)]",
+  "transition-[right] duration-300 ease-in-out",
 ].join(" ");
 
 /** Badge button — base styles shared between active and inactive states. */
@@ -269,6 +300,18 @@ export default function SectionNavDeck({
 }: SectionNavDeckProps) {
   // AC-16: SSR safety — render null on server and first hydration.
   const [mounted, setMounted] = useState(false);
+
+  // Mobile drawer open state — initialized open by default (AC-9).
+  // Plain literal `true` — no window check, SSR-safe, no hydration mismatch (BUG-020).
+  // Not persisted across page loads (AC-10).
+  const [isMobileOpen, setIsMobileOpen] = useState(true);
+
+  // ── Drawer handlers declared above useEffect (BUG-007: React Compiler forward reference) ──
+
+  const handleToggle = useCallback(() => {
+    setIsMobileOpen((prev) => !prev);
+  }, []); // no external deps — setIsMobileOpen is stable (BUG-002: whole object deps)
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -475,6 +518,11 @@ export default function SectionNavDeck({
     );
   };
 
+  // ── Mobile drawer right offset — toggle button sits to the left of the panel ──
+  // When open: panel is at right-0 (w-14 = 56px), toggle button sits just left of it.
+  // When closed: panel is off-screen (translate-x-full), toggle button sits at right-0.
+  const toggleBtnRight = isMobileOpen ? 56 : 0;
+
   return (
     <>
       {/* ── Desktop: fixed right column, vertically centered (AC-6) ──────────── */}
@@ -487,14 +535,58 @@ export default function SectionNavDeck({
         {sections.map(renderBadge)}
       </div>
 
-      {/* ── Mobile: horizontally-scrollable row below navbar (AC-7) ──────────── */}
-      <div
-        className={mobileDeckClass}
-        role="navigation"
-        aria-label="Section navigator"
+      {/* ── Mobile: right-side overlay drawer (AC-8 through AC-21) ───────────── */}
+
+      {/* Toggle button — visible in both open and closed states (AC-13, AC-14) */}
+      <button
+        type="button"
+        className={mobileToggleBtnClass}
+        style={{ right: toggleBtnRight }}
+        onClick={handleToggle}
+        aria-expanded={isMobileOpen}
+        aria-label={
+          isMobileOpen ? "Close section navigation" : "Open section navigation"
+        }
+        aria-controls="section-nav-drawer-panel"
       >
-        {sections.map(renderBadge)}
-      </div>
+        {/* Chevron icon — points left when open, right when closed */}
+        <svg
+          viewBox="0 0 16 16"
+          fill="none"
+          className="w-3.5 h-3.5 shrink-0"
+          aria-hidden="true"
+        >
+          <path
+            d={isMobileOpen ? "M10 4l-4 4 4 4" : "M6 4l4 4-4 4"}
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {/* Drawer panel — right-side overlay, slides in/out (AC-8, AC-11, AC-12) */}
+      <nav
+        id="section-nav-drawer-panel"
+        className={[
+          mobileDrawerPanelBase,
+          isMobileOpen ? "translate-x-0" : "translate-x-full",
+        ].join(" ")}
+        role="navigation"
+        aria-label="Section navigation"
+        aria-hidden={!isMobileOpen}
+      >
+        {/* Drawer contents — removed from tab order when closed (AC-21).
+            inert as boolean per React 19+ / @types/react >=18.3 */}
+        <div
+          tabIndex={isMobileOpen ? undefined : -1}
+          className="flex flex-col items-center gap-1.5 w-full"
+          inert={!isMobileOpen || undefined}
+        >
+          {sections.map(renderBadge)}
+        </div>
+      </nav>
     </>
   );
 }
