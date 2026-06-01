@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { NOTES } from "@/utils/musicLogic";
+import { NOTES, preProcessChords } from "@/utils/musicLogic";
 import { createSong } from "@/app/actions/songActions";
 import { normaliseYouTubeUrl } from "@/components/client/YouTubeLinkModal";
+import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
 
 const inputBaseClass = [
   "w-full px-3 py-2 rounded-xl",
@@ -21,14 +22,12 @@ const inputBaseClass = [
 const labelClass =
   "block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5";
 
-/**
- * NewSongFormClient — Form for creating a new song.
- *
- * Fields: title, artist, original_key, content.
- * On submit: calls createSong() Server Action.
- * On success: navigates to /library/[id].
- * On error: displays error message inline near the submit button.
- */
+const panelClasses = [
+  "rounded-2xl border border-brand-brown/20 dark:border-brand-tan/20",
+  "bg-brand-cream dark:bg-brand-espresso",
+  "p-4",
+].join(" ");
+
 export default function NewSongFormClient() {
   const router = useRouter();
 
@@ -41,13 +40,14 @@ export default function NewSongFormClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const processedLines = preProcessChords(content);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setIsSaving(true);
 
     try {
-      // Normalise youtube_url before saving (AC-4/5/6)
       let normalisedYoutubeUrl: string | null = null;
       if (youtubeUrl.trim() !== "") {
         const normalised = normaliseYouTubeUrl(youtubeUrl);
@@ -85,8 +85,8 @@ export default function NewSongFormClient() {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div className="flex flex-col gap-5">
-        {/* ── Title ──────────────────────────────────────────────────────────── */}
+      {/* ── Metadata fields ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
         <div>
           <label htmlFor="song-title" className={labelClass}>
             Title
@@ -105,7 +105,6 @@ export default function NewSongFormClient() {
           />
         </div>
 
-        {/* ── Artist ─────────────────────────────────────────────────────────── */}
         <div>
           <label htmlFor="song-artist" className={labelClass}>
             Artist
@@ -124,7 +123,6 @@ export default function NewSongFormClient() {
           />
         </div>
 
-        {/* ── Singer ─────────────────────────────────────────────────────────── */}
         <div>
           <label htmlFor="song-singer" className={labelClass}>
             Singer
@@ -142,8 +140,31 @@ export default function NewSongFormClient() {
           />
         </div>
 
-        {/* ── YouTube URL ────────────────────────────────────────────────────── */}
         <div>
+          <label htmlFor="song-key" className={labelClass}>
+            Original Key
+          </label>
+          <select
+            id="song-key"
+            value={originalKey}
+            onChange={(e) => {
+              setOriginalKey(e.target.value);
+              if (error) setError(null);
+            }}
+            className={[
+              inputBaseClass,
+              "cursor-pointer font-mono font-bold",
+            ].join(" ")}
+          >
+            {(NOTES as string[]).map((note) => (
+              <option key={note} value={note}>
+                {note}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="sm:col-span-2">
           <label htmlFor="song-youtube-url" className={labelClass}>
             YouTube URL
           </label>
@@ -162,98 +183,102 @@ export default function NewSongFormClient() {
             Optional. Saved as a canonical embed URL.
           </p>
         </div>
+      </div>
 
-        {/* ── Original Key ───────────────────────────────────────────────────── */}
-        <div>
-          <label htmlFor="song-key" className={labelClass}>
-            Original Key
-          </label>
-          <select
-            id="song-key"
-            value={originalKey}
-            onChange={(e) => {
-              setOriginalKey(e.target.value);
-              if (error) setError(null);
-            }}
-            className={[
-              inputBaseClass,
-              "cursor-pointer",
-              "font-mono font-bold",
-            ].join(" ")}
-          >
-            {(NOTES as string[]).map((note) => (
-              <option key={note} value={note}>
-                {note}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ── Content ────────────────────────────────────────────────────────── */}
-        <div>
-          <label htmlFor="song-content" className={labelClass}>
-            Chord Sheet
-          </label>
+      {/* ── Editor + Preview panels ─────────────────────────────────────────── */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6 mb-6">
+        {/* Editor panel */}
+        <div className={panelClasses}>
+          <p className={labelClass}>Chord Sheet</p>
           <textarea
             id="song-content"
             value={content}
             onChange={(e) => {
               setContent(e.target.value);
               if (error) setError(null);
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
             }}
             aria-label="Song chord sheet content"
             placeholder={
               "[VERSE]\nG    D    Em    C\nGreat is Thy faithfulness..."
             }
             required
-            rows={16}
+            rows={1}
             spellCheck={false}
-            className={[inputBaseClass, "font-mono resize-y"].join(" ")}
+            className={[
+              "w-full resize-none overflow-x-auto overflow-y-hidden rounded-xl p-3",
+              "font-mono text-sm leading-relaxed",
+              "text-brand-espresso dark:text-brand-cream",
+              "bg-brand-cream dark:bg-brand-espresso",
+              "border border-brand-brown/20 dark:border-brand-tan/20",
+              "focus:outline-none focus:ring-2 focus:ring-brand-espresso dark:focus:ring-brand-tan focus:ring-offset-1",
+              "transition-colors duration-200",
+            ].join(" ")}
             style={{ whiteSpace: "pre" }}
+            ref={(el) => {
+              if (el) {
+                el.style.height = "auto";
+                el.style.height = `${el.scrollHeight}px`;
+              }
+            }}
           />
         </div>
 
-        {/* ── Error message ──────────────────────────────────────────────────── */}
-        {error && (
-          <p
-            role="alert"
-            className="text-sm font-medium text-red-700 dark:text-red-400"
-          >
-            {error}
-          </p>
-        )}
-
-        {/* ── Submit button ──────────────────────────────────────────────────── */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={isSaving}
-            aria-label={isSaving ? "Creating song" : "Create song"}
-            className={[
-              "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl",
-              "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso",
-              "text-sm font-semibold font-sans",
-              "border border-brand-tan dark:border-brand-tan",
-              "hover:bg-brand-brown hover:text-brand-cream hover:border-brand-brown",
-              "transition-colors duration-200",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
-              isSaving ? "opacity-50 cursor-not-allowed" : "",
-            ].join(" ")}
-          >
-            {isSaving ? (
-              <>
-                <Loader2
-                  size={16}
-                  className="animate-spin"
-                  aria-hidden="true"
-                />
-                Creating…
-              </>
-            ) : (
-              "Create Song"
-            )}
-          </button>
+        {/* Preview panel */}
+        <div className={[panelClasses, "mt-6 lg:mt-0"].join(" ")}>
+          <p className={labelClass}>Preview</p>
+          {content.trim() ? (
+            <div className="overflow-x-auto">
+              <ChordSheetClient
+                processedLines={processedLines}
+                originalKey={originalKey}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-brand-brown/50 dark:text-brand-tan/50 font-mono">
+              Preview will appear as you type…
+            </p>
+          )}
         </div>
+      </div>
+
+      {/* ── Error message ──────────────────────────────────────────────────────── */}
+      {error && (
+        <p
+          role="alert"
+          className="mb-4 text-sm font-medium text-red-700 dark:text-red-400"
+        >
+          {error}
+        </p>
+      )}
+
+      {/* ── Submit button ──────────────────────────────────────────────────────── */}
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={isSaving}
+          aria-label={isSaving ? "Creating song" : "Create song"}
+          className={[
+            "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl",
+            "bg-brand-tan text-brand-espresso dark:bg-brand-tan dark:text-brand-espresso",
+            "text-sm font-semibold font-sans",
+            "border border-brand-tan dark:border-brand-tan",
+            "hover:bg-brand-brown hover:text-brand-cream hover:border-brand-brown",
+            "transition-colors duration-200",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+            isSaving ? "opacity-50 cursor-not-allowed" : "",
+          ].join(" ")}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+              Creating…
+            </>
+          ) : (
+            "Create Song"
+          )}
+        </button>
       </div>
     </form>
   );

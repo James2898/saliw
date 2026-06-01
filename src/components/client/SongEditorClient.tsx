@@ -211,18 +211,22 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
   ].join(" ");
 
-  // ── Shared textarea element (reused in both mobile and desktop views) ───────
+  // ── Shared textarea element — auto-grows to fit content, no scrollbar ───────
   const textareaEl = (
     <textarea
       value={currentContent}
       onChange={(e) => {
         setCurrentContent(e.target.value);
         if (saveError) setSaveError(null);
+        // Auto-resize: reset to auto so shrinking works, then expand to scrollHeight
+        e.target.style.height = "auto";
+        e.target.style.height = `${e.target.scrollHeight}px`;
       }}
       aria-label="Song chord sheet editor"
       spellCheck={false}
+      rows={1}
       className={[
-        "w-full min-h-[480px] resize-y rounded-xl p-3",
+        "w-full resize-none overflow-x-auto overflow-y-hidden rounded-xl p-3",
         "font-mono text-sm leading-relaxed",
         "text-brand-espresso dark:text-brand-cream",
         "bg-brand-cream dark:bg-brand-espresso",
@@ -231,6 +235,12 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
         "transition-colors duration-200",
       ].join(" ")}
       style={{ whiteSpace: "pre" }}
+      ref={(el) => {
+        if (el) {
+          el.style.height = "auto";
+          el.style.height = `${el.scrollHeight}px`;
+        }
+      }}
     />
   );
 
