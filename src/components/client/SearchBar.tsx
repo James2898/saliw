@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useCallback } from "react";
-import { Search } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Search, X } from "lucide-react";
+import Button from "@/components/client/button";
 
 interface SearchBarProps {
   defaultValue: string;
@@ -11,6 +12,8 @@ interface SearchBarProps {
   pageSize?: number;
   /** Pass current letter filter so search navigation preserves it (AC-19 / AM-2) */
   letter?: string;
+  placeholder?: string;
+  ariaLabel?: string;
 }
 
 // BUG-007: buildSearchUrl declared above any hook that references it.
@@ -33,11 +36,10 @@ function buildSearchUrl(
 /**
  * SearchBar — Client Component for the Song Library and Setlist List.
  *
- * Accepts the current search query as `defaultValue` (passed from the Server Component
- * via the URL `?q` param) and debounces URL updates at 300ms to avoid firing a
- * navigation on every keystroke.
+ * Implements explicit search submission via <form role="search"> with an
+ * explicit search Button. Executes search on Form submit (Enter or button click).
+ * Clearing via the X button immediately restores the unfiltered list.
  *
- * Uses `router.replace` to avoid polluting browser history on every keypress.
  * Preserves all live params (pageSize, letter) when navigating (AM-2 / AC-19).
  * Does NOT call Supabase or any Server Action.
  */
@@ -46,51 +48,77 @@ export default function SearchBar({
   basePath = "/library",
   pageSize,
   letter,
+  placeholder = "Search by title or artist…",
+  ariaLabel = "Search songs by title or artist",
 }: SearchBarProps) {
   const router = useRouter();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // BUG-001: useState lazy initializer for values derived from props
+  const [query, setQuery] = useState(() => defaultValue ?? "");
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const term = e.target.value.trim();
-
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-
-      debounceRef.current = setTimeout(() => {
-        router.replace(buildSearchUrl(basePath, term, pageSize, letter));
-      }, 300);
+  const handleSearch = useCallback(
+    (term: string) => {
+      router.replace(buildSearchUrl(basePath, term.trim(), pageSize, letter));
     },
     [router, basePath, pageSize, letter]
   );
 
-  return (
-    <div className="relative w-full max-w-md">
-      {/* Search icon — decorative, positioned inside the input */}
-      <span
-        className="pointer-events-none absolute inset-y-0 left-3 flex items-center"
-        aria-hidden="true"
-      >
-        <Search size={16} strokeWidth={2} className="text-brand-tan" />
-      </span>
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      handleSearch(query);
+    },
+    [handleSearch, query]
+  );
 
-      <input
-        type="search"
-        defaultValue={defaultValue}
-        onChange={handleChange}
-        placeholder="Search by title or artist…"
-        aria-label="Search songs by title or artist"
-        className={[
-          "w-full pl-9 pr-4 py-2 rounded-xl",
-          "bg-brand-cream dark:bg-brand-espresso",
-          "border border-brand-tan",
-          "font-sans text-sm text-brand-espresso dark:text-brand-cream",
-          "placeholder:text-brand-tan",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
-          "transition-colors duration-200",
-        ].join(" ")}
-      />
-    </div>
+  const handleClear = useCallback(() => {
+    setQuery("");
+    handleSearch("");
+  }, [handleSearch]);
+
+  return (
+    <form
+      role="search"
+      onSubmit={handleSubmit}
+      className="flex items-center gap-2 w-full max-w-md"
+    >
+      <div className="relative flex-1">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          className={[
+            "w-full pl-4 pr-9 py-2 rounded-xl",
+            "bg-brand-cream dark:bg-brand-espresso",
+            "border border-brand-tan",
+            "font-sans text-sm text-brand-espresso dark:text-brand-cream",
+            "placeholder:text-brand-tan",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
+            "transition-colors duration-200",
+          ].join(" ")}
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="Clear search"
+            className="absolute inset-y-0 right-2.5 flex items-center text-brand-brown/60 hover:text-brand-espresso dark:text-brand-tan/60 dark:hover:text-brand-cream transition-colors"
+          >
+            <X size={16} strokeWidth={2} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="sm"
+        aria-label="Submit search"
+        className="h-[38px] px-3.5 shrink-0"
+      >
+        <Search size={16} strokeWidth={2} aria-hidden="true" />
+      </Button>
+    </form>
   );
 }

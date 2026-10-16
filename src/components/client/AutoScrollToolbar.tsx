@@ -17,7 +17,7 @@ export interface AutoScrollToolbarProps {
  * z-50 keeps it above content; exceeds ServiceNavigator z-40.
  */
 const containerClass = [
-  "fixed bottom-6 right-6 z-50",
+  "fixed bottom-16 sm:bottom-20 md:bottom-6 right-6 z-50",
   "flex flex-col items-end gap-2",
   "font-sans",
 ].join(" ");
