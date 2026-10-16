@@ -10,7 +10,7 @@
  * The 12-note chromatic scale used for all transposition calculations.
  * Semitone offsets are calculated as array indices (0 = C, 11 = B).
  */
-export const NOTES: readonly string[] = [
+export const NOTES = [
   "C",
   "C#",
   "D",
@@ -24,6 +24,8 @@ export const NOTES: readonly string[] = [
   "Bb",
   "B",
 ] as const;
+
+export type MusicalNote = (typeof NOTES)[number];
 
 /**
  * Shared chord detection regex.
@@ -63,7 +65,7 @@ const ENHARMONICS: Readonly<Record<string, number>> = {
  * @returns Chromatic index 0–11, or 0 as a safe fallback for unrecognised input
  */
 function rootToIndex(root: string): number {
-  const idx = (NOTES as string[]).indexOf(root);
+  const idx = (NOTES as readonly string[]).indexOf(root);
   if (idx !== -1) return idx;
   return ENHARMONICS[root] ?? 0;
 }

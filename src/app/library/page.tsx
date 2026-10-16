@@ -7,6 +7,7 @@ import NewSongButton from "@/components/library/NewSongButton";
 import PaginationControls from "@/components/client/PaginationControls";
 import PageSizeSelect from "@/components/client/PageSizeSelect";
 import AlphabetFilter from "@/components/client/AlphabetFilter";
+import type { SongSummary } from "@/types/Song";
 
 export const metadata: Metadata = {
   title: "Song Library",
@@ -15,12 +16,7 @@ export const metadata: Metadata = {
 
 const ALLOWED_PAGE_SIZES = [10, 25, 50, 100] as const;
 
-type SongRow = {
-  id: string;
-  title: string;
-  artist: string;
-  original_key: string;
-};
+type SongRow = SongSummary;
 
 interface LibraryPageProps {
   searchParams: Promise<{
