@@ -3,7 +3,7 @@ import { ChevronLeft, Pencil } from "lucide-react";
 import { createClient } from "@/services/supabase/server";
 import { preProcessChords } from "@/utils/musicLogic";
 import Card from "@/components/server/card";
-import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
+import SongDetailClient from "./SongDetailClient";
 import SongYouTubeSection from "@/components/client/SongYouTubeSection";
 
 export const dynamic = "force-dynamic";
@@ -165,9 +165,9 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
           isMusicDirector={isMusicDirector}
         />
 
-        {/* ── Chord sheet — Client island ───────────────────────────────────── */}
+        {/* ── Chord sheet & Chord Drawer — Client island ─────────────────────── */}
         <Card padding="lg">
-          <ChordSheetClient
+          <SongDetailClient
             processedLines={processedLines}
             originalKey={song.original_key}
           />
