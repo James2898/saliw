@@ -238,6 +238,7 @@ export default async function SetlistsPage({
                 basePath="/setlists"
                 pageSize={pageSize}
                 letter={letter ?? undefined}
+                placeholder="Search setlist name or song…"
               />
             </div>
             <PageSizeSelect
