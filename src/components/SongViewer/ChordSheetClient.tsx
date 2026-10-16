@@ -399,272 +399,241 @@ export default function ChordSheetClient({
             )}
           </button>
 
-          {/* Collapsible controls — max-h-96 accommodates Key + Size + Hide Chords + Capo + CAGED rows (AM-1) */}
+          {/* Collapsible controls — accommodates Key + Size + Chords + Capo + CAGED clusters */}
           <div
             className={[
               "overflow-hidden transition-all duration-200 chord-sheet-toolbar-panel",
-              toolbarOpen ? "max-h-96" : "max-h-0",
+              toolbarOpen ? "max-h-[600px]" : "max-h-0",
             ].join(" ")}
             aria-label="Chord sheet controls"
           >
             <div
               className={[
-                "flex items-center gap-3 flex-wrap",
+                "flex items-center gap-4 flex-wrap",
                 "px-4 py-3",
                 "border-t border-brand-brown/20 dark:border-brand-tan/20",
               ].join(" ")}
             >
-              {/* ── Key transposition ───────────────────────────────────────── */}
-              <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
-                Key
-              </span>
+              {/* ── Key transposition cluster ───────────────────────────────── */}
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
+                  Key
+                </span>
 
-              {/* −1 semitone button */}
-              <button
-                type="button"
-                onClick={decrement}
-                aria-label="Transpose down one semitone"
-                className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
-              >
-                −1
-              </button>
-
-              {/* Key selector dropdown */}
-              <select
-                value={displayKey}
-                onChange={(e) => setTargetKey(e.target.value)}
-                aria-label="Select target key"
-                className={[
-                  "px-3 py-1.5 rounded-lg",
-                  "font-mono font-bold text-sm",
-                  "text-brand-espresso dark:text-brand-cream",
-                  "bg-brand-cream dark:bg-brand-espresso",
-                  "border border-brand-tan dark:border-brand-tan/60",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
-                  "transition-colors duration-200",
-                  "cursor-pointer",
-                ].join(" ")}
-              >
-                {(NOTES as string[]).map((note) => (
-                  <option key={note} value={note}>
-                    {note}
-                  </option>
-                ))}
-              </select>
-
-              {/* +1 semitone button */}
-              <button
-                type="button"
-                onClick={increment}
-                aria-label="Transpose up one semitone"
-                className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
-              >
-                +1
-              </button>
-
-              {/* Reset key — only show when transposed */}
-              {semitoneOffset !== 0 && (
+                {/* −1 semitone button */}
                 <button
                   type="button"
-                  onClick={reset}
-                  aria-label="Reset to original key"
+                  onClick={decrement}
+                  aria-label="Transpose down one semitone"
+                  className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
+                >
+                  −1
+                </button>
+
+                {/* Key selector dropdown */}
+                <select
+                  value={displayKey}
+                  onChange={(e) => setTargetKey(e.target.value)}
+                  aria-label="Select target key"
                   className={[
-                    "px-2.5 py-1 rounded-lg shrink-0",
-                    "text-xs font-semibold font-sans",
-                    "text-brand-brown dark:text-brand-tan",
-                    "hover:text-brand-espresso dark:hover:text-brand-cream",
-                    "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-                    "transition-colors duration-200",
+                    "px-3 py-1.5 rounded-lg",
+                    "font-mono font-bold text-sm",
+                    "text-brand-espresso dark:text-brand-cream",
+                    "bg-brand-cream dark:bg-brand-espresso",
+                    "border border-brand-tan dark:border-brand-tan/60",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                    "transition-colors duration-200",
+                    "cursor-pointer",
                   ].join(" ")}
                 >
-                  Reset
+                  {(NOTES as string[]).map((note) => (
+                    <option key={note} value={note}>
+                      {note}
+                    </option>
+                  ))}
+                </select>
+
+                {/* +1 semitone button */}
+                <button
+                  type="button"
+                  onClick={increment}
+                  aria-label="Transpose up one semitone"
+                  className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
+                >
+                  +1
                 </button>
-              )}
 
-              {/* Original key indicator */}
-              <span className="ml-auto text-xs font-medium text-brand-brown dark:text-brand-tan shrink-0">
-                Original: {originalKey}
-              </span>
+                {/* Reset key — only show when transposed */}
+                {semitoneOffset !== 0 && (
+                  <button
+                    type="button"
+                    onClick={reset}
+                    aria-label="Reset to original key"
+                    className={[
+                      "px-2.5 py-1 rounded-lg shrink-0",
+                      "text-xs font-semibold font-sans",
+                      "text-brand-brown dark:text-brand-tan",
+                      "hover:text-brand-espresso dark:hover:text-brand-cream",
+                      "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                      "transition-colors duration-200",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                    ].join(" ")}
+                  >
+                    Reset
+                  </button>
+                )}
 
-              {/* ── Divider ───────────────────────────────────────────────────── */}
-              <span
-                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
-                aria-hidden="true"
-              />
-
-              {/* ── Font size controls ───────────────────────────────────────── */}
-              <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
-                Size
-              </span>
-
-              {/* A− decrease font */}
-              <button
-                type="button"
-                onClick={decreaseFont}
-                aria-label="Decrease font size"
-                className={[ctrlBtnClass, "w-8 h-8 text-xs"].join(" ")}
-              >
-                A−
-              </button>
-
-              {/* Font size indicator — click to reset */}
-              <button
-                type="button"
-                onClick={resetFont}
-                aria-label={`Font size ${fontSize}px — click to reset`}
-                title="Click to reset font size"
-                className={[
-                  "px-2 py-1 rounded-lg shrink-0",
-                  "text-xs font-mono font-bold",
-                  "text-brand-espresso dark:text-brand-cream",
-                  "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
-                  "transition-colors duration-200",
-                ].join(" ")}
-              >
-                {fontSize}px
-              </button>
-
-              {/* A+ increase font */}
-              <button
-                type="button"
-                onClick={increaseFont}
-                aria-label="Increase font size"
-                className={[ctrlBtnClass, "w-8 h-8 text-xs"].join(" ")}
-              >
-                A+
-              </button>
-
-              {/* ── Divider ───────────────────────────────────────────────────── */}
-              <span
-                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
-                aria-hidden="true"
-              />
-
-              {/* ── Stage-ready toggles ──────────────────────────────────────── */}
-
-              {/* Hide Chords toggle */}
-              <button
-                type="button"
-                onClick={() => setChordsHidden((prev) => !prev)}
-                aria-pressed={chordsHidden}
-                aria-label={chordsHidden ? "Show chords" : "Hide chords"}
-                className={[
-                  toggleBtnClass,
-                  chordsHidden ? toggleActiveClass : toggleInactiveClass,
-                ].join(" ")}
-              >
-                {chordsHidden ? "Show Chords" : "Hide Chords"}
-              </button>
-
-              {/* ── Divider ───────────────────────────────────────────────────── */}
-              <span
-                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
-                aria-hidden="true"
-              />
-
-              {/* ── Capo selector (frets 0–7) ────────────────────────────────── */}
-              {/*
-                Capo applies an inverse transpose to the chord display only.
-                Fret N: chord sheet shows open-position shapes the performer
-                fingers (sounding key transposed DOWN by N semitones).
-                Does NOT affect performanceKey or any sync/Realtime state.
-              */}
-              <span className={pickerLabelClass}>Capo</span>
-
-              <div
-                className="flex items-center gap-1.5 flex-wrap"
-                role="group"
-                aria-label="Capo fret selector"
-              >
-                {CAPO_FRETS.map((fret) => {
-                  const isSelected = capoOffset === fret;
-                  return (
-                    <button
-                      key={fret}
-                      type="button"
-                      onClick={() => {
-                        setCapoOffset(fret);
-                        setCAGEDShape(null);
-                      }}
-                      aria-label={`Capo fret ${fret}${fret === 0 ? " (no capo)" : ""}${isSelected ? " (selected)" : ""}`}
-                      aria-pressed={isSelected}
-                      className={[
-                        swatchBtnBaseClass,
-                        isSelected
-                          ? capoSwatchSelectedClass
-                          : capoSwatchUnselectedClass,
-                      ].join(" ")}
-                    >
-                      {fret}
-                    </button>
-                  );
-                })}
+                {/* Original key indicator */}
+                <span className="text-xs font-medium text-brand-brown dark:text-brand-tan shrink-0">
+                  ({originalKey})
+                </span>
               </div>
 
-              {/* ── Divider ───────────────────────────────────────────────────── */}
-              <span
-                className="w-px h-5 bg-brand-brown/20 dark:bg-brand-tan/20 shrink-0"
-                aria-hidden="true"
-              />
+              {/* ── Font size controls cluster ───────────────────────────────── */}
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <span className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan shrink-0">
+                  Size
+                </span>
 
-              {/* ── CAGED shape picker ───────────────────────────────────────── */}
-              {/*
-                Functional performer aid: clicking a CAGED shape auto-sets the
-                capo to the lowest fret (0–7) that makes that open shape sound
-                like the current displayKey. Shapes requiring capo > 7 are
-                disabled (greyed out). Pressing the active shape deselects it
-                and resets capo to 0.
-              */}
-              <span className={pickerLabelClass}>CAGED</span>
+                {/* A− decrease font */}
+                <button
+                  type="button"
+                  onClick={decreaseFont}
+                  aria-label="Decrease font size"
+                  className={[ctrlBtnClass, "w-8 h-8 text-xs"].join(" ")}
+                >
+                  A−
+                </button>
 
-              <div
-                className="flex items-center gap-1.5 flex-wrap"
-                role="group"
-                aria-label="CAGED shape selector"
-              >
-                {CAGED_SHAPES.map((shape) => {
-                  const capoFret = getSemitoneOffset(
-                    CAGED_SHAPE_ROOTS[shape],
-                    displayKey
-                  );
-                  const isDisabled = capoFret > 7;
-                  const isSelected = cagedShape === shape;
-                  return (
-                    <button
-                      key={shape}
-                      type="button"
-                      disabled={isDisabled}
-                      onClick={
-                        isDisabled
-                          ? undefined
-                          : () => {
-                              if (isSelected) {
-                                setCAGEDShape(null);
-                                setCapoOffset(0);
-                              } else {
-                                setCAGEDShape(shape);
-                                setCapoOffset(capoFret);
-                              }
-                            }
-                      }
-                      aria-label={`CAGED shape ${shape}${isDisabled ? " (not available in current key)" : ""}${isSelected ? " (selected)" : ""}`}
-                      aria-pressed={isDisabled ? undefined : isSelected}
-                      aria-disabled={isDisabled ? true : undefined}
-                      className={[
-                        swatchBtnBaseClass,
-                        isDisabled
-                          ? capoSwatchDisabledClass
-                          : isSelected
+                {/* Font size indicator — click to reset */}
+                <button
+                  type="button"
+                  onClick={resetFont}
+                  aria-label={`Font size ${fontSize}px — click to reset`}
+                  title="Click to reset font size"
+                  className={[
+                    "px-2 py-1 rounded-lg shrink-0",
+                    "text-xs font-mono font-bold",
+                    "text-brand-espresso dark:text-brand-cream",
+                    "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                    "transition-colors duration-200",
+                  ].join(" ")}
+                >
+                  {fontSize}px
+                </button>
+
+                {/* A+ increase font */}
+                <button
+                  type="button"
+                  onClick={increaseFont}
+                  aria-label="Increase font size"
+                  className={[ctrlBtnClass, "w-8 h-8 text-xs"].join(" ")}
+                >
+                  A+
+                </button>
+              </div>
+
+              {/* ── Stage-ready toggles cluster ──────────────────────────────── */}
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setChordsHidden((prev) => !prev)}
+                  aria-pressed={chordsHidden}
+                  aria-label={chordsHidden ? "Show chords" : "Hide chords"}
+                  className={[
+                    toggleBtnClass,
+                    chordsHidden ? toggleActiveClass : toggleInactiveClass,
+                  ].join(" ")}
+                >
+                  {chordsHidden ? "Show Chords" : "Hide Chords"}
+                </button>
+              </div>
+
+              {/* ── Capo selector cluster ────────────────────────────────────── */}
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <span className={pickerLabelClass}>Capo</span>
+                <div
+                  className="flex items-center gap-1.5 flex-nowrap"
+                  role="group"
+                  aria-label="Capo fret selector"
+                >
+                  {CAPO_FRETS.map((fret) => {
+                    const isSelected = capoOffset === fret;
+                    return (
+                      <button
+                        key={fret}
+                        type="button"
+                        onClick={() => {
+                          setCapoOffset(fret);
+                          setCAGEDShape(null);
+                        }}
+                        aria-label={`Capo fret ${fret}${fret === 0 ? " (no capo)" : ""}${isSelected ? " (selected)" : ""}`}
+                        aria-pressed={isSelected}
+                        className={[
+                          swatchBtnBaseClass,
+                          isSelected
                             ? capoSwatchSelectedClass
                             : capoSwatchUnselectedClass,
-                      ].join(" ")}
-                    >
-                      {shape}
-                    </button>
-                  );
-                })}
+                        ].join(" ")}
+                      >
+                        {fret}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── CAGED shape picker cluster ───────────────────────────────── */}
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <span className={pickerLabelClass}>CAGED</span>
+                <div
+                  className="flex items-center gap-1.5 flex-nowrap"
+                  role="group"
+                  aria-label="CAGED shape selector"
+                >
+                  {CAGED_SHAPES.map((shape) => {
+                    const capoFret = getSemitoneOffset(
+                      CAGED_SHAPE_ROOTS[shape],
+                      displayKey
+                    );
+                    const isDisabled = capoFret > 7;
+                    const isSelected = cagedShape === shape;
+                    return (
+                      <button
+                        key={shape}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={
+                          isDisabled
+                            ? undefined
+                            : () => {
+                                if (isSelected) {
+                                  setCAGEDShape(null);
+                                  setCapoOffset(0);
+                                } else {
+                                  setCAGEDShape(shape);
+                                  setCapoOffset(capoFret);
+                                }
+                              }
+                        }
+                        aria-label={`CAGED shape ${shape}${isDisabled ? " (not available in current key)" : ""}${isSelected ? " (selected)" : ""}`}
+                        aria-pressed={isDisabled ? undefined : isSelected}
+                        aria-disabled={isDisabled ? true : undefined}
+                        className={[
+                          swatchBtnBaseClass,
+                          isDisabled
+                            ? capoSwatchDisabledClass
+                            : isSelected
+                              ? capoSwatchSelectedClass
+                              : capoSwatchUnselectedClass,
+                        ].join(" ")}
+                      >
+                        {shape}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -725,6 +694,27 @@ export default function ChordSheetClient({
                           key={tokenIndex}
                           className="chord-item"
                           data-original-chord={token.originalChord}
+                          onClick={
+                            onChordClick
+                              ? () => onChordClick(token.text)
+                              : undefined
+                          }
+                          role={onChordClick ? "button" : undefined}
+                          tabIndex={onChordClick ? 0 : undefined}
+                          onKeyDown={
+                            onChordClick
+                              ? (e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    const activeChord =
+                                      (
+                                        e.currentTarget as HTMLElement
+                                      ).innerText.trim() || token.text;
+                                    onChordClick(activeChord);
+                                  }
+                                }
+                              : undefined
+                          }
                         >
                           {token.text}
                         </span>

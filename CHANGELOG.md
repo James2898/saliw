@@ -6,6 +6,16 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-10-17
 
+### Added / Changed
+
+- P1/P2 UI & Layout Polish, Mobile Responsiveness, and Explicit Search Execution (`TASK-052`)
+  - Profile layout & role badge: wrapped `/profile` page content in semantic `<main>` with `Card` and rendered formatted role badges for `music_director`, `admin`, and `member` (AC-1, AC-2)
+  - Responsive song controls clustering: grouped controls into sub-clusters (Key Stepper, Font Size, Chords Toggle, Capo, CAGED) with `flex-nowrap shrink-0` and removed vertical dividers to eliminate orphaned buttons/dividers on mobile screens (AC-3, AC-4)
+  - Mobile layout & collision prevention: hid `SectionNavDeck` on `< 768px` (`hidden md:flex`) to preserve full width without truncation, and elevated `AutoScrollToolbar` mobile offset (`bottom-16 sm:bottom-20 md:bottom-6`) to clear the bottom drawer trigger tab (AC-5, AC-6)
+  - SearchBar polish & explicit execution: removed 300ms debounce, wrapped input in `<form role="search">` with explicit submit `Button` (`Search` icon) and Enter key submission (`e.preventDefault()`), added immediate reset clear button, and added customizable `placeholder` / `ariaLabel` props with `/setlists` passing contextual placeholder (AC-7, AC-8, AC-13, AC-14, AC-15, AM-1)
+  - ChordDrawer integration & terminology: renamed drawer trigger tab from "Chords ↑" to "Chord Helper ↑", integrated `ChordDrawer` on standalone song viewer (`/library/[id]`), computed transposed `uniqueChords` via `useMemo`, and wired accessible `onChordClick` callback in `ChordSheetClient` (AC-9, AC-10, AC-11, AC-12, AM-2)
+  - Affected files: `src/app/profile/page.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SectionNavDeck.tsx`, `src/components/client/AutoScrollToolbar.tsx`, `src/components/client/ChordDrawer.tsx`, `src/components/client/SearchBar.tsx`, `src/app/setlists/page.tsx`, `src/app/library/[id]/SongDetailClient.tsx`, `src/app/library/[id]/page.tsx`
+
 ### Security
 
 - Immediate P0 security hardening across auth, external video embedding, and profile role authorization (`TASK-050`)
