@@ -4,6 +4,29 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-17
+
+### Security
+
+- Immediate P0 security hardening across auth, external video embedding, and profile role authorization (`TASK-050`)
+  - Auth callback open redirect guard: strictly validate `next` parameter in `src/app/auth/callback/route.ts` ensuring only internal relative paths starting with `/` (rejecting `//`, `/\`, and `@` parser confusion) are accepted; falls back safely to `/` (AC-1)
+  - YouTube URL validation & canonicalization: extracted shared validation utility in `src/utils/youtube.ts` enforcing permitted YouTube domains and 11-char video ID extraction; canonicalizes to `https://www.youtube.com/embed/${videoId}`; returns safe error objects per BUG-016 (AC-2)
+  - Iframe sandboxing: added `sandbox="allow-scripts allow-same-origin allow-presentation"` attributes to all embedded YouTube iframes in `SongYouTubeSection.tsx` and `SetlistSongSection.tsx` without `allow-top-navigation` or `allow-forms` (AC-3)
+  - Database role default: migration `20261017000000_p0_security_hardening.sql` sets `public.profiles.role` default value to `'member'` (AC-4)
+  - Role & email tamper protection: trigger function `prevent_profile_role_email_tampering()` and `BEFORE UPDATE` trigger on `public.profiles` aborts unauthorized changes to `role` or `email` columns with SQLSTATE `42501` (AC-5)
+  - Affected files: `src/app/auth/callback/route.ts`, `src/app/actions/songActions.ts`, `src/components/client/SongYouTubeSection.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/components/client/YouTubeLinkModal.tsx`, `src/utils/youtube.ts`, `supabase/migrations/20261017000000_p0_security_hardening.sql`
+
+### Performance & Reliability
+
+- P1 immediate reliability and performance optimizations across chord processing, realtime setlist sync, and chord sheet event listeners (`TASK-051`)
+  - Chord preprocessing memoization: wrapped `preProcessChords` in `useMemo` with primitive dependency arrays (`[currentContent]` in `SongEditorClient.tsx` and `[content]` in `NewSongFormClient.tsx`) preventing expensive regex re-parsing when editing non-chord fields (AC-1 through AC-5, BUG-002, BUG-007)
+  - Realtime timer lifecycle & memory leak prevention: tracked all debounce timers (`debounceTimersRef`) and idle/status timers (`statusTimersRef`) in `useSetlistSync.ts`, clearing them on `useEffect` unmount; guarded all deferred callbacks with `isMountedRef` to prevent post-unmount execution or state updates (AC-6, AC-7, BUG-019)
+  - Realtime subscription in-flight guards: added connection guards on `toggleFollow` and `toggleLive` (`isFollowConnectingRef`, `isLiveConnectingRef`) preventing duplicate channel subscriptions on rapid user clicks and resetting cleanly on resolution or error (AC-8, AC-9, AM-1)
+  - Window listener N+1 elimination: added optional `{ enabled?: boolean }` prop to `useAutoScroll` and `useFontSize`, passing `{ enabled: !injectedAutoScroll }` in `ChordSheetClient.tsx` to prevent redundant global `keydown` and `resize` listeners across multi-song setlist views while preserving smooth listener operation for the active song (AC-10 through AC-13, AM-2)
+  - Affected files: `src/components/client/SongEditorClient.tsx`, `src/components/client/NewSongFormClient.tsx`, `src/hooks/useSetlistSync.ts`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/hooks/useAutoScroll.ts`, `src/hooks/useFontSize.ts`
+
+---
+
 ## [Unreleased] — 2026-06-01
 
 ### Added
