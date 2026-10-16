@@ -170,7 +170,7 @@ export async function updateMusician(input: {
     }
 
     // Build payload with only the fields that are explicitly provided
-    const payload: Record<string, unknown> = {};
+    const payload: Partial<DbMusician> = {};
     if (input.name !== undefined) payload.name = input.name;
     if (input.notes !== undefined) payload.notes = input.notes;
 

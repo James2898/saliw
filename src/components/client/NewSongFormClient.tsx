@@ -33,7 +33,7 @@ export default function NewSongFormClient() {
 
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
-  const [originalKey, setOriginalKey] = useState<string>(NOTES[0] as string);
+  const [originalKey, setOriginalKey] = useState<string>(NOTES[0]);
   const [singer, setSinger] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [content, setContent] = useState("");
@@ -156,7 +156,7 @@ export default function NewSongFormClient() {
               "cursor-pointer font-mono font-bold",
             ].join(" ")}
           >
-            {(NOTES as string[]).map((note) => (
+            {NOTES.map((note) => (
               <option key={note} value={note}>
                 {note}
               </option>
