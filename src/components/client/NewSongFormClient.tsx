@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { NOTES, preProcessChords } from "@/utils/musicLogic";
 import { createSong } from "@/app/actions/songActions";
-import { normaliseYouTubeUrl } from "@/components/client/YouTubeLinkModal";
+import { normaliseYouTubeUrl } from "@/utils/youtube";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
 
 const inputBaseClass = [
@@ -40,7 +40,7 @@ export default function NewSongFormClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const processedLines = preProcessChords(content);
+  const processedLines = useMemo(() => preProcessChords(content), [content]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

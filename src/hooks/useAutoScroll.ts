@@ -63,6 +63,15 @@ export type UseAutoScrollReturn = {
   setSpeed: (value: number) => void;
 };
 
+export interface UseAutoScrollOptions {
+  /**
+   * Whether global window event listeners (resize, keydown) should be attached.
+   * Defaults to true. When false (e.g. child ChordSheetClient instances in setlists),
+   * window listeners are skipped to prevent duplicate N+1 listener attachments.
+   */
+  enabled?: boolean;
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 /**
@@ -78,7 +87,10 @@ export type UseAutoScrollReturn = {
  * - BUG-004: No Tailwind named utilities here (CSS only in component).
  * - AC-30: All localStorage calls are wrapped in try/catch.
  */
-export function useAutoScroll(): UseAutoScrollReturn {
+export function useAutoScroll(
+  options?: UseAutoScrollOptions
+): UseAutoScrollReturn {
+  const enabled = options?.enabled ?? true;
   // Speed persisted to localStorage via lazy initializer (BUG-001)
   const [speed, setSpeedState] = useState<number>(readStoredSpeed);
 
@@ -245,6 +257,8 @@ export function useAutoScroll(): UseAutoScrollReturn {
   // ── cannotScroll detector — runs on mount and on window resize ─────────────
 
   useEffect(() => {
+    if (!enabled) return;
+
     function checkScrollable() {
       if (typeof window === "undefined") return;
       const scrollHeight = document.documentElement.scrollHeight;
@@ -255,11 +269,13 @@ export function useAutoScroll(): UseAutoScrollReturn {
     checkScrollable();
     window.addEventListener("resize", checkScrollable);
     return () => window.removeEventListener("resize", checkScrollable);
-  }, []);
+  }, [enabled]);
 
   // ── Spacebar key handler (AC 18) ──────────────────────────────────────────
 
   useEffect(() => {
+    if (!enabled) return;
+
     function handleKeyDown(e: KeyboardEvent) {
       if (e.code !== "Space") return;
 
@@ -297,7 +313,7 @@ export function useAutoScroll(): UseAutoScrollReturn {
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cancelRaf, startRaf]);
+  }, [enabled, cancelRaf, startRaf]);
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
 

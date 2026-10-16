@@ -2,6 +2,7 @@
 
 import { createClient } from "@/services/supabase/server";
 import { chordRegex, NOTES } from "@/utils/musicLogic";
+import { normaliseYouTubeUrl } from "@/utils/youtube";
 import type { DbSong } from "@/types/supabase";
 
 /**
@@ -59,6 +60,21 @@ export async function createSong(input: {
       };
     }
 
+    let validatedYoutubeUrl: string | null = null;
+    if (input.youtube_url !== undefined && input.youtube_url !== null) {
+      const trimmed = input.youtube_url.trim();
+      if (trimmed !== "") {
+        const normalised = normaliseYouTubeUrl(trimmed);
+        if (!normalised.ok) {
+          return {
+            data: null,
+            error: "Invalid YouTube URL format.",
+          };
+        }
+        validatedYoutubeUrl = normalised.embedUrl;
+      }
+    }
+
     const { data, error } = await supabase
       .from("songs")
       .insert({
@@ -68,7 +84,7 @@ export async function createSong(input: {
         content: input.content,
         created_by: user.id,
         singer: input.singer ?? null,
-        youtube_url: input.youtube_url ?? null,
+        youtube_url: validatedYoutubeUrl,
       })
       .select(
         "id, title, artist, original_key, content, created_by, singer, youtube_url"
@@ -140,6 +156,27 @@ export async function updateSong(input: {
     }
 
     const { id, ...fields } = input;
+
+    if (fields.youtube_url !== undefined) {
+      if (fields.youtube_url === null) {
+        fields.youtube_url = null;
+      } else {
+        const trimmed = fields.youtube_url.trim();
+        if (trimmed === "") {
+          fields.youtube_url = null;
+        } else {
+          const normalised = normaliseYouTubeUrl(trimmed);
+          if (!normalised.ok) {
+            return {
+              data: null,
+              error: "Invalid YouTube URL format.",
+            };
+          }
+          fields.youtube_url = normalised.embedUrl;
+        }
+      }
+    }
+
     const updatePayload = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
     );
