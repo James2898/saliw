@@ -60,6 +60,7 @@ export default function SetlistPeopleLocalSection({
 }: SetlistPeopleLocalSectionProps) {
   // ── Add-row local state — lazy initializers (BUG-001) ────────────────────────
   // Handlers declared below; useState seeded before any JSX references them.
+  const [isLineupOpen, setIsLineupOpen] = useState<boolean>(() => false);
   const [addMusicianId, setAddMusicianId] = useState<string>(() => "");
   const [addInstrument, setAddInstrument] = useState<string>(() => "");
 
@@ -146,54 +147,72 @@ export default function SetlistPeopleLocalSection({
 
       {/* ── Lineup subsection ─────────────────────────────────────────────── */}
       <div>
-        <p className={sectionHeadingClass}>
+        {/* Desktop heading */}
+        <p className={`hidden md:block ${sectionHeadingClass}`}>
           Lineup ({lineup.length}{" "}
           {lineup.length === 1 ? "musician" : "musicians"})
         </p>
 
-        {/* Lineup entries or empty state */}
-        {lineup.length === 0 ? (
-          <p className="text-sm text-brand-brown/60 dark:text-brand-tan/60 mb-4">
-            No musicians added yet.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2 mb-4">
-            {lineup.map((entry) => (
-              <div key={entry.tempId} className={rowClass}>
-                {/* Musician name and instrument */}
-                <p className="flex-1 text-sm text-brand-espresso dark:text-brand-cream">
-                  <span className="font-medium">{entry.name}</span>
-                  <span className="text-brand-brown/60 dark:text-brand-tan/60">
-                    {" "}
-                    — {entry.instrument}
-                  </span>
-                </p>
+        {/* Mobile disclosure accordion header (< 768px) */}
+        <button
+          type="button"
+          onClick={() => setIsLineupOpen((prev) => !prev)}
+          aria-expanded={isLineupOpen}
+          aria-controls="mobile-lineup-content"
+          className="md:hidden w-full min-h-[44px] flex items-center justify-between px-4 py-2.5 rounded-xl border border-brand-brown/20 dark:border-brand-tan/20 bg-brand-cream dark:bg-brand-espresso text-sm font-semibold text-brand-espresso dark:text-brand-cream mb-4 focus:outline-none focus:ring-2 focus:ring-brand-espresso"
+        >
+          <span>Service Lineup: {lineup.length} assigned</span>
+          <span aria-hidden="true">{isLineupOpen ? "▴" : "▾"}</span>
+        </button>
 
-                {/* Remove button */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemove(entry.tempId)}
-                  aria-label={`Remove ${entry.name} from lineup`}
-                >
-                  Remove
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Lineup content: always expanded on desktop md:block, toggled on mobile */}
+        <div
+          id="mobile-lineup-content"
+          className={isLineupOpen ? "block" : "hidden md:block"}
+        >
+          {/* Lineup entries or empty state */}
+          {lineup.length === 0 ? (
+            <p className="text-sm text-brand-brown/60 dark:text-brand-tan/60 mb-4">
+              No musicians added yet.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2 mb-4">
+              {lineup.map((entry) => (
+                <div key={entry.tempId} className={rowClass}>
+                  {/* Musician name and instrument */}
+                  <p className="flex-1 text-sm text-brand-espresso dark:text-brand-cream min-w-0">
+                    <span className="font-medium">{entry.name}</span>
+                    <span className="text-brand-brown/60 dark:text-brand-tan/60">
+                      {" "}
+                      — {entry.instrument}
+                    </span>
+                  </p>
 
-        {/* Add musician row */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-end gap-3 flex-wrap">
+                  {/* Remove button */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemove(entry.tempId)}
+                    aria-label={`Remove ${entry.name} from lineup`}
+                    className="min-h-[44px]"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add musician row — refactored to responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
             {/* Musician select */}
-            <div className="flex flex-col gap-1 min-w-[160px]">
+            <div className="flex flex-col gap-1 min-w-0">
               <label className={labelClass}>Musician</label>
               <select
                 value={addMusicianId}
                 onChange={handleAddMusicianSelectChange}
-                className={selectClass}
+                className={`${selectClass} w-full`}
                 aria-label="Select musician to add"
               >
                 <option value="">— Select —</option>
@@ -212,7 +231,7 @@ export default function SetlistPeopleLocalSection({
             </div>
 
             {/* Instrument input */}
-            <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+            <div className="flex flex-col gap-1 min-w-0">
               <label className={labelClass}>Instrument</label>
               <input
                 type="text"
@@ -225,7 +244,7 @@ export default function SetlistPeopleLocalSection({
             </div>
 
             {/* Add button */}
-            <div className="pb-0.5">
+            <div className="min-w-0 sm:pb-0.5">
               <Button
                 type="button"
                 variant="primary"
@@ -233,6 +252,7 @@ export default function SetlistPeopleLocalSection({
                 onClick={handleAdd}
                 disabled={addButtonDisabled}
                 aria-label="Add musician to lineup"
+                className="w-full sm:w-auto min-h-[44px]"
               >
                 Add
               </Button>

@@ -96,6 +96,7 @@ export default async function NewSetlistPage() {
             allSongs={allSongs}
             libraryError={libraryError}
             initialDate=""
+            initialIsPublic={true}
             allMusicians={allMusicians}
             isMusicDirector={isMusicDirector}
           />
