@@ -1,9 +1,14 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import AppendSongsModal from "@/components/client/AppendSongsModal";
+import dynamic from "next/dynamic";
 import type { ModalSong } from "@/components/client/AppendSongsModal";
 import { getAllSongs } from "@/app/actions/songActions";
+
+const AppendSongsModal = dynamic(
+  () => import("@/components/client/AppendSongsModal"),
+  { ssr: false }
+);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

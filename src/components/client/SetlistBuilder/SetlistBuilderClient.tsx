@@ -14,14 +14,18 @@ import {
   setSetlistWorshipLeader,
   addSetlistMusician,
 } from "@/app/actions/setlistActions";
+import dynamic from "next/dynamic";
 import Button from "@/components/client/button";
 import ErrorBanner from "./ErrorBanner";
 import SetlistPanel from "./SetlistPanel";
 import LibraryPanel from "./LibraryPanel";
-import CloneSetlistDialog from "./CloneSetlistDialog";
 import SetlistPeopleLocalSection, {
   type PendingLineupEntry,
 } from "./SetlistPeopleLocalSection";
+
+const CloneSetlistDialog = dynamic(() => import("./CloneSetlistDialog"), {
+  ssr: false,
+});
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
