@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import Link from "next/link";
 import { ListMusic, Music, Sparkles } from "lucide-react";
 import RecentSongs, {
   type RecentSong,
@@ -63,6 +64,22 @@ export default function PublicDashboardView({
           every song finds its key, every setlist finds its flow, and every
           service is shared in sync.
         </p>
+
+        {/* Public Hero CTA Buttons */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+          <Link
+            href="/library"
+            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl font-sans font-semibold text-base inline-flex items-center justify-center transition-colors duration-200 bg-brand-tan text-brand-espresso hover:bg-brand-brown hover:text-brand-cream border border-brand-tan hover:border-brand-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2"
+          >
+            Browse Song Library →
+          </Link>
+          <Link
+            href="/setlists"
+            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl font-sans font-semibold text-base inline-flex items-center justify-center transition-colors duration-200 bg-transparent text-brand-brown border border-brand-brown hover:bg-[var(--brand-tan-alpha)] dark:text-brand-tan dark:border-brand-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-brown focus-visible:ring-offset-2"
+          >
+            Explore Setlists
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

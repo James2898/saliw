@@ -438,52 +438,49 @@ export default function Navbar() {
           </ul>
         </nav>
 
-        {/* Sidebar footer — greeting + theme toggle + auth */}
+        {/* Sidebar footer — greeting + full-width vertical action rows */}
         <div className="shrink-0 px-3 py-4 border-t border-brand-brown/20 flex flex-col gap-2">
           {/* Greeting (authenticated only) */}
           {greetingText && (
-            <span className="font-sans font-semibold text-sm text-brand-espresso dark:text-brand-cream px-3">
+            <span className="font-sans font-semibold text-sm text-brand-espresso dark:text-brand-cream px-3 mb-1">
               {greetingText}
             </span>
           )}
 
-          <div className="flex items-center gap-2">
-            {/* Theme toggle */}
+          <div className="flex flex-col gap-1.5">
+            {/* Profile link (authenticated only) */}
+            {user && (
+              <Link
+                href="/profile"
+                onClick={closeSidebar}
+                className={[
+                  "w-full min-h-[44px] flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold font-sans transition-colors duration-200",
+                  pathname === "/profile"
+                    ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
+                    : "text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-cream dark:hover:bg-brand-tan/10",
+                ].join(" ")}
+              >
+                <UserRound size={18} strokeWidth={2} aria-hidden="true" />
+                <span>Profile Settings</span>
+              </Link>
+            )}
+
+            {/* Theme toggle — full-width touch target with explicit status label */}
             <button
               type="button"
               onClick={toggleTheme}
               aria-label={
                 isDark ? "Switch to light mode" : "Switch to dark mode"
               }
-              className={[
-                iconBtnClass,
-                "flex-1 justify-start gap-3 px-3 text-sm font-semibold font-sans w-auto h-auto py-2.5",
-              ].join(" ")}
+              className="w-full min-h-[44px] flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold font-sans transition-colors duration-200 text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-cream dark:hover:bg-brand-tan/10"
             >
               {isDark ? (
                 <Sun size={18} strokeWidth={2} aria-hidden="true" />
               ) : (
                 <Moon size={18} strokeWidth={2} aria-hidden="true" />
               )}
-              <span>{isDark ? "Light mode" : "Dark mode"}</span>
+              <span>{`Theme: ${isDark ? "Dark" : "Light"}`}</span>
             </button>
-
-            {/* Profile link (authenticated only) */}
-            {user && (
-              <Link
-                href="/profile"
-                onClick={closeSidebar}
-                aria-label="Your profile"
-                className={[
-                  iconBtnClass,
-                  pathname === "/profile"
-                    ? "bg-brand-brown/10 text-brand-brown dark:bg-brand-tan/10 dark:text-brand-tan"
-                    : "",
-                ].join(" ")}
-              >
-                <UserRound size={18} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            )}
 
             {/* Auth action */}
             {user ? (
@@ -495,10 +492,10 @@ export default function Navbar() {
                   // Brief delay so sidebar closes before modal opens (avoids z-index overlap)
                   setTimeout(() => openLogoutModal(sidebarLogoutRef), 50);
                 }}
-                aria-label="Sign out"
-                className={iconBtnClass}
+                className="w-full min-h-[44px] flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold font-sans transition-colors duration-200 text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-cream dark:hover:bg-brand-tan/10"
               >
                 <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+                <span>Sign Out</span>
               </button>
             ) : (
               <button
@@ -507,10 +504,10 @@ export default function Navbar() {
                   closeSidebar();
                   handleLoginClick();
                 }}
-                aria-label="Sign in"
-                className={iconBtnClass}
+                className="w-full min-h-[44px] flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold font-sans transition-colors duration-200 text-brand-espresso hover:bg-brand-brown/10 dark:text-brand-cream dark:hover:bg-brand-tan/10"
               >
                 <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+                <span>Sign In</span>
               </button>
             )}
           </div>
