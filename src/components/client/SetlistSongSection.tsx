@@ -50,8 +50,6 @@ interface SetlistSongSectionProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
-  /** 0-based position of this song in the setlist — used for alternating background. */
-  songIndex?: number;
   /**
    * Callback fired when a chord token is clicked in the chord sheet.
    * Receives the transposed (displayed) chord name as the performer sees it.
@@ -103,7 +101,6 @@ function SetlistSongSection({
   chordFontSize,
   chordBg,
   chordColor,
-  songIndex = 0,
   onChordClick,
   onOffsetChange,
 }: SetlistSongSectionProps) {

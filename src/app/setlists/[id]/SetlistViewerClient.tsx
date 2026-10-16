@@ -3,17 +3,24 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Pencil, Settings } from "lucide-react";
+import dynamic from "next/dynamic";
 import ServiceNavigator from "@/components/client/ServiceNavigator";
 import SetlistSongSection from "@/components/client/SetlistSongSection";
-import ChordDrawer from "@/components/client/ChordDrawer";
 import GoLiveButton from "@/components/client/GoLiveButton";
 import FollowLeaderButton from "@/components/client/FollowLeaderButton";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 import AppendSongsButton from "@/components/client/AppendSongsButton";
-import SetlistSettingsModal from "@/components/client/SetlistSettingsModal";
 import SectionNavDeck, {
   deriveSections,
 } from "@/components/client/SectionNavDeck";
+
+const ChordDrawer = dynamic(() => import("@/components/client/ChordDrawer"), {
+  ssr: false,
+});
+const SetlistSettingsModal = dynamic(
+  () => import("@/components/client/SetlistSettingsModal"),
+  { ssr: false }
+);
 import { useSetlistSync } from "@/hooks/useSetlistSync";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useFontSize } from "@/hooks/useFontSize";
@@ -381,14 +388,13 @@ export default function SetlistViewerClient({
 
         {/* ── Song sections ──────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-10">
-          {songs.map((song, songIndex) => {
+          {songs.map((song) => {
             const overrideKey = sync.overrideKeys.get(song.junctionId);
             const liveSyncState = sync.songSyncStates.get(song.junctionId);
 
             return (
               <SetlistSongSection
                 key={song.junctionId}
-                songIndex={songIndex}
                 junctionId={song.junctionId}
                 songId={song.songId}
                 setlistId={song.setlistId}

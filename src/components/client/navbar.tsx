@@ -17,9 +17,13 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { createClient } from "@/services/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import LogoutModal from "@/components/client/logout-modal";
+
+const LogoutModal = dynamic(() => import("@/components/client/logout-modal"), {
+  ssr: false,
+});
 
 const navLinks = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
