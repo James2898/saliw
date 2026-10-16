@@ -8,6 +8,15 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ### Added / Changed
 
+- P3 TypeScript modernization, schema generics, and domain safety (`TASK-054`)
+  - Supabase database generic definition: declared canonical `Database` interface in `src/types/supabase.ts` with `Row`, `Insert`, `Update`, `Relationships`, `Views` (`public_musicians`), and `Functions` (`reorder_setlist_songs`, `is_music_director`) matching Supabase schema conventions and nullable `timestamptz` typing per BUG-018 (AC-1)
+  - Supabase client generic parameterization: typed `createBrowserClient<Database>` and `createServerClient<Database>` in `client.ts` and `server.ts`, providing automatic return type inference for standard queries, mutations, and actions (AC-2)
+  - Domain type consolidation: extracted canonical `SongSummary` domain type (`Pick<Song, "id" | "title" | "artist" | "original_key">`) in `src/types/Song.ts` and eliminated duplicate local interfaces across `RecentSongs.tsx`, `library/page.tsx`, `SetlistBuilderClient.tsx`, and `AppendSongsModal.tsx` (AC-3)
+  - Song nullability alignment: aligned `Song.singer?: string | null` with `DbSong.singer` to prevent database-to-domain conversion mismatches (AC-4)
+  - Strict musical note domain typing: declared `NOTES as const` without widening in `src/utils/musicLogic.ts`, exported `MusicalNote` union type, and eliminated mutable `(NOTES as string[])` type casts across music logic, hooks, and song editor/creator forms (AC-5)
+  - Dead code pruning: deleted obsolete unused type files `src/types/Singer.ts` and `src/types/View.ts` with zero dangling imports (AC-6)
+  - Affected files: `src/types/supabase.ts`, `src/services/supabase/client.ts`, `src/services/supabase/server.ts`, `src/types/Song.ts`, `src/components/dashboard/RecentSongs.tsx`, `src/app/library/page.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/components/client/AppendSongsModal.tsx`, `src/utils/musicLogic.ts`, `src/hooks/useTranspose.ts`, `src/components/client/NewSongFormClient.tsx`, `src/components/client/SongEditorClient.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/app/actions/songActions.ts`, `src/app/actions/setlistActions.ts`, `src/app/actions/musicianActions.ts`, `src/app/page.tsx`, `src/types/Singer.ts` (deleted), `src/types/View.ts` (deleted)
+
 - P1/P2 UI & Layout Polish, Mobile Responsiveness, and Explicit Search Execution (`TASK-052`)
   - Profile layout & role badge: wrapped `/profile` page content in semantic `<main>` with `Card` and rendered formatted role badges for `music_director`, `admin`, and `member` (AC-1, AC-2)
   - Responsive song controls clustering: grouped controls into sub-clusters (Key Stepper, Font Size, Chords Toggle, Capo, CAGED) with `flex-nowrap shrink-0` and removed vertical dividers to eliminate orphaned buttons/dividers on mobile screens (AC-3, AC-4)
