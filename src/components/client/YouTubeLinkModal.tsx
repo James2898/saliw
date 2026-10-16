@@ -18,49 +18,13 @@ interface YouTubeLinkModalProps {
   onSaveSuccess: (newUrl: string | null) => void;
 }
 
-// ── Utility: normalise any YouTube URL to a canonical embed URL ───────────────
+import {
+  extractYouTubeVideoId,
+  getYouTubeEmbedUrl,
+  normaliseYouTubeUrl,
+} from "@/utils/youtube";
 
-/**
- * Extracts the YouTube video ID from a watch URL, youtu.be shortlink, or embed URL.
- * Returns null if the input does not match any known format.
- */
-function extractYouTubeVideoId(url: string): string | null {
-  const trimmed = url.trim();
-
-  // https://www.youtube.com/watch?v=VIDEO_ID
-  const watchMatch = trimmed.match(
-    /(?:youtube\.com\/watch\?(?:.*&)?v=)([a-zA-Z0-9_-]{11})/
-  );
-  if (watchMatch) return watchMatch[1];
-
-  // https://youtu.be/VIDEO_ID
-  const shortMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  if (shortMatch) return shortMatch[1];
-
-  // https://www.youtube.com/embed/VIDEO_ID
-  const embedMatch = trimmed.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
-  if (embedMatch) return embedMatch[1];
-
-  return null;
-}
-
-/**
- * Validates and normalises a YouTube URL to the canonical embed format.
- * Returns { ok: true, embedUrl } on success, or { ok: false, error } if the URL is invalid.
- * An empty/blank string returns { ok: true, embedUrl: null } (clear the field — AC-6).
- */
-export function normaliseYouTubeUrl(
-  raw: string
-): { ok: true; embedUrl: string | null } | { ok: false; error: string } {
-  const trimmed = raw.trim();
-  if (trimmed === "") return { ok: true, embedUrl: null };
-
-  const videoId = extractYouTubeVideoId(trimmed);
-  if (!videoId) {
-    return { ok: false, error: "Please enter a valid YouTube URL." };
-  }
-  return { ok: true, embedUrl: `https://www.youtube.com/embed/${videoId}` };
-}
+export { extractYouTubeVideoId, getYouTubeEmbedUrl, normaliseYouTubeUrl };
 
 // ── Module-level CSS class constants ──────────────────────────────────────────
 
@@ -146,17 +110,23 @@ export default function YouTubeLinkModal({
     setSaveError(null);
     setUrlError(null);
 
-    const normalised = normaliseYouTubeUrl(urlInput);
-    if (!normalised.ok) {
-      setUrlError(normalised.error);
-      return;
+    const trimmed = urlInput.trim();
+    let embedUrlToSave: string | null = null;
+
+    if (trimmed !== "") {
+      const normalised = normaliseYouTubeUrl(trimmed);
+      if (!normalised.ok) {
+        setUrlError(normalised.error);
+        return;
+      }
+      embedUrlToSave = normalised.embedUrl;
     }
 
     setIsSaving(true);
     try {
       const result = await updateSong({
         id: songId,
-        youtube_url: normalised.embedUrl,
+        youtube_url: embedUrlToSave,
       });
 
       if (result.error) {
@@ -164,7 +134,7 @@ export default function YouTubeLinkModal({
         return;
       }
 
-      onSaveSuccess(normalised.embedUrl ?? null);
+      onSaveSuccess(embedUrlToSave);
       onClose();
       triggerRef.current?.focus();
     } catch {

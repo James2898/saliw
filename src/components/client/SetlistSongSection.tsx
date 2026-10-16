@@ -409,6 +409,7 @@ function SetlistSongSection({
                   allowFullScreen
                   className="absolute inset-0 w-full h-full"
                   loading="lazy"
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
                 />
               </div>
             </div>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { NOTES, preProcessChords } from "@/utils/musicLogic";
 import { createSong } from "@/app/actions/songActions";
-import { normaliseYouTubeUrl } from "@/components/client/YouTubeLinkModal";
+import { normaliseYouTubeUrl } from "@/utils/youtube";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
 
 const inputBaseClass = [
