@@ -5,15 +5,11 @@ import { Loader2 } from "lucide-react";
 import Button from "@/components/client/button";
 import { addSongToSetlist } from "@/app/actions/setlistActions";
 import { useRouter } from "next/navigation";
+import type { SongSummary } from "@/types/Song";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface ModalSong {
-  id: string;
-  title: string;
-  artist: string;
-  original_key: string;
-}
+export type ModalSong = SongSummary;
 
 interface AppendSongsModalProps {
   isOpen: boolean;

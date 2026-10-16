@@ -27,6 +27,8 @@ const CloneSetlistDialog = dynamic(() => import("./CloneSetlistDialog"), {
   ssr: false,
 });
 
+import type { SongSummary } from "@/types/Song";
+
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
 export interface SortableSong {
@@ -39,12 +41,7 @@ export interface SortableSong {
   orderIndex: number;
 }
 
-export interface SongLibraryItem {
-  id: string;
-  title: string;
-  artist: string;
-  original_key: string;
-}
+export type SongLibraryItem = SongSummary;
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
