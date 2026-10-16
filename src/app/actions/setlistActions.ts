@@ -313,8 +313,29 @@ export async function updateSetlistSongOrder(input: {
       return { data: null, error: "No updates provided." };
     }
 
-    // Perform sequential updates for each setlist_songs row.
-    // Each update is scoped to the specific setlist_id for RLS coherence.
+    // Attempt atomic Postgres RPC reordering first (P2 optimization)
+    const { error: rpcError } = await supabase.rpc("reorder_setlist_songs", {
+      p_setlist_id: input.setlist_id,
+      p_song_orders: input.updates,
+    });
+
+    if (!rpcError) {
+      const { data: rows } = await supabase
+        .from("setlist_songs")
+        .select()
+        .eq("setlist_id", input.setlist_id)
+        .order("order_index", { ascending: true });
+      return { data: (rows ?? []) as DbSetlistSong[], error: null };
+    }
+
+    if (rpcError.code === "42501") {
+      return {
+        data: null,
+        error: "You do not have permission to modify this setlist.",
+      };
+    }
+
+    // Fallback to sequential updates if RPC is not yet applied in environment
     const updatedRows: DbSetlistSong[] = [];
 
     for (const update of input.updates) {

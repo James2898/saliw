@@ -26,6 +26,11 @@ All notable changes to the Saliw Music Portal are documented here.
   - Role & email tamper protection: trigger function `prevent_profile_role_email_tampering()` and `BEFORE UPDATE` trigger on `public.profiles` aborts unauthorized changes to `role` or `email` columns with SQLSTATE `42501` (AC-5)
   - Affected files: `src/app/auth/callback/route.ts`, `src/app/actions/songActions.ts`, `src/components/client/SongYouTubeSection.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/components/client/YouTubeLinkModal.tsx`, `src/utils/youtube.ts`, `supabase/migrations/20261017000000_p0_security_hardening.sql`
 
+- Database privacy hardening and private setlist RLS scoping (`TASK-053`)
+  - Private setlist RLS scoping: migration `20261017010000_p2_rls_scoping.sql` replaces permissive SELECT policies with scoped rules (`is_public = true OR leader_id = auth.uid() OR public.is_music_director()`) across `setlists`, `setlist_songs`, and `setlist_musicians` (AC-4)
+  - Musician column-level protection: revoked table-level SELECT on `musicians` from `anon`, granted `(id, name)` only, created public view `public.public_musicians(id, name)`, and audited `musicianActions.ts` to restrict unauthenticated queries per BUG-011 (AC-5)
+  - Affected files: `supabase/migrations/20261017010000_p2_rls_scoping.sql`, `src/app/actions/musicianActions.ts`
+
 ### Performance & Reliability
 
 - P1 immediate reliability and performance optimizations across chord processing, realtime setlist sync, and chord sheet event listeners (`TASK-051`)
@@ -34,6 +39,12 @@ All notable changes to the Saliw Music Portal are documented here.
   - Realtime subscription in-flight guards: added connection guards on `toggleFollow` and `toggleLive` (`isFollowConnectingRef`, `isLiveConnectingRef`) preventing duplicate channel subscriptions on rapid user clicks and resetting cleanly on resolution or error (AC-8, AC-9, AM-1)
   - Window listener N+1 elimination: added optional `{ enabled?: boolean }` prop to `useAutoScroll` and `useFontSize`, passing `{ enabled: !injectedAutoScroll }` in `ChordSheetClient.tsx` to prevent redundant global `keydown` and `resize` listeners across multi-song setlist views while preserving smooth listener operation for the active song (AC-10 through AC-13, AM-2)
   - Affected files: `src/components/client/SongEditorClient.tsx`, `src/components/client/NewSongFormClient.tsx`, `src/hooks/useSetlistSync.ts`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/hooks/useAutoScroll.ts`, `src/hooks/useFontSize.ts`
+
+- P2 architecture, dynamic code splitting, and atomic setlist reordering (`TASK-053`)
+  - Dynamic code splitting: lazy-loaded heavy client modals and drawers (`ChordDrawer`, `SetlistSettingsModal`, `AppendSongsModal`, `LogoutModal`, `CloneSetlistDialog`) with `next/dynamic(..., { ssr: false })` stripping modal JavaScript from initial route bundles (AC-1, AC-2)
+  - Unused prop cleanup: removed obsolete `songIndex` parameter and prop from `SetlistViewerClient.tsx` and `SetlistSongSection.tsx` to eliminate console and compiler warnings (AC-3)
+  - Atomic setlist reorder RPC: added transactional PostgreSQL procedure `public.reorder_setlist_songs` (`SECURITY DEFINER`, search path pinned to `public, pg_temp`, ownership/role verification with error 42501) and integrated it into `setlistActions.ts:updateSetlistSongOrder` with graceful sequential fallback (AC-6, AC-7)
+  - Affected files: `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/components/client/AppendSongsButton.tsx`, `src/components/client/navbar.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/app/actions/setlistActions.ts`
 
 ---
 

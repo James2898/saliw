@@ -15,10 +15,16 @@ export async function listMusicians(): Promise<{
 }> {
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Authenticated users can read notes; unauthenticated callers are restricted to id and name per BUG-011
+    const selectFields = user ? "id, name, notes" : "id, name";
 
     const { data, error } = await supabase
       .from("musicians")
-      .select("id, name, notes")
+      .select(selectFields)
       .order("name", { ascending: true });
 
     if (error) {
@@ -28,7 +34,7 @@ export async function listMusicians(): Promise<{
       };
     }
 
-    return { data: (data ?? []) as DbMusician[], error: null };
+    return { data: (data ?? []) as unknown as DbMusician[], error: null };
   } catch {
     return {
       data: null,
@@ -49,10 +55,17 @@ export async function getMusicianById(input: {
 }): Promise<{ data: DbMusician | null; error: string | null }> {
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const selectFields = user
+      ? "id, name, notes, created_by, created_at, updated_at"
+      : "id, name";
 
     const { data, error } = await supabase
       .from("musicians")
-      .select("id, name, notes, created_by, created_at, updated_at")
+      .select(selectFields)
       .eq("id", input.id)
       .single();
 
@@ -66,7 +79,7 @@ export async function getMusicianById(input: {
       };
     }
 
-    return { data: data as DbMusician, error: null };
+    return { data: data as unknown as DbMusician, error: null };
   } catch {
     return {
       data: null,
