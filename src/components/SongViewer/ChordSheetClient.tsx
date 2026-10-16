@@ -193,7 +193,7 @@ export default function ChordSheetClient({
   // When used standalone (single song viewer / song editor), fall back to the internal hook.
   // Rules of Hooks: useFontSize is always called; its return value is only used when
   // no external font size prop is provided.
-  const internalFontSize = useFontSize();
+  const internalFontSize = useFontSize({ enabled: !injectedAutoScroll });
   const fontSize = fontSizeProp ?? internalFontSize.fontSize;
   const increaseFont = onIncreaseFont ?? internalFontSize.increase;
   const decreaseFont = onDecreaseFont ?? internalFontSize.decrease;
@@ -203,7 +203,7 @@ export default function ChordSheetClient({
   // when a parent owns auto-scroll. The internal instance stays inert in that
   // case because the internal AutoScrollToolbar is not rendered (no toggle
   // button means the rAF never starts).
-  const internalAutoScroll = useAutoScroll();
+  const internalAutoScroll = useAutoScroll({ enabled: !injectedAutoScroll });
   const autoScroll = injectedAutoScroll ?? internalAutoScroll;
 
   const [chordsHidden, setChordsHidden] = useState(false);
@@ -224,7 +224,6 @@ export default function ChordSheetClient({
   // Fires the TRANSPOSED chord name (span.innerText) rather than the original
   // chord name (data-original-chord), so the drawer always receives the chord
   // name as the performer sees it in the sheet.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   function handleChordClick(e: MouseEvent) {
     if (!onChordClick) return;
     const target = e.target as HTMLElement;

@@ -48,7 +48,18 @@ function readStoredFontSize(): number {
   return DEFAULT_SIZE;
 }
 
-export function useFontSize(): UseFontSizeReturn {
+export interface UseFontSizeOptions {
+  /**
+   * Whether global window event listeners (if any) should be attached.
+   * Defaults to true. When false (e.g. child ChordSheetClient instances in setlists),
+   * listeners are skipped to prevent duplicate N+1 listener attachments.
+   */
+  enabled?: boolean;
+}
+
+export function useFontSize(options?: UseFontSizeOptions): UseFontSizeReturn {
+  const _enabled = options?.enabled ?? true;
+  void _enabled;
   const [fontSize, setFontSize] = useState<number>(readStoredFontSize);
 
   const persist = useCallback((value: number) => {
