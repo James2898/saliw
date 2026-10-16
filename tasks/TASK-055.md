@@ -119,10 +119,12 @@ Execute Phase P3 mobile user experience and layout polish across four key surfac
   - `src/components/client/SongEditorClient.tsx` — Update mobile tab labels and styling to match NewSongFormClient with min 44px touch targets.
   - `src/components/client/SetlistBuilder/SetlistPeopleLocalSection.tsx` — Wrap mobile lineup in expandable disclosure accordion defaulting to collapsed (`md:block` on desktop) and refactor add-row to responsive grid.
   - `src/components/dashboard/PublicDashboardView.tsx` — Add primary "Browse Song Library →" and secondary "Explore Setlists" CTA buttons with responsive stacking and min 44px height.
+  - `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx` & `src/app/setlists/new/page.tsx` — Make public visibility switch default toggled ON (`true`) during setlist creation with safe fallback in `createSetlist`.
 - **Diff Summary:**
   - `src/components/client/navbar.tsx` L441–517 — replace horizontal drawer footer with stacked vertical list of 44px action rows (AC-1, AC-5)
   - `src/components/client/NewSongFormClient.tsx` L42, L200–265 — add `activeTab` state, `role="tablist"` mobile switcher, and CSS display toggling (AC-2, AC-5, AM-1)
   - `src/components/client/SongEditorClient.tsx` L217–221, L430–508 — update tab labels to "Edit Sheet" / "Live Preview", ensure 44px touch targets and CSS visibility toggling (AC-2, AC-5, AM-1)
   - `src/components/client/SetlistBuilder/SetlistPeopleLocalSection.tsx` L65, L150–240 — mobile disclosure accordion defaulting to collapsed (`md:block`), responsive grid `grid-cols-1 sm:grid-cols-[1fr_1fr_auto]` (AC-3, AC-5, AM-2, BUG-005)
   - `src/components/dashboard/PublicDashboardView.tsx` L1–2, L65–85 — add primary and secondary CTA buttons in public landing hero with mobile vertical stacking (AC-4, AC-5)
-- **Notes:** All touch targets enforce >=44px height. State is preserved across tab switches without DOM unmounting. All accessibility ARIA attributes properly implemented.
+  - `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx` L88, `src/app/setlists/new/page.tsx` L99, `src/app/actions/setlistActions.ts` L96 — set default public visibility to toggled ON (`true`) on setlist creation
+- **Notes:** All touch targets enforce >=44px height. State is preserved across tab switches without DOM unmounting. All accessibility ARIA attributes properly implemented. Setlist creation defaults to public.
