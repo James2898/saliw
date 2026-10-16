@@ -215,7 +215,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   ].join(" ");
 
   const tabButtonBase = [
-    "px-4 py-2 text-sm font-semibold transition-colors duration-200 border-b-2",
+    "flex-1 py-2.5 px-4 text-sm font-semibold transition-colors duration-200 border-b-2 min-h-[44px] flex items-center justify-center",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
   ].join(" ");
 
@@ -430,7 +430,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       <div
         role="tablist"
         aria-label="Editor view"
-        className="flex gap-0 mb-4 border-b border-brand-brown/20 dark:border-brand-tan/20 lg:hidden"
+        className="flex mb-4 border-b border-brand-brown/20 dark:border-brand-tan/20 lg:hidden"
       >
         <button
           id="tab-edit"
@@ -446,7 +446,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
               : "text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream",
           ].join(" ")}
         >
-          Edit
+          Edit Sheet
         </button>
         <button
           id="tab-preview"
@@ -462,7 +462,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
               : "text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream",
           ].join(" ")}
         >
-          Preview
+          Live Preview
         </button>
       </div>
 
