@@ -530,7 +530,7 @@ export default function ChordDrawer({
         className={closedPillClass}
         aria-label="Open chord helper"
       >
-        Chords ↑
+        Chord Helper ↑
       </button>
     );
   }
