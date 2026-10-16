@@ -706,7 +706,11 @@ export default function ChordSheetClient({
                               ? (e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     e.preventDefault();
-                                    onChordClick(token.text);
+                                    const activeChord =
+                                      (
+                                        e.currentTarget as HTMLElement
+                                      ).innerText.trim() || token.text;
+                                    onChordClick(activeChord);
                                   }
                                 }
                               : undefined

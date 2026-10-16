@@ -212,8 +212,6 @@ const desktopDeckClass = [
   "max-h-[80vh] overflow-y-auto",
 ].join(" ");
 
-
-
 /** Badge button — base styles shared between active and inactive states. */
 const badgeBtnBase = [
   "min-w-[44px] min-h-[44px]",
