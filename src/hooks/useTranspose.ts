@@ -49,7 +49,7 @@ export function useTranspose(
   // NOTES has 12 entries (indices 0–11). We resolve the originalKey's index
   // by using getSemitoneOffset(originalKey, 'C') to get its distance from C,
   // then add semitoneOffset. A simpler direct lookup:
-  const originalIndex = (NOTES as string[]).indexOf(originalKey);
+  const originalIndex = (NOTES as readonly string[]).indexOf(originalKey);
   // Fall back to 0 (C) if originalKey is an enharmonic not in NOTES (e.g. "Ab").
   // getSemitoneOffset handles enharmonics internally; we replicate that here.
   const resolvedOriginalIndex =

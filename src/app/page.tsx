@@ -52,12 +52,14 @@ export default async function HomePage() {
       ]);
 
       if (!guestUpcomingRes.error && guestUpcomingRes.data) {
-        guestUpcoming = (guestUpcomingRes.data as UpcomingRow[]).map((row) => ({
-          id: row.id,
-          name: row.name,
-          date: row.date,
-          songCount: row.setlist_songs[0]?.count ?? 0,
-        }));
+        guestUpcoming = (guestUpcomingRes.data as unknown as UpcomingRow[]).map(
+          (row) => ({
+            id: row.id,
+            name: row.name,
+            date: row.date,
+            songCount: row.setlist_songs[0]?.count ?? 0,
+          })
+        );
       }
 
       if (!guestRecentSongsRes.error && guestRecentSongsRes.data) {
@@ -173,7 +175,7 @@ export default async function HomePage() {
   // ── Upcoming Setlists ───────────────────────────────────────────────────────
   const upcomingSetlists: UpcomingSetlist[] = upcomingListRes.error
     ? []
-    : ((upcomingListRes.data ?? []) as UpcomingRow[]).map((row) => ({
+    : ((upcomingListRes.data ?? []) as unknown as UpcomingRow[]).map((row) => ({
         id: row.id,
         name: row.name,
         date: row.date,

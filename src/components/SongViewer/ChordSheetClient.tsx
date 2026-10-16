@@ -446,7 +446,7 @@ export default function ChordSheetClient({
                     "cursor-pointer",
                   ].join(" ")}
                 >
-                  {(NOTES as string[]).map((note) => (
+                  {NOTES.map((note) => (
                     <option key={note} value={note}>
                       {note}
                     </option>
