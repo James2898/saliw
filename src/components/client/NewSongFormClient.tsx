@@ -28,9 +28,15 @@ const panelClasses = [
   "p-4",
 ].join(" ");
 
+const tabButtonBase = [
+  "flex-1 py-2.5 px-4 text-sm font-semibold transition-colors duration-200 border-b-2 min-h-[44px] flex items-center justify-center",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+].join(" ");
+
 export default function NewSongFormClient() {
   const router = useRouter();
 
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">(() => "edit");
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [originalKey, setOriginalKey] = useState<string>(NOTES[0]);
@@ -185,10 +191,58 @@ export default function NewSongFormClient() {
         </div>
       </div>
 
+      {/* ── Mobile tab switcher — hidden on desktop (lg:hidden) ─────────── */}
+      <div
+        role="tablist"
+        aria-label="Editor view"
+        className="flex mb-4 border-b border-brand-brown/20 dark:border-brand-tan/20 lg:hidden"
+      >
+        <button
+          id="tab-edit"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "edit"}
+          aria-controls="panel-edit"
+          onClick={() => setActiveTab("edit")}
+          className={[
+            tabButtonBase,
+            activeTab === "edit"
+              ? "text-brand-espresso dark:text-brand-cream border-brand-espresso dark:border-brand-cream"
+              : "text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream",
+          ].join(" ")}
+        >
+          Edit Sheet
+        </button>
+        <button
+          id="tab-preview"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "preview"}
+          aria-controls="panel-preview"
+          onClick={() => setActiveTab("preview")}
+          className={[
+            tabButtonBase,
+            activeTab === "preview"
+              ? "text-brand-espresso dark:text-brand-cream border-brand-espresso dark:border-brand-cream"
+              : "text-brand-brown dark:text-brand-tan border-transparent hover:text-brand-espresso dark:hover:text-brand-cream",
+          ].join(" ")}
+        >
+          Live Preview
+        </button>
+      </div>
+
       {/* ── Editor + Preview panels ─────────────────────────────────────────── */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-6 mb-6">
         {/* Editor panel */}
-        <div className={panelClasses}>
+        <div
+          id="panel-edit"
+          role="tabpanel"
+          aria-labelledby="tab-edit"
+          className={[
+            panelClasses,
+            activeTab === "edit" ? "block" : "hidden lg:block",
+          ].join(" ")}
+        >
           <p className={labelClass}>Chord Sheet</p>
           <textarea
             id="song-content"
@@ -226,7 +280,16 @@ export default function NewSongFormClient() {
         </div>
 
         {/* Preview panel */}
-        <div className={[panelClasses, "mt-6 lg:mt-0"].join(" ")}>
+        <div
+          id="panel-preview"
+          role="tabpanel"
+          aria-labelledby="tab-preview"
+          className={[
+            panelClasses,
+            "mt-6 lg:mt-0",
+            activeTab === "preview" ? "block" : "hidden lg:block",
+          ].join(" ")}
+        >
           <p className={labelClass}>Preview</p>
           {content.trim() ? (
             <div className="overflow-x-auto">

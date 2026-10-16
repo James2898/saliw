@@ -85,7 +85,7 @@ export default function SetlistBuilderClient({
   allSongs,
   libraryError,
   initialDate,
-  initialIsPublic = false,
+  initialIsPublic = true,
   allMusicians = [],
   isMusicDirector = false,
 }: SetlistBuilderClientProps) {

@@ -93,7 +93,7 @@ export async function createSetlist(input: {
         name: input.name,
         date: input.date,
         leader_id: user.id,
-        is_public: input.is_public ?? false,
+        is_public: input.is_public ?? true,
       })
       .select()
       .single();
