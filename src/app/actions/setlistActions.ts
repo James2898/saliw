@@ -409,7 +409,7 @@ export async function updatePerformanceDetails(input: {
     }
 
     // Build payload conditionally: only include fields that are explicitly present
-    const payload: Record<string, unknown> = {};
+    const payload: Partial<DbSetlistSong> = {};
     if (input.performance_key !== undefined)
       payload.performance_key = input.performance_key;
 
@@ -552,7 +552,7 @@ export async function updateSetlist(input: {
     }
 
     // Build payload conditionally — only include fields that are explicitly present
-    const payload: Record<string, unknown> = {};
+    const payload: Partial<DbSetlist> = {};
     if (input.name !== undefined) payload.name = input.name;
     if (input.date !== undefined) payload.date = input.date || null;
     if (input.worship_leader_id !== undefined)

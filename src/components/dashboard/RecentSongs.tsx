@@ -1,15 +1,11 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
+import type { SongSummary } from "@/types/Song";
 
-export interface RecentSong {
-  id: string;
-  title: string;
-  artist: string;
-  original_key: string;
-}
+export type RecentSong = SongSummary;
 
 interface RecentSongsProps {
-  songs: RecentSong[];
+  songs: SongSummary[];
 }
 
 const focusRing =

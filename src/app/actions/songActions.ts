@@ -4,6 +4,7 @@ import { createClient } from "@/services/supabase/server";
 import { chordRegex, NOTES } from "@/utils/musicLogic";
 import { normaliseYouTubeUrl } from "@/utils/youtube";
 import type { DbSong } from "@/types/supabase";
+import type { SongSummary } from "@/types/Song";
 
 /**
  * Validates that the given song content contains at least one recognizable chord.
@@ -179,7 +180,7 @@ export async function updateSong(input: {
 
     const updatePayload = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
-    );
+    ) as Partial<DbSong>;
 
     const { data, error } = await supabase
       .from("songs")
@@ -227,12 +228,7 @@ export async function updateSong(input: {
  * @returns All songs ordered by title ascending, or an error message
  */
 export async function getAllSongs(): Promise<{
-  data: Array<{
-    id: string;
-    title: string;
-    artist: string;
-    original_key: string;
-  }> | null;
+  data: SongSummary[] | null;
   error: string | null;
 }> {
   try {
