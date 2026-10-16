@@ -326,7 +326,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
               "font-mono font-bold",
             ].join(" ")}
           >
-            {(NOTES as string[]).map((note) => (
+            {NOTES.map((note) => (
               <option key={note} value={note}>
                 {note}
               </option>

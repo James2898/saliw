@@ -12,6 +12,14 @@ export type Song = {
   artist: string;
   original_key: string;
   content: string;
-  singer?: string;
+  singer?: string | null;
   youtube_url?: string | null;
 };
+
+/**
+ * Canonical 4-field song summary used across dashboard, library lists, and setlist pickers.
+ */
+export type SongSummary = Pick<
+  Song,
+  "id" | "title" | "artist" | "original_key"
+>;
