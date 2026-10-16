@@ -14,13 +14,6 @@ import SectionNavDeck, {
   deriveSections,
 } from "@/components/client/SectionNavDeck";
 
-const ChordDrawer = dynamic(() => import("@/components/client/ChordDrawer"), {
-  ssr: false,
-});
-const SetlistSettingsModal = dynamic(
-  () => import("@/components/client/SetlistSettingsModal"),
-  { ssr: false }
-);
 import { useSetlistSync } from "@/hooks/useSetlistSync";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useFontSize } from "@/hooks/useFontSize";
@@ -28,6 +21,14 @@ import { useChordFontSize } from "@/hooks/useChordFontSize";
 import { useChordColor } from "@/hooks/useChordColor";
 import type { ProcessedLine } from "@/utils/musicLogic";
 import { getSemitoneOffset, shiftChord } from "@/utils/musicLogic";
+
+const ChordDrawer = dynamic(() => import("@/components/client/ChordDrawer"), {
+  ssr: false,
+});
+const SetlistSettingsModal = dynamic(
+  () => import("@/components/client/SetlistSettingsModal"),
+  { ssr: false }
+);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
