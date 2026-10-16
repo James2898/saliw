@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { preProcessChords, NOTES } from "@/utils/musicLogic";
@@ -202,7 +202,10 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
   };
 
   // ── Live preview data ───────────────────────────────────────────────────────
-  const processedLines = preProcessChords(currentContent);
+  const processedLines = useMemo(
+    () => preProcessChords(currentContent),
+    [currentContent]
+  );
 
   // ── Shared panel styles ─────────────────────────────────────────────────────
   const panelClasses = [

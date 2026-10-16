@@ -112,6 +112,16 @@ export function useSetlistSync({
     new Map()
   );
 
+  // ── Active status timers (e.g. 2000ms "saved" -> "idle" transition) ───────
+  const statusTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map()
+  );
+
+  // ── In-flight connection and mount refs (AC-8, AC-9, AM-1) ────────────────
+  const isLiveConnectingRef = useRef(false);
+  const isFollowConnectingRef = useRef(false);
+  const isMountedRef = useRef(true);
+
   // ── RF-3: Ref mirror of validJunctionIds — prevents stale closure in channel handlers ──
   const validJunctionIdsRef = useRef<Set<string>>(new Set());
 
@@ -153,6 +163,7 @@ export function useSetlistSync({
   // ── Helper: update per-song sync state ───────────────────────────────────
   const setSongSyncState = useCallback(
     (junctionId: string, state: SongSyncState) => {
+      if (!isMountedRef.current) return;
       setSongSyncStates((prev) => new Map(prev).set(junctionId, state));
     },
     []
@@ -194,6 +205,9 @@ export function useSetlistSync({
   // ── Director: Go Live toggle ──────────────────────────────────────────────
 
   const toggleLive = useCallback(() => {
+    // In-flight guard: prevent concurrent connection attempts (AM-1, AC-8, AC-9)
+    if (isLiveConnecting || isLiveConnectingRef.current) return;
+
     if (isLive) {
       // Deactivate — remove channel and return to D-1
       if (channelRef.current) {
@@ -206,31 +220,43 @@ export function useSetlistSync({
       // Activate — transition to D-2 (connecting)
       setLiveError(null);
       setIsLiveConnecting(true);
+      isLiveConnectingRef.current = true;
 
-      const channel = supabase.channel(`setlist_sync:${setlistId}`, {
-        config: { broadcast: { self: false } },
-      });
+      try {
+        const channel = supabase.channel(`setlist_sync:${setlistId}`, {
+          config: { broadcast: { self: false } },
+        });
 
-      channelRef.current = channel;
+        channelRef.current = channel;
 
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setIsLiveConnecting(false);
-          setIsLive(true);
-        } else if (status === "CHANNEL_ERROR") {
-          setIsLiveConnecting(false);
-          setIsLive(false);
-          setLiveError("Unable to start live session. Please try again.");
-          if (channelRef.current) {
-            supabase.removeChannel(channelRef.current);
-            channelRef.current = null;
+        channel.subscribe((status) => {
+          isLiveConnectingRef.current = false;
+          if (!isMountedRef.current) return;
+
+          if (status === "SUBSCRIBED") {
+            setIsLiveConnecting(false);
+            setIsLive(true);
+          } else if (status === "CHANNEL_ERROR") {
+            setIsLiveConnecting(false);
+            setIsLive(false);
+            setLiveError("Unable to start live session. Please try again.");
+            if (channelRef.current) {
+              supabase.removeChannel(channelRef.current);
+              channelRef.current = null;
+            }
+          } else if (status === "CLOSED") {
+            setIsLive(false);
           }
-        } else if (status === "CLOSED") {
-          setIsLive(false);
+        });
+      } catch {
+        isLiveConnectingRef.current = false;
+        if (isMountedRef.current) {
+          setIsLiveConnecting(false);
+          setLiveError("Unable to start live session. Please try again.");
         }
-      });
+      }
     }
-  }, [isLive, setlistId]);
+  }, [isLive, isLiveConnecting, setlistId, supabase]);
 
   // ── Director: active song change → SONG_CHANGE broadcast ─────────────────
 
@@ -271,6 +297,13 @@ export function useSetlistSync({
         clearTimeout(existingTimer);
       }
 
+      // Clear any pending status/idle timer for this junctionId
+      const existingStatusTimer = statusTimersRef.current.get(junctionId);
+      if (existingStatusTimer !== undefined) {
+        clearTimeout(existingStatusTimer);
+        statusTimersRef.current.delete(junctionId);
+      }
+
       // RF-1: increment the sequence counter for this junctionId
       const currentSeq = (sequenceRef.current.get(junctionId) ?? 0) + 1;
       sequenceRef.current.set(junctionId, currentSeq);
@@ -278,6 +311,7 @@ export function useSetlistSync({
 
       const timer = setTimeout(async () => {
         debounceTimersRef.current.delete(junctionId);
+        if (!isMountedRef.current) return;
 
         // RF-5: read key from ref, not from the closure captured at schedule-time (AC-14)
         const keyToSave = latestKeyRef.current.get(junctionId);
@@ -288,6 +322,8 @@ export function useSetlistSync({
           setlist_id: setlistId,
           performance_key: keyToSave,
         });
+
+        if (!isMountedRef.current) return;
 
         // RF-1: only proceed if this sequence is still the latest for this song
         const latestSeq = sequenceRef.current.get(junctionId) ?? 0;
@@ -316,9 +352,13 @@ export function useSetlistSync({
         broadcastKeyChange(junctionId, keyToSave);
 
         setSongSyncState(junctionId, { status: "saved", errorMessage: null });
-        setTimeout(() => {
+
+        const idleTimer = setTimeout(() => {
+          statusTimersRef.current.delete(junctionId);
+          if (!isMountedRef.current) return;
           setSongSyncState(junctionId, { status: "idle", errorMessage: null });
         }, 2000);
+        statusTimersRef.current.set(junctionId, idleTimer);
       }, DEBOUNCE_MS);
 
       debounceTimersRef.current.set(junctionId, timer);
@@ -329,6 +369,9 @@ export function useSetlistSync({
   // ── Follower: Follow Leader toggle ────────────────────────────────────────
 
   const toggleFollow = useCallback(() => {
+    // In-flight guard: prevent concurrent checks or duplicate subscriptions (AC-8, AC-9)
+    if (isStateChecking || isFollowConnectingRef.current) return;
+
     if (isFollowing) {
       // Disable Follow Leader — remove channel, revert keys to snapshot (AC-26)
       if (channelRef.current) {
@@ -345,6 +388,7 @@ export function useSetlistSync({
       );
     } else {
       // Enable Follow Leader — F-2: State Check
+      isFollowConnectingRef.current = true;
       setIsStateChecking(true);
       setFollowError(null);
       (async () => {
@@ -352,6 +396,11 @@ export function useSetlistSync({
           const { data, error } = await getSetlistWithSongs({
             setlist_id: setlistId,
           });
+
+          if (!isMountedRef.current) {
+            isFollowConnectingRef.current = false;
+            return;
+          }
 
           if (error) {
             setFollowError("Unable to sync current state.");
@@ -368,74 +417,111 @@ export function useSetlistSync({
           }
           // data === null (empty setlist) treated as valid empty snapshot; no error shown (AC-22)
         } catch {
-          setFollowError("Unable to sync current state.");
+          if (isMountedRef.current) {
+            setFollowError("Unable to sync current state.");
+          }
+        } finally {
+          if (isMountedRef.current) {
+            setIsStateChecking(false);
+          }
         }
 
-        setIsStateChecking(false);
+        if (!isMountedRef.current) {
+          isFollowConnectingRef.current = false;
+          return;
+        }
 
-        // Subscribe to incoming broadcasts regardless of State Check outcome (AC-23)
-        const channel = supabase.channel(`setlist_sync:${setlistId}`, {
-          config: { broadcast: { self: false } },
-        });
+        try {
+          // Subscribe to incoming broadcasts regardless of State Check outcome (AC-23)
+          const channel = supabase.channel(`setlist_sync:${setlistId}`, {
+            config: { broadcast: { self: false } },
+          });
 
-        channelRef.current = channel;
+          channelRef.current = channel;
 
-        // Handle SONG_CHANGE — scroll to song element (AC-28)
-        channel.on(
-          "broadcast",
-          { event: REALTIME_EVENTS.SONG_CHANGE },
-          (payload: { payload: SongChangePayload }) => {
-            const { junctionId } = payload.payload;
-            // Silent skip if junctionId not in rendered set (AC-31)
-            if (!validJunctionIdsRef.current.has(junctionId)) return;
-            document
-              .getElementById(`song-${junctionId}`)
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        );
+          // Handle SONG_CHANGE — scroll to song element (AC-28)
+          channel.on(
+            "broadcast",
+            { event: REALTIME_EVENTS.SONG_CHANGE },
+            (payload: { payload: SongChangePayload }) => {
+              const { junctionId } = payload.payload;
+              // Silent skip if junctionId not in rendered set (AC-31)
+              if (!validJunctionIdsRef.current.has(junctionId)) return;
+              document
+                .getElementById(`song-${junctionId}`)
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          );
 
-        // Handle KEY_CHANGE — update overrideKeys map (AC-29)
-        channel.on(
-          "broadcast",
-          { event: REALTIME_EVENTS.KEY_CHANGE },
-          (payload: { payload: KeyChangePayload }) => {
-            const { junctionId, performanceKey } = payload.payload;
-            // Silent skip if junctionId not in rendered set (AC-31)
-            if (!validJunctionIdsRef.current.has(junctionId)) return;
-            setOverrideKeys((prev) =>
-              new Map(prev).set(junctionId, performanceKey)
-            );
-          }
-        );
+          // Handle KEY_CHANGE — update overrideKeys map (AC-29)
+          channel.on(
+            "broadcast",
+            { event: REALTIME_EVENTS.KEY_CHANGE },
+            (payload: { payload: KeyChangePayload }) => {
+              const { junctionId, performanceKey } = payload.payload;
+              // Silent skip if junctionId not in rendered set (AC-31)
+              if (!validJunctionIdsRef.current.has(junctionId)) return;
+              setOverrideKeys((prev) =>
+                new Map(prev).set(junctionId, performanceKey)
+              );
+            }
+          );
 
-        channel.subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            setIsFollowing(true);
-            setFollowSyncStatus("synced");
-          } else if (status === "CLOSED") {
+          channel.subscribe((status) => {
+            isFollowConnectingRef.current = false;
+            if (!isMountedRef.current) return;
+            if (status === "SUBSCRIBED") {
+              setIsFollowing(true);
+              setFollowSyncStatus("synced");
+            } else if (status === "CLOSED") {
+              setFollowSyncStatus("lost");
+            } else if (status === "CHANNEL_ERROR") {
+              setFollowSyncStatus("lost");
+            }
+          });
+        } catch {
+          isFollowConnectingRef.current = false;
+          if (isMountedRef.current) {
             setFollowSyncStatus("lost");
-          } else if (status === "CHANNEL_ERROR") {
-            setFollowSyncStatus("lost");
           }
-        });
+        }
       })();
     }
-  }, [isFollowing, setlistId, stateCheckSnapshot]);
+  }, [isFollowing, isStateChecking, setlistId, stateCheckSnapshot, supabase]);
 
   // ── Keep validJunctionIdsRef in sync with validJunctionIds (RF-3) ───────────
   useEffect(() => {
     validJunctionIdsRef.current = validJunctionIds;
   }, [validJunctionIds]);
 
-  // ── Unmount cleanup — remove any active channel on component teardown (AC-9) ──
+  // ── Unmount cleanup — remove any active channel and clear all pending timers (AC-6, AC-7, BUG-019) ──
   useEffect(() => {
+    isMountedRef.current = true;
+    const debounceTimers = debounceTimersRef.current;
+    const statusTimers = statusTimersRef.current;
     return () => {
+      isMountedRef.current = false;
+      isLiveConnectingRef.current = false;
+      isFollowConnectingRef.current = false;
+
+      // Clear all pending debounce timers (AC-6, BUG-019)
+      for (const t of debounceTimers.values()) {
+        clearTimeout(t);
+      }
+      debounceTimers.clear();
+
+      // Clear all active status/idle transition timeouts (AC-6, BUG-019)
+      for (const t of statusTimers.values()) {
+        clearTimeout(t);
+      }
+      statusTimers.clear();
+
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, []);
+  }, [supabase]);
 
   return {
     // Director
