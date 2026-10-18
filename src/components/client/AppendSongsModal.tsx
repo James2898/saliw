@@ -1,10 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import Button from "@/components/client/button";
-import { addSongToSetlist } from "@/app/actions/setlistActions";
 import { useRouter } from "next/navigation";
+import {
+  addSongToSetlist,
+  removeSongFromSetlist,
+  updatePerformanceDetails,
+  updateSetlistSongOrder,
+} from "@/app/actions/setlistActions";
+import ErrorBanner from "@/components/client/SetlistBuilder/ErrorBanner";
+import LibraryPanel from "@/components/client/SetlistBuilder/LibraryPanel";
+import SetlistPanel from "@/components/client/SetlistBuilder/SetlistPanel";
+import type {
+  SongLibraryItem,
+  SortableSong,
+} from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 import type { SongSummary } from "@/types/Song";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -14,29 +25,37 @@ export type ModalSong = SongSummary;
 interface AppendSongsModalProps {
   isOpen: boolean;
   setlistId: string;
-  existingSongIds: Set<string>;
+  existingSongIds?: Set<string>;
+  /** Current ordered songs in the setlist (passed from SetlistViewerClient). */
+  currentSongs?: SortableSong[];
   onClose: () => void;
-  /** Ref for the FAB button — focus returns here on modal close (AC-16). */
+  /** Ref for the FAB button — focus returns here on modal close. */
   fabRef: React.RefObject<HTMLButtonElement | null>;
-  /** Songs to display; fetched by the parent before opening (AC-33). */
+  /** Songs from the library; fetched by the parent before opening. */
   songs: ModalSong[];
-  /** Whether the parent is still fetching songs. */
+  /** Whether the parent is still fetching library songs. */
   isFetchingSongs: boolean;
-  /** Error from song fetch, if any. */
+  /** Error from library song fetch, if any. */
   fetchError: string | null;
   /** Called when the user clicks "Retry" after a fetch error. */
   onRetryFetch: () => void;
 }
 
-// ── Module-level CSS class constants ──────────────────────────────────────────
+// ── Module-level constants (BUG-019: stable references) ──────────────────────
+
+const EMPTY_SORTABLE_SONGS: SortableSong[] = [];
+
+function noopSave() {
+  // No-op: Edit Songs modal auto-saves each mutation immediately (AC-4, AC-6).
+}
 
 const backdropClass =
   "fixed inset-0 z-[80] bg-[var(--brand-espresso)]/40 backdrop-blur-sm";
 
 const panelClass = [
   "fixed z-[90] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-  "w-[min(90vw,36rem)]",
-  "max-h-[80vh]",
+  "w-[min(95vw,64rem)]",
+  "max-h-[85vh]",
   "bg-[var(--brand-background)]",
   "border border-[var(--brand-tan)]/30",
   "rounded-2xl shadow-lg",
@@ -65,41 +84,7 @@ const closeButtonClass = [
   "transition-colors duration-200",
 ].join(" ");
 
-const bodyClass = "flex-1 overflow-y-auto px-6 py-4 min-h-0";
-
-const footerClass = [
-  "flex items-center justify-between gap-3",
-  "px-6 py-4",
-  "border-t border-[var(--brand-tan)]/20",
-  "shrink-0",
-].join(" ");
-
-const songRowBaseClass = [
-  "flex items-center gap-3 px-4 py-3 rounded-xl",
-  "border border-[var(--brand-tan)]/10",
-  "transition-colors duration-200",
-].join(" ");
-
-const songRowEnabledClass = [
-  songRowBaseClass,
-  "bg-[var(--brand-background)]",
-  "hover:bg-[var(--brand-tan-alpha)]",
-  "cursor-pointer",
-].join(" ");
-
-const songRowDisabledClass = [
-  songRowBaseClass,
-  "bg-[var(--brand-tan-alpha)]/40",
-  "opacity-60",
-  "cursor-not-allowed",
-].join(" ");
-
-const checkboxClass = [
-  "w-4 h-4 shrink-0 rounded",
-  "border border-[var(--brand-tan)]",
-  "accent-[var(--brand-espresso)]",
-  "cursor-pointer",
-].join(" ");
+const bodyClass = "flex-1 overflow-y-auto px-6 py-5 min-h-0";
 
 const retryButtonClass = [
   "text-sm font-semibold px-4 py-2 rounded-lg",
@@ -110,60 +95,34 @@ const retryButtonClass = [
   "transition-colors duration-200",
 ].join(" ");
 
-const searchInputClass = [
-  "w-full",
-  "rounded-xl",
-  "border border-brand-tan",
-  "bg-brand-cream dark:bg-brand-espresso",
-  "text-brand-espresso dark:text-brand-cream",
-  "placeholder:text-brand-tan",
-  "px-4 py-2",
-  "text-sm",
-  "mb-1",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-0",
-].join(" ");
+const focusableSelectors = [
+  "button:not([disabled])",
+  "select:not([disabled])",
+  "input:not([disabled])",
+].join(", ");
 
-// ── AppendSongsModal ──────────────────────────────────────────────────────────
+// ── AppendSongsModalDialog (mounted only while open) ─────────────────────────
 
-/**
- * AppendSongsModal — scrollable song-picker dialog for adding songs to a setlist.
- *
- * Songs are fetched by the parent (AppendSongsButton) before opening to avoid
- * calling setState inside a useEffect body (React Compiler lint rule).
- *
- * AC-8:  Opens when FAB is clicked.
- * AC-9:  Closeable via X button.
- * AC-10: Closeable by clicking the backdrop.
- * AC-11: Closeable by Escape key.
- * AC-12: State is reset on every close.
- * AC-13: role="dialog", aria-modal="true", aria-labelledby.
- * AC-14: Focus trap (Tab/Shift+Tab).
- * AC-15: Focus moves to first focusable element on open.
- * AC-16: Focus returns to FAB on close.
- * AC-17–21: Song list from getAllSongs(), pre-check existing songs.
- * AC-22–24: Checkbox interaction; no duplicates.
- * AC-25–30: Save with sequential appends, refresh, close on success.
- * AC-31–32: Empty state message.
- * AC-33–36: Loading, error, save-error states.
- */
-export default function AppendSongsModal({
-  isOpen,
+function AppendSongsModalDialog({
   setlistId,
   existingSongIds,
+  currentSongs,
   onClose,
   fabRef,
   songs,
   isFetchingSongs,
   fetchError,
   onRetryFetch,
-}: AppendSongsModalProps) {
+}: Omit<AppendSongsModalProps, "isOpen">) {
   const router = useRouter();
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  // ── State (lazy initializers — BUG-001) ────────────────────────────────────
 
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [localSongs, setLocalSongs] = useState<SortableSong[]>(
+    () => currentSongs ?? EMPTY_SORTABLE_SONGS
+  );
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // ── Refs ───────────────────────────────────────────────────────────────────
@@ -171,106 +130,223 @@ export default function AppendSongsModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // ── Helpers — declared BEFORE useEffects (BUG-007) ────────────────────────
+  // ── Helpers — declared BEFORE useMemo / useEffect (BUG-007) ────────────────
 
-  /** Reset checkbox + error state when the modal closes (AC-12). */
-  const resetSelectionState = useCallback(() => {
-    setChecked(new Set());
-    setSaveError(null);
-    setSearchQuery("");
+  /** Dismiss the inline error banner. */
+  const handleDismissError = useCallback(() => {
+    setError(null);
   }, []);
 
-  /** Toggle a song's checked state (only for non-existing songs, AC-22). */
-  const toggleSong = useCallback(
-    (songId: string) => {
-      if (existingSongIds.has(songId)) return;
-      setChecked((prev) => {
-        const next = new Set(prev);
-        if (next.has(songId)) {
-          next.delete(songId);
-        } else {
-          next.add(songId);
-        }
-        return next;
-      });
-    },
-    [existingSongIds]
-  );
+  /** Close modal and return focus to the trigger button (AC-3, AM-2). */
+  const handleClose = useCallback(() => {
+    onClose();
+    fabRef.current?.focus();
+  }, [onClose, fabRef]);
 
-  /** Update search query on every keystroke. */
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchQuery(e.target.value);
-    },
-    []
-  );
+  /**
+   * Auto-save Add Song (AC-6, AC-8):
+   * Calls addSongToSetlist, appends the created row to localSongs, and refreshes.
+   */
+  const handleAdd = useCallback(
+    async (song: SongLibraryItem) => {
+      if (addingId !== null) return;
+      if (localSongs.some((s) => s.songId === song.id)) return;
 
-  /** Handle Save: sequentially append checked songs (AC-28, anti-race BUG). */
-  const handleSave = useCallback(async () => {
-    // Collect checked songs in modal-list order (top-to-bottom, AC-28).
-    const toAdd = songs.filter(
-      (s) => checked.has(s.id) && !existingSongIds.has(s.id)
-    );
-    if (toAdd.length === 0) return;
+      setAddingId(song.id);
+      setError(null);
 
-    setIsSaving(true);
-    setSaveError(null);
-
-    try {
-      // Sequential loop — no Promise.all — to avoid MAX(order_index) race (AC-27–28).
-      for (const song of toAdd) {
+      try {
         const result = await addSongToSetlist({
           setlist_id: setlistId,
           song_id: song.id,
         });
-        if (result.error) {
-          setSaveError(result.error);
-          setIsSaving(false);
+
+        if (result.error || !result.data) {
+          setError(
+            result.error ?? "Unable to add song to setlist. Please try again."
+          );
           return;
         }
+
+        const created = result.data;
+        setLocalSongs((prev) => [
+          ...prev,
+          {
+            junctionId: created.id,
+            songId: song.id,
+            title: song.title,
+            artist: song.artist,
+            originalKey: song.original_key,
+            performanceKey: created.performance_key ?? song.original_key,
+            orderIndex: prev.length,
+          },
+        ]);
+        router.refresh();
+      } catch {
+        setError("An unexpected error occurred. Please try again.");
+      } finally {
+        setAddingId(null);
       }
+    },
+    [addingId, localSongs, setlistId, router]
+  );
 
-      // Success: reset selections, close modal, refresh the setlist view (AC-29).
-      resetSelectionState();
-      onClose();
-      // Return focus to FAB before refreshing (AC-16).
-      fabRef.current?.focus();
-      router.refresh();
-    } catch {
-      setSaveError("An unexpected error occurred. Please try again.");
-      setIsSaving(false);
+  /**
+   * Auto-save Remove Song (AC-6, AC-8):
+   * Optimistically removes the song from localSongs, calls removeSongFromSetlist,
+   * rolls back on error, and refreshes on success.
+   */
+  const handleRemove = useCallback(
+    async (songId: string) => {
+      const target = localSongs.find((s) => s.songId === songId);
+      if (!target) return;
+
+      const previousSongs = localSongs;
+      setError(null);
+      setLocalSongs((prev) =>
+        prev
+          .filter((s) => s.songId !== songId)
+          .map((s, index) => ({ ...s, orderIndex: index }))
+      );
+
+      if (!target.junctionId) return;
+
+      try {
+        const result = await removeSongFromSetlist({
+          id: target.junctionId,
+          setlist_id: setlistId,
+        });
+
+        if (result.error) {
+          setLocalSongs(previousSongs);
+          setError(result.error);
+          return;
+        }
+
+        router.refresh();
+      } catch {
+        setLocalSongs(previousSongs);
+        setError("An unexpected error occurred. Please try again.");
+      }
+    },
+    [localSongs, setlistId, router]
+  );
+
+  /**
+   * Auto-save Reorder Songs (AC-6, AC-8):
+   * Optimistically updates localSongs order, calls updateSetlistSongOrder,
+   * rolls back on error, and refreshes on success.
+   */
+  const handleReorder = useCallback(
+    async (newSongs: SortableSong[]) => {
+      const orderChanged =
+        newSongs.length === localSongs.length &&
+        newSongs.some((s, index) => s.songId !== localSongs[index]?.songId);
+
+      if (!orderChanged) return;
+
+      const previousSongs = localSongs;
+      setError(null);
+      setLocalSongs(newSongs);
+
+      const updates = newSongs
+        .filter(
+          (s): s is SortableSong & { junctionId: string } =>
+            s.junctionId !== null
+        )
+        .map((s, index) => ({
+          id: s.junctionId,
+          order_index: index,
+        }));
+
+      if (updates.length === 0) return;
+
+      try {
+        const result = await updateSetlistSongOrder({
+          setlist_id: setlistId,
+          updates,
+        });
+
+        if (result.error) {
+          setLocalSongs(previousSongs);
+          setError(result.error);
+          return;
+        }
+
+        router.refresh();
+      } catch {
+        setLocalSongs(previousSongs);
+        setError("An unexpected error occurred. Please try again.");
+      }
+    },
+    [localSongs, setlistId, router]
+  );
+
+  /**
+   * Auto-save Performance Key Change (AC-6, AC-8):
+   * Optimistically updates performanceKey in localSongs, calls updatePerformanceDetails,
+   * rolls back on error, and refreshes on success.
+   */
+  const handleKeyChange = useCallback(
+    async (songId: string, newKey: string) => {
+      const target = localSongs.find((s) => s.songId === songId);
+      if (!target || target.performanceKey === newKey) return;
+
+      const previousSongs = localSongs;
+      setError(null);
+      setLocalSongs((prev) =>
+        prev.map((s) =>
+          s.songId === songId ? { ...s, performanceKey: newKey } : s
+        )
+      );
+
+      if (!target.junctionId) return;
+
+      try {
+        const result = await updatePerformanceDetails({
+          id: target.junctionId,
+          setlist_id: setlistId,
+          performance_key: newKey,
+        });
+
+        if (result.error) {
+          setLocalSongs(previousSongs);
+          setError(result.error);
+          return;
+        }
+
+        router.refresh();
+      } catch {
+        setLocalSongs(previousSongs);
+        setError("An unexpected error occurred. Please try again.");
+      }
+    },
+    [localSongs, setlistId, router]
+  );
+
+  // ── Derived values (wrapped in useMemo — BUG-019) ──────────────────────────
+
+  const addedIds = useMemo(() => {
+    if (currentSongs !== undefined) {
+      return new Set(localSongs.map((s) => s.songId));
     }
-  }, [
-    songs,
-    checked,
-    existingSongIds,
-    setlistId,
-    resetSelectionState,
-    onClose,
-    fabRef,
-    router,
-  ]);
-
-  /** Close modal: reset state and return focus to FAB (AC-12, AC-16). */
-  const handleClose = useCallback(() => {
-    resetSelectionState();
-    onClose();
-    fabRef.current?.focus();
-  }, [resetSelectionState, onClose, fabRef]);
+    const ids = new Set(existingSongIds);
+    for (const song of localSongs) {
+      ids.add(song.songId);
+    }
+    return ids;
+  }, [currentSongs, existingSongIds, localSongs]);
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
-  // Move focus to close button when modal opens (AC-15).
+  // Move focus to close button when modal mounts (AM-2).
   useEffect(() => {
-    if (!isOpen) return;
     const id = setTimeout(() => closeButtonRef.current?.focus(), 0);
     return () => clearTimeout(id);
-  }, [isOpen]);
+  }, []);
 
-  // Escape key dismiss + Tab focus trap (AC-11, AC-14).
+  // Escape key dismiss + Tab focus trap including select:not([disabled]) (AC-3, AC-9).
   useEffect(() => {
-    if (!isOpen) return;
-
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         handleClose();
@@ -278,11 +354,6 @@ export default function AppendSongsModal({
       }
 
       if (e.key === "Tab" && panelRef.current) {
-        const focusableSelectors = [
-          "button:not([disabled])",
-          'input[type="checkbox"]:not([disabled])',
-          'input[type="search"]:not([disabled])',
-        ].join(", ");
         const focusables = Array.from(
           panelRef.current.querySelectorAll<HTMLElement>(focusableSelectors)
         ).filter((el) => el.offsetParent !== null);
@@ -307,45 +378,27 @@ export default function AppendSongsModal({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleClose]);
-
-  if (!isOpen) return null;
-
-  // ── Derived values ─────────────────────────────────────────────────────────
-
-  const hasNewChecked =
-    checked.size > 0 && [...checked].some((id) => !existingSongIds.has(id));
-  const isEmpty = !isFetchingSongs && !fetchError && songs.length === 0;
-
-  const lowerQuery = searchQuery.toLowerCase();
-  const filteredSongs =
-    lowerQuery.trim() === ""
-      ? songs
-      : songs.filter(
-          (s) =>
-            s.title.toLowerCase().includes(lowerQuery) ||
-            s.artist.toLowerCase().includes(lowerQuery)
-        );
+  }, [handleClose]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <>
-      {/* Backdrop (AC-10) */}
+      {/* Backdrop (AC-3) */}
       <div className={backdropClass} aria-hidden="true" onClick={handleClose} />
 
-      {/* Dialog panel (AC-13) */}
+      {/* Dialog panel (AC-3, AM-2) */}
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="append-songs-modal-title"
+        aria-labelledby="edit-songs-modal-title"
         className={panelClass}
       >
-        {/* Header */}
+        {/* Header (AC-3) */}
         <div className={headerClass}>
-          <h2 id="append-songs-modal-title" className={titleClass}>
-            Add Songs to Setlist
+          <h2 id="edit-songs-modal-title" className={titleClass}>
+            Edit Songs
           </h2>
           <button
             ref={closeButtonRef}
@@ -370,174 +423,102 @@ export default function AppendSongsModal({
           </button>
         </div>
 
-        {/* Body */}
+        {/* Body — two-column Edit Setlist song management layout (AC-4, AC-5) */}
         <div className={bodyClass}>
-          {/* Search input */}
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            placeholder="Search songs…"
-            className={searchInputClass}
-            aria-label="Search songs"
-          />
-
-          {/* Loading state (AC-33) */}
-          {isFetchingSongs && (
-            <div className="flex items-center justify-center py-10 gap-3 text-[var(--brand-brown)]">
-              <Loader2 size={20} className="animate-spin" aria-hidden="true" />
-              <span className="text-sm font-medium">Loading songs…</span>
+          {error && (
+            <div className="mb-6">
+              <ErrorBanner message={error} onDismiss={handleDismissError} />
             </div>
           )}
 
-          {/* Fetch error state (AC-34) */}
-          {!isFetchingSongs && fetchError && (
-            <div className="flex flex-col items-center justify-center py-10 gap-4">
-              <p
-                role="alert"
-                className="text-sm font-medium text-[var(--brand-brown)]"
-              >
-                {fetchError}
+          <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_360px] md:gap-8 md:items-start">
+            {/* Setlist Panel — left / top */}
+            <div>
+              <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest mb-4">
+                Setlist ({localSongs.length}{" "}
+                {localSongs.length === 1 ? "song" : "songs"})
               </p>
-              <button
-                type="button"
-                onClick={onRetryFetch}
-                className={retryButtonClass}
-              >
-                Retry
-              </button>
+              <SetlistPanel
+                songs={localSongs}
+                onReorder={handleReorder}
+                onRemove={handleRemove}
+                onKeyChange={handleKeyChange}
+                isDirty={false}
+                onSave={noopSave}
+                isSaving={false}
+              />
             </div>
-          )}
 
-          {/* Empty state (AC-31) */}
-          {isEmpty && (
-            <p className="py-10 text-center text-sm text-[var(--brand-brown)]">
-              No songs in your library yet. Add songs in the Song Library first.
-            </p>
-          )}
-
-          {/* Song list (AC-17–24) */}
-          {!isFetchingSongs && !fetchError && songs.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {/* No-results message when search yields nothing */}
-              {filteredSongs.length === 0 && lowerQuery.trim() !== "" && (
-                <p className="text-brand-brown dark:text-brand-tan text-sm py-4 text-center">
-                  No songs match your search.
-                </p>
-              )}
-              {filteredSongs.map((song) => {
-                const isExisting = existingSongIds.has(song.id);
-                const isChecked = isExisting || checked.has(song.id);
-
-                return (
-                  <div
-                    key={song.id}
-                    className={
-                      isExisting ? songRowDisabledClass : songRowEnabledClass
-                    }
-                    onClick={isExisting ? undefined : () => toggleSong(song.id)}
-                    aria-disabled={isExisting}
-                  >
-                    {/* Checkbox (AC-22) */}
-                    <input
-                      type="checkbox"
-                      id={`append-song-${song.id}`}
-                      checked={isChecked}
-                      disabled={isExisting}
-                      onChange={
-                        isExisting ? undefined : () => toggleSong(song.id)
-                      }
-                      className={checkboxClass}
-                      aria-label={
-                        isExisting
-                          ? `${song.title} — already in setlist`
-                          : song.title
-                      }
-                    />
-
-                    {/* Song info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[var(--brand-espresso)] dark:text-[var(--brand-cream)] font-medium text-sm truncate">
-                        {song.title}
-                      </p>
-                      {song.artist && (
-                        <p className="text-[var(--brand-brown)] text-xs truncate">
-                          {song.artist}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Key badge */}
-                    <span className="bg-[var(--brand-tan-alpha)] text-[var(--brand-espresso)] dark:text-[var(--brand-cream)] text-xs font-medium px-2 py-0.5 rounded shrink-0">
-                      {song.original_key}
-                    </span>
-
-                    {/* "Already added" label (AC-20) */}
-                    {isExisting && (
-                      <span className="text-xs font-medium text-[var(--brand-brown)]/60 shrink-0">
-                        Already added
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className={footerClass}>
-          {/* Save error message (AC-35, AC-36) */}
-          <div className="flex-1 min-w-0">
-            {saveError && (
-              <p
-                role="alert"
-                className="text-sm font-medium text-red-700 dark:text-red-400 truncate"
-              >
-                {saveError}
-              </p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-3 shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-
-            {/* Save button — hidden in empty state (AC-32), enabled only when new songs checked (AC-25) */}
-            {!isEmpty && (
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={handleSave}
-                disabled={!hasNewChecked || isSaving || isFetchingSongs}
-                aria-label={isSaving ? "Saving songs" : "Save selected songs"}
-              >
-                {isSaving ? (
-                  <>
+            {/* Library Panel — right / bottom */}
+            <div>
+              {isFetchingSongs ? (
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest">
+                    Song Library
+                  </p>
+                  <div className="flex items-center justify-center py-10 gap-3 text-brand-brown dark:text-brand-tan">
                     <Loader2
-                      size={14}
-                      className="animate-spin mr-2"
+                      size={20}
+                      className="animate-spin"
                       aria-hidden="true"
                     />
-                    Saving…
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            )}
+                    <span className="text-sm font-medium">Loading songs…</span>
+                  </div>
+                </div>
+              ) : fetchError ? (
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest">
+                    Song Library
+                  </p>
+                  <div className="flex flex-col items-center justify-center py-8 gap-4">
+                    <p
+                      role="alert"
+                      className="text-sm font-medium text-brand-brown dark:text-brand-tan"
+                    >
+                      {fetchError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onRetryFetch}
+                      className={retryButtonClass}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <LibraryPanel
+                  songs={songs}
+                  addedIds={addedIds}
+                  onAdd={handleAdd}
+                  addingId={addingId}
+                  query={searchQuery}
+                  onQueryChange={setSearchQuery}
+                  libraryError={fetchError}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
     </>
   );
+}
+
+// ── AppendSongsModal wrapper ──────────────────────────────────────────────────
+
+/**
+ * AppendSongsModal — Edit Songs modal on the Setlist detail page.
+ *
+ * Reuses SetlistPanel and LibraryPanel from the Edit Setlist page so music
+ * directors can reorder songs via drag-and-drop, change performance keys,
+ * remove songs, and search/add library songs with automatic persistence and
+ * optimistic rollback on error (no Cancel or Save footer buttons).
+ */
+export default function AppendSongsModal({
+  isOpen,
+  ...dialogProps
+}: AppendSongsModalProps) {
+  if (!isOpen) return null;
+  return <AppendSongsModalDialog {...dialogProps} />;
 }

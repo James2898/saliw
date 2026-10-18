@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ModalSong } from "@/components/client/AppendSongsModal";
+import type { SortableSong } from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 import { getAllSongs } from "@/app/actions/songActions";
 
 const AppendSongsModal = dynamic(
@@ -14,7 +15,8 @@ const AppendSongsModal = dynamic(
 
 interface AppendSongsButtonProps {
   setlistId: string;
-  existingSongIds: Set<string>;
+  existingSongIds?: Set<string>;
+  currentSongs?: SortableSong[];
 }
 
 // ── Module-level CSS class constants ──────────────────────────────────────────
@@ -51,24 +53,19 @@ const fabButtonClass = [
 // ── AppendSongsButton ─────────────────────────────────────────────────────────
 
 /**
- * AppendSongsButton — Desktop-only FAB that opens the AppendSongsModal.
+ * AppendSongsButton — Desktop-only FAB that opens the Edit Songs modal (AppendSongsModal).
  *
  * Owns the song-fetch lifecycle: fetches all songs when clicked so the modal
  * receives pre-loaded data (avoids calling setState inside useEffect, per
  * React Compiler lint rules observed during TASK-038 build).
  *
- * AC-1:  hidden lg:flex — renders only at lg: breakpoint and larger.
- * AC-2:  fixed bottom-6 left-6 z-50.
- * AC-3:  Rendered only inside {isLeader && ...} guard in SetlistViewerClient.
- * AC-4:  Music-note-plus icon.
- * AC-5:  aria-label="Append songs to setlist".
- * AC-6:  title="Add Songs" for tooltip on hover.
- * AC-7:  Artisan CSS-variable colors; auto dark mode.
- * AC-8:  Opens AppendSongsModal on click.
+ * AC-1:  "Edit Songs" label, title="Edit Songs", aria-label="Edit songs in setlist".
+ * AC-2:  Rendered only inside {isLeader && ...} guard in SetlistViewerClient.
  */
 export default function AppendSongsButton({
   setlistId,
   existingSongIds,
+  currentSongs,
 }: AppendSongsButtonProps) {
   // ── State ──────────────────────────────────────────────────────────────────
 
@@ -132,11 +129,11 @@ export default function AppendSongsButton({
           ref={fabRef}
           type="button"
           onClick={openModal}
-          aria-label="Append songs to setlist"
-          title="Add Songs"
+          aria-label="Edit songs in setlist"
+          title="Edit Songs"
           className={fabButtonClass}
         >
-          {/* Music-note-plus icon (AC-4) */}
+          {/* Music-note-plus icon */}
           <svg
             width="16"
             height="16"
@@ -172,15 +169,16 @@ export default function AppendSongsButton({
             <line x1="11" y1="3" x2="15" y2="3" />
           </svg>
 
-          <span>Add Songs</span>
+          <span>Edit Songs</span>
         </button>
       </div>
 
-      {/* Modal — rendered outside the FAB container (AC-8) */}
+      {/* Modal — rendered outside the FAB container */}
       <AppendSongsModal
         isOpen={isModalOpen}
         setlistId={setlistId}
         existingSongIds={existingSongIds}
+        currentSongs={currentSongs}
         onClose={closeModal}
         fabRef={fabRef}
         songs={songs}
