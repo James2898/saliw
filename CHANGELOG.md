@@ -4,6 +4,18 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-18
+
+### Changed
+- Replace "Add Songs" checkbox modal on Setlist detail page with auto-saving "Edit Songs" modal (`TASK-20261018-e7m`)
+  - Updated desktop FAB in `AppendSongsButton.tsx` to `"Edit Songs"` (`title="Edit Songs"`, `aria-label="Edit songs in setlist"`) while preserving `isLeader` role gating and `next/dynamic(..., { ssr: false })` code splitting (AC-1, AC-2, AM-1)
+  - Rebuilt `AppendSongsModal.tsx` with a widened two-column layout (`w-[min(95vw,64rem)]`, `md:grid-cols-[1fr_360px]`) reusing `SetlistPanel` (`SortableSongRow`, `isDirty={false}`) and `LibraryPanel`, without footer Cancel/Save buttons (AC-3, AC-4, AC-5, AM-2)
+  - Wired immediate auto-save persistence with optimistic UI updates, rollback on failure, dismissible `ErrorBanner`, and `router.refresh()` synchronization for `addSongToSetlist`, `removeSongFromSetlist`, `updateSetlistSongOrder`, and `updatePerformanceDetails` (AC-6, AC-7, AC-8)
+  - Added `select:not([disabled])` to modal focus trap and completed explicit `dark:` Artisan palette pairs across `SetlistPanel`, `SortableSongRow`, `LibraryPanel`, and `ErrorBanner` (AC-9, BUG-005)
+  - Affected files: `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/client/AppendSongsButton.tsx`, `src/components/client/AppendSongsModal.tsx`, `src/components/client/SetlistBuilder/SetlistPanel.tsx`, `src/components/client/SetlistBuilder/SortableSongRow.tsx`, `src/components/client/SetlistBuilder/LibraryPanel.tsx`, `src/components/client/SetlistBuilder/ErrorBanner.tsx`
+
+---
+
 ## [Unreleased] — 2026-10-17
 
 ### Added / Changed

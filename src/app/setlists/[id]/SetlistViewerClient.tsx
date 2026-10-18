@@ -21,6 +21,7 @@ import { useChordFontSize } from "@/hooks/useChordFontSize";
 import { useChordColor } from "@/hooks/useChordColor";
 import type { ProcessedLine } from "@/utils/musicLogic";
 import { getSemitoneOffset, shiftChord } from "@/utils/musicLogic";
+import type { SortableSong } from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 
 const ChordDrawer = dynamic(() => import("@/components/client/ChordDrawer"), {
   ssr: false,
@@ -100,10 +101,26 @@ export default function SetlistViewerClient({
   );
 
   // Set of song IDs (songs table PK) already present in the setlist — passed to
-  // AppendSongsButton so the modal pre-checks and disables existing songs (AC-20, AC-24).
+  // AppendSongsButton so the modal marks existing songs as Added (AC-5).
   // Wrapped in useMemo so the Set reference stays stable across renders.
   const existingSongIds = useMemo(
     () => new Set(songs.map((s) => s.songId)),
+    [songs]
+  );
+
+  // Ordered setlist songs for the Edit Songs modal (AppendSongsButton -> AppendSongsModal).
+  // Wrapped in useMemo so the array reference stays stable across renders (BUG-019).
+  const setlistSongs = useMemo<SortableSong[]>(
+    () =>
+      songs.map((s, index) => ({
+        junctionId: s.junctionId,
+        songId: s.songId,
+        title: s.title,
+        artist: s.artist,
+        originalKey: s.originalKey,
+        performanceKey: s.performanceKey,
+        orderIndex: index,
+      })),
     [songs]
   );
 
@@ -242,11 +259,12 @@ export default function SetlistViewerClient({
         onMobileOpenChange={setIsSectionNavOpen}
       />
 
-      {/* ── Append Songs FAB — desktop-only, fixed bottom-left (TASK-038 AC-1–7) */}
+      {/* ── Edit Songs FAB — desktop-only, fixed bottom-left (TASK-038, TASK-20261018-e7m) */}
       {isLeader && (
         <AppendSongsButton
           setlistId={setlistId}
           existingSongIds={existingSongIds}
+          currentSongs={setlistSongs}
         />
       )}
 
