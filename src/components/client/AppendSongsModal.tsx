@@ -495,6 +495,7 @@ function AppendSongsModalDialog({
                   query={searchQuery}
                   onQueryChange={setSearchQuery}
                   libraryError={fetchError}
+                  listClassName="max-h-[min(55vh,480px)] overflow-y-auto pr-1"
                 />
               )}
             </div>
