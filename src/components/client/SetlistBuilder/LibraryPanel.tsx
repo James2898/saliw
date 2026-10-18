@@ -10,6 +10,7 @@ interface LibraryPanelProps {
   query: string;
   onQueryChange: (q: string) => void;
   libraryError?: string | null;
+  listClassName?: string;
 }
 
 export default function LibraryPanel({
@@ -20,6 +21,7 @@ export default function LibraryPanel({
   query,
   onQueryChange,
   libraryError,
+  listClassName,
 }: LibraryPanelProps) {
   // ── Library fetch error ────────────────────────────────────────────────────
   if (libraryError) {
@@ -81,13 +83,16 @@ export default function LibraryPanel({
         ].join(" ")}
       />
 
-      {/* Results */}
       {filtered.length === 0 ? (
         <p className="text-brand-brown dark:text-brand-tan text-sm">
           No songs match your search.
         </p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div
+          className={["flex flex-col gap-2", listClassName]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {filtered.map((song) => {
             const isAdded = addedIds.has(song.id);
             const isAdding = addingId === song.id;
