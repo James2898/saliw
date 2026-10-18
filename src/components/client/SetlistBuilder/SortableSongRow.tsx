@@ -42,7 +42,7 @@ export default function SortableSongRow({
         "flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso",
         isDragging
           ? "border border-[var(--brand-tan)] shadow-lg shadow-[var(--brand-tan)]/20 z-10"
-          : "border border-brand-brown/10",
+          : "border border-brand-brown/10 dark:border-brand-tan/15",
       ].join(" ")}
     >
       {/* Drag handle */}
@@ -78,7 +78,7 @@ export default function SortableSongRow({
         value={song.performanceKey}
         onChange={(e) => onKeyChange(song.songId, e.target.value)}
         aria-label={`Performance key for ${song.title}`}
-        className="text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso shrink-0"
+        className="text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 dark:border-brand-tan/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso dark:focus:ring-brand-tan shrink-0"
       >
         {NOTES.map((note) => (
           <option key={note} value={note}>
@@ -92,7 +92,7 @@ export default function SortableSongRow({
         type="button"
         aria-label={`Remove ${song.title} from setlist`}
         onClick={() => onRemove(song.songId)}
-        className="text-brand-brown/60 hover:text-red-600 transition-colors duration-200 shrink-0 text-sm font-medium"
+        className="text-brand-brown/60 dark:text-brand-tan/60 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 shrink-0 text-sm font-medium"
       >
         Remove
       </button>
