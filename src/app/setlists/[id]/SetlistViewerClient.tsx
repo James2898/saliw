@@ -6,8 +6,6 @@ import { Pencil, Settings } from "lucide-react";
 import dynamic from "next/dynamic";
 import ServiceNavigator from "@/components/client/ServiceNavigator";
 import SetlistSongSection from "@/components/client/SetlistSongSection";
-import GoLiveButton from "@/components/client/GoLiveButton";
-import FollowLeaderButton from "@/components/client/FollowLeaderButton";
 import StageSyncControls from "@/components/client/StageSyncControls";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 import AppendSongsButton from "@/components/client/AppendSongsButton";
@@ -280,34 +278,6 @@ export default function SetlistViewerClient({
     [sync, songs]
   );
 
-  // BUG-019 memoized sync slices passed to child buttons & nav
-  const goLiveSyncSlice = useMemo(
-    () => ({
-      isLive: sync.isLive,
-      isLiveConnecting: sync.isLiveConnecting,
-      liveError: sync.liveError,
-      toggleLive: sync.toggleLive,
-    }),
-    [sync.isLive, sync.isLiveConnecting, sync.liveError, sync.toggleLive]
-  );
-
-  const followLeaderSyncSlice = useMemo(
-    () => ({
-      isFollowing: sync.isFollowing,
-      isStateChecking: sync.isStateChecking,
-      followError: sync.followError,
-      followSyncStatus: sync.followSyncStatus,
-      toggleFollow: sync.toggleFollow,
-    }),
-    [
-      sync.isFollowing,
-      sync.isStateChecking,
-      sync.followError,
-      sync.followSyncStatus,
-      sync.toggleFollow,
-    ]
-  );
-
   const serviceNavigatorSyncSlice = useMemo(
     () => ({
       isLive: sync.isLive,
@@ -370,11 +340,6 @@ export default function SetlistViewerClient({
               sync={sync}
               isLeader={isLeader}
               isMusicDirector={isMusicDirector}
-            />
-            <GoLiveButton sync={goLiveSyncSlice} isLeader={isLeader} />
-            <FollowLeaderButton
-              sync={followLeaderSyncSlice}
-              isLeader={isLeader}
             />
             <button
               type="button"
