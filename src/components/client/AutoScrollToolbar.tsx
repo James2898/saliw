@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { UseAutoScrollReturn } from "@/hooks/useAutoScroll";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -141,9 +141,24 @@ export default function AutoScrollToolbar({
     setMounted(true);
   }, []);
 
+  const onScrollStateChangeRef = useRef(onScrollStateChange);
   useEffect(() => {
-    onScrollStateChange?.({ isActive, isScrolling, speed });
-  }, [isActive, isScrolling, speed, onScrollStateChange]);
+    onScrollStateChangeRef.current = onScrollStateChange;
+  });
+
+  const prevScrollStateRef = useRef({ isActive, isScrolling, speed });
+
+  useEffect(() => {
+    const prev = prevScrollStateRef.current;
+    if (
+      prev.isActive !== isActive ||
+      prev.isScrolling !== isScrolling ||
+      prev.speed !== speed
+    ) {
+      prevScrollStateRef.current = { isActive, isScrolling, speed };
+      onScrollStateChangeRef.current?.({ isActive, isScrolling, speed });
+    }
+  }, [isActive, isScrolling, speed]);
 
   return (
     <div
