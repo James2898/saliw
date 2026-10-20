@@ -137,6 +137,10 @@ interface ChordSheetClientProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
+  /** Line height multiplier for chord and lyric lines (e.g. 1.8). */
+  lineHeight?: number;
+  /** When true, hides the embedded song controls toolbar (e.g. in Page View mode where controls are in a popover). */
+  hideToolbar?: boolean;
   /**
    * Optional stable prefix for section header `id` attributes.
    * When provided, each `type: "header"` span receives
@@ -178,6 +182,8 @@ export default function ChordSheetClient({
   chordFontSize,
   chordBg,
   chordColor,
+  lineHeight,
+  hideToolbar = false,
   sectionIdPrefix,
 }: ChordSheetClientProps) {
   const {
@@ -332,6 +338,16 @@ export default function ChordSheetClient({
     }
   }, [chordBg]);
 
+  // Apply chord line-height CSS variable to the container (AC-4).
+  useEffect(() => {
+    if (lineHeight !== undefined) {
+      sheetRef.current?.style.setProperty(
+        "--chord-line-height",
+        String(lineHeight)
+      );
+    }
+  }, [lineHeight]);
+
   // Build chord-display container class with conditional modifiers.
   const chordDisplayClass = ["chord-display", chordsHidden && "chords-hidden"]
     .filter(Boolean)
@@ -346,13 +362,14 @@ export default function ChordSheetClient({
 
       <div>
         {/* ── Transposition control bar (accordion) ─────────────────────────── */}
-        <div
-          className={[
-            "mb-6 rounded-xl overflow-hidden",
-            "bg-brand-cream dark:bg-brand-espresso",
-            "border border-brand-brown/20 dark:border-brand-tan/20",
-          ].join(" ")}
-        >
+        {!hideToolbar && (
+          <div
+            className={[
+              "mb-6 rounded-xl overflow-hidden",
+              "bg-brand-cream dark:bg-brand-espresso",
+              "border border-brand-brown/20 dark:border-brand-tan/20",
+            ].join(" ")}
+          >
           {/* Accordion toggle row */}
           <button
             type="button"
@@ -638,6 +655,7 @@ export default function ChordSheetClient({
             </div>
           </div>
         </div>
+        )}
 
         {/* ── Chord sheet ────────────────────────────────────────────────────── */}
         <div
