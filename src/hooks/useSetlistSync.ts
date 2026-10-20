@@ -282,7 +282,7 @@ export function useSetlistSync({
 
   const broadcastKeyChange = useCallback(
     (junctionId: string, performanceKey: string) => {
-      if (!channelRef.current) return;
+      if (!isLive || !channelRef.current) return;
       const timestamp = Date.now();
       channelRef.current
         .send({
@@ -298,24 +298,27 @@ export function useSetlistSync({
           console.error("[useSetlistSync] KEY_CHANGE broadcast failed", err);
         });
     },
-    []
+    [isLive]
   );
 
   // ── Director: broadcast SONG_CHANGE ──────────────────────────────────────
 
-  const broadcastSongChange = useCallback((junctionId: string) => {
-    if (!channelRef.current) return;
-    const timestamp = Date.now();
-    channelRef.current
-      .send({
-        type: "broadcast",
-        event: REALTIME_EVENTS.SONG_CHANGE,
-        payload: { junctionId, timestamp } satisfies SongChangePayload,
-      })
-      .catch((err: unknown) => {
-        console.error("[useSetlistSync] SONG_CHANGE broadcast failed", err);
-      });
-  }, []);
+  const broadcastSongChange = useCallback(
+    (junctionId: string) => {
+      if (!isLive || !channelRef.current) return;
+      const timestamp = Date.now();
+      channelRef.current
+        .send({
+          type: "broadcast",
+          event: REALTIME_EVENTS.SONG_CHANGE,
+          payload: { junctionId, timestamp } satisfies SongChangePayload,
+        })
+        .catch((err: unknown) => {
+          console.error("[useSetlistSync] SONG_CHANGE broadcast failed", err);
+        });
+    },
+    [isLive]
+  );
 
   // ── Director: broadcast SECTION_CHANGE ───────────────────────────────────
 
@@ -326,7 +329,7 @@ export function useSetlistSync({
       sectionLabel: string,
       sectionIndex?: number
     ) => {
-      if (!channelRef.current) return;
+      if (!isLive || !channelRef.current) return;
       const timestamp = Date.now();
       channelRef.current
         .send({
@@ -347,7 +350,7 @@ export function useSetlistSync({
           );
         });
     },
-    []
+    [isLive]
   );
 
   // ── Director: broadcast SCROLL_SYNC ──────────────────────────────────────
@@ -362,7 +365,7 @@ export function useSetlistSync({
       isScrolling?: boolean;
       speedMultiplier?: number;
     }) => {
-      if (!channelRef.current) return;
+      if (!isLive || !channelRef.current) return;
       const timestamp = Date.now();
       channelRef.current
         .send({
@@ -384,12 +387,13 @@ export function useSetlistSync({
           console.error("[useSetlistSync] SCROLL_SYNC broadcast failed", err);
         });
     },
-    []
+    [isLive]
   );
 
   // ── Director: Go Live toggle ──────────────────────────────────────────────
 
   const toggleLive = useCallback(() => {
+    if (!isLeader) return;
     // In-flight guard: prevent concurrent connection attempts (AM-1, AC-8, AC-9)
     if (isLiveConnecting || isLiveConnectingRef.current) return;
 
@@ -481,6 +485,7 @@ export function useSetlistSync({
       }
     }
   }, [
+    isLeader,
     isLive,
     isLiveConnecting,
     setlistId,
@@ -863,6 +868,7 @@ export function useSetlistSync({
       statusTimers.clear();
 
       if (channelRef.current) {
+        channelRef.current.untrack().catch(() => {});
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
