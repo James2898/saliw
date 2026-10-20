@@ -9,6 +9,7 @@ import type {
   ChordColorPreset,
 } from "@/hooks/useChordColor";
 import { CHORD_BG_PRESETS, CHORD_COLOR_PRESETS } from "@/hooks/useChordColor";
+import type { UseSetlistLayoutReturn } from "@/hooks/useSetlistLayout";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,9 +24,11 @@ interface SetlistSettingsModalProps {
   chordFontSizeControls: UseChordFontSizeReturn;
   /** Chord color/background controls. */
   chordColorControls: UseChordColorReturn;
+  /** Setlist display layout controls (line spacing, width, page mode, columns, overflow). */
+  layoutControls?: UseSetlistLayoutReturn;
 }
 
-type TabId = "font" | "chords";
+type TabId = "font" | "chords" | "layout";
 
 // ── Module-level CSS class constants ──────────────────────────────────────────
 
@@ -129,6 +132,7 @@ export default function SetlistSettingsModal({
   fontSizeControls,
   chordFontSizeControls,
   chordColorControls,
+  layoutControls,
 }: SetlistSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>("font");
 
@@ -277,6 +281,21 @@ export default function SetlistSettingsModal({
           >
             Chords
           </button>
+          {layoutControls && (
+            <button
+              role="tab"
+              type="button"
+              id="settings-tab-layout"
+              aria-selected={activeTab === "layout"}
+              aria-controls="settings-panel-layout"
+              onClick={() => setActiveTab("layout")}
+              className={
+                activeTab === "layout" ? tabActiveClass : tabInactiveClass
+              }
+            >
+              Layout
+            </button>
+          )}
         </div>
 
         {/* Tab panels */}
@@ -523,6 +542,210 @@ export default function SetlistSettingsModal({
               </p>
             </div>
           </div>
+
+          {/* Layout tab (AC-1–6, AC-14, AC-18) */}
+          {layoutControls && (
+            <div
+              role="tabpanel"
+              id="settings-panel-layout"
+              aria-labelledby="settings-tab-layout"
+              hidden={activeTab !== "layout"}
+            >
+              {/* Line Spacing stepper (AC-2, AC-3, AC-4) */}
+              <div className="mb-6">
+                <p className={sectionLabelClass}>Line Spacing</p>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={layoutControls.decreaseLineHeight}
+                    aria-label="Decrease line spacing"
+                    disabled={layoutControls.lineHeight <= 1.2}
+                    className={[
+                      ctrlBtnClass,
+                      "disabled:opacity-40 disabled:cursor-not-allowed",
+                    ].join(" ")}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={layoutControls.resetLineHeight}
+                    aria-label={`Line spacing ${layoutControls.lineHeight.toFixed(1)} — click to reset`}
+                    title="Click to reset line spacing to 1.8"
+                    className={[
+                      "px-2 py-1 rounded-lg shrink-0",
+                      "text-xs font-mono font-bold",
+                      "text-brand-espresso dark:text-brand-cream",
+                      "hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                      "transition-colors duration-200",
+                    ].join(" ")}
+                  >
+                    {layoutControls.lineHeight.toFixed(1)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={layoutControls.increaseLineHeight}
+                    aria-label="Increase line spacing"
+                    disabled={layoutControls.lineHeight >= 2.4}
+                    className={[
+                      ctrlBtnClass,
+                      "disabled:opacity-40 disabled:cursor-not-allowed",
+                    ].join(" ")}
+                  >
+                    +
+                  </button>
+                  <span className="text-xs text-brand-brown/60 dark:text-brand-tan/60 ml-1">
+                    1.2–2.4 (default 1.8)
+                  </span>
+                </div>
+              </div>
+
+              {/* Content Width toggle (AC-5) */}
+              <div className="mb-6">
+                <p className={sectionLabelClass}>Content Width</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => layoutControls.setContentWidth("centered")}
+                    aria-pressed={layoutControls.contentWidth === "centered"}
+                    className={[
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors duration-200",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                      layoutControls.contentWidth === "centered"
+                        ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan shadow-sm"
+                        : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                    ].join(" ")}
+                  >
+                    Centered (3xl)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => layoutControls.setContentWidth("full")}
+                    aria-pressed={layoutControls.contentWidth === "full"}
+                    className={[
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors duration-200",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                      layoutControls.contentWidth === "full"
+                        ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan shadow-sm"
+                        : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                    ].join(" ")}
+                  >
+                    Full Width
+                  </button>
+                </div>
+                {layoutControls.pageColumns > 1 && layoutControls.layoutMode === "page" && (
+                  <p className="mt-1.5 text-xs text-brand-brown/60 dark:text-brand-tan/60">
+                    Multi-column view automatically expands to full width.
+                  </p>
+                )}
+              </div>
+
+              {/* Layout Mode (Continuous vs Page View) (AC-6, AC-7, AC-8) */}
+              <div className="mb-6">
+                <p className={sectionLabelClass}>Display Mode</p>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => layoutControls.setLayoutMode("scroll")}
+                      aria-pressed={layoutControls.layoutMode === "scroll"}
+                      className={[
+                        "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors duration-200",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                        layoutControls.layoutMode === "scroll"
+                          ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan shadow-sm"
+                          : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                      ].join(" ")}
+                    >
+                      Continuous Scroll
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => layoutControls.setLayoutMode("page")}
+                      aria-pressed={layoutControls.layoutMode === "page"}
+                      className={[
+                        "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors duration-200",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                        layoutControls.layoutMode === "page"
+                          ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan shadow-sm"
+                          : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                      ].join(" ")}
+                    >
+                      Page View (1 Song / Screen)
+                    </button>
+                  </div>
+
+                  {/* Columns selector when Page View is active */}
+                  {layoutControls.layoutMode === "page" && (
+                    <div className="pt-2 pl-1 border-t border-brand-brown/15 dark:border-brand-tan/15">
+                      <p className="text-xs font-medium text-brand-brown dark:text-brand-tan mb-2">
+                        Columns (Side-by-side):
+                      </p>
+                      <div className="flex items-center gap-2">
+                        {([1, 2, 3] as const).map((cols) => {
+                          const isSelected = layoutControls.pageColumns === cols;
+                          return (
+                            <button
+                              key={cols}
+                              type="button"
+                              onClick={() => layoutControls.setPageColumns(cols)}
+                              aria-pressed={isSelected}
+                              className={[
+                                "px-3 py-1 rounded-lg text-xs font-semibold border transition-colors duration-200",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                                isSelected
+                                  ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-tan dark:text-brand-espresso dark:border-brand-tan shadow-sm"
+                                  : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                              ].join(" ")}
+                            >
+                              {cols} {cols === 1 ? "Column" : "Columns"}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-1.5 text-xs text-brand-brown/60 dark:text-brand-tan/60">
+                        {layoutControls.pageColumns === 3
+                          ? "3 cols on ≥1280px screen; collapses to 2 on 1024–1279px, 1 on <1024px."
+                          : layoutControls.pageColumns === 2
+                            ? "2 cols on ≥1024px screen; collapses to 1 on <1024px."
+                            : "Standard 1 column single page."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Long Song Overflow & Fit Song to Screen (AC-13, AC-14) */}
+              {layoutControls.layoutMode === "page" && (
+                <div className="mb-2">
+                  <p className={sectionLabelClass}>Long Song Overflow</p>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={layoutControls.overflowBehavior === "fit"}
+                        onChange={(e) =>
+                          layoutControls.setOverflowBehavior(
+                            e.target.checked ? "fit" : "paginate"
+                          )
+                        }
+                        className="rounded border-brand-brown/40 dark:border-brand-tan/40 text-brand-espresso focus:ring-brand-espresso dark:focus:ring-brand-tan w-4 h-4"
+                      />
+                      <span className="text-xs font-semibold text-brand-espresso dark:text-brand-cream">
+                        Fit song to screen (auto-scale)
+                      </span>
+                    </label>
+                    <p className="text-xs text-brand-brown/60 dark:text-brand-tan/60">
+                      {layoutControls.overflowBehavior === "fit"
+                        ? "Scales chord sheet font size down dynamically to fit the entire song on one screen without pagination."
+                        : "Paginate overflow across screens (advance through sub-pages via Space/Arrows)."}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>

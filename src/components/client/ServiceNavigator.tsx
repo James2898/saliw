@@ -24,6 +24,10 @@ interface ServiceNavigatorProps {
   setlistId: string;
   isAuthenticated: boolean;
   sync: ServiceNavigatorSync;
+  /** Controlled active song ID (e.g. in Page View mode where one song is visible at a time). */
+  activeSongId?: string;
+  /** Callback when user clicks a song title. When provided, replaces smooth scroll navigation. */
+  onSelectSong?: (junctionId: string) => void;
   /**
    * Called on pointerdown of a song-title button — before the click fires.
    * Use this to pause any ongoing auto-scroll so the page is stationary by
@@ -62,12 +66,15 @@ interface ServiceNavigatorProps {
 export default function ServiceNavigator({
   songs,
   sync,
+  activeSongId: activeSongIdProp,
+  onSelectSong,
   onBeforeNavigate,
   onAfterNavigate,
 }: ServiceNavigatorProps) {
-  const [activeSongId, setActiveSongId] = useState<string | null>(
+  const [internalActiveSongId, setInternalActiveSongId] = useState<string | null>(
     songs.length > 0 ? songs[0].junctionId : null
   );
+  const activeSongId = activeSongIdProp ?? internalActiveSongId;
   const ratiosRef = useRef<Map<string, number>>(new Map());
 
   // Latest onAfterNavigate stored in a ref so the settle detector doesn't
@@ -105,7 +112,7 @@ export default function ServiceNavigator({
   });
 
   useEffect(() => {
-    if (songs.length === 0) return;
+    if (songs.length === 0 || activeSongIdProp !== undefined) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -130,7 +137,7 @@ export default function ServiceNavigator({
         }
 
         if (winningId !== null && winningRatio > 0) {
-          setActiveSongId(winningId);
+          setInternalActiveSongId(winningId);
 
           // AC-7: broadcast SONG_CHANGE when Go Live is active
           // Read isLive from ref to avoid reconnecting the observer on every render (RF-3)
@@ -200,6 +207,11 @@ export default function ServiceNavigator({
   };
 
   const handleScrollToSong = (junctionId: string) => {
+    if (onSelectSong) {
+      onSelectSong(junctionId);
+      return;
+    }
+
     const element = document.getElementById(`song-${junctionId}`);
     if (!element) return;
     // onBeforeNavigate is fired earlier on pointerdown so the page is already
