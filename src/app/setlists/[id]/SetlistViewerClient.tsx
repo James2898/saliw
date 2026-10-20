@@ -247,28 +247,81 @@ export default function SetlistViewerClient({
   // useMemo dep is just `songs`. Recomputes only when songs array changes.
   const navSections = useMemo(() => deriveSections(songs), [songs]);
 
+  // Memoized scroll state change handler (prevents unsolicited broadcast spam)
+  const handleScrollStateChange = useCallback(
+    ({ isScrolling, speed }: { isScrolling: boolean; speed: number }) => {
+      if (sync.isLive) {
+        const scrollDist =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = scrollDist > 0 ? window.scrollY / scrollDist : 0;
+        const activeJunctionId = songs[0]?.junctionId ?? "";
+        sync.broadcastScrollSync({
+          junctionId: activeJunctionId,
+          isAutoScrolling: isScrolling,
+          speedLevel: speed,
+          scrollPercentage: Math.round(ratio * 100),
+          scrollPositionRatio: ratio,
+          isScrolling,
+          speedMultiplier: speed,
+        });
+      }
+    },
+    [sync, songs]
+  );
+
+  const handleSectionClick = useCallback(
+    (target: { id: string; label: string }) => {
+      if (sync.isLive) {
+        const junctionId =
+          target.id.split("-")[1] ?? songs[0]?.junctionId ?? "";
+        sync.broadcastSectionChange(junctionId, target.id, target.label);
+      }
+    },
+    [sync, songs]
+  );
+
+  // BUG-019 memoized sync slices passed to child buttons & nav
+  const goLiveSyncSlice = useMemo(
+    () => ({
+      isLive: sync.isLive,
+      isLiveConnecting: sync.isLiveConnecting,
+      liveError: sync.liveError,
+      toggleLive: sync.toggleLive,
+    }),
+    [sync.isLive, sync.isLiveConnecting, sync.liveError, sync.toggleLive]
+  );
+
+  const followLeaderSyncSlice = useMemo(
+    () => ({
+      isFollowing: sync.isFollowing,
+      isStateChecking: sync.isStateChecking,
+      followError: sync.followError,
+      followSyncStatus: sync.followSyncStatus,
+      toggleFollow: sync.toggleFollow,
+    }),
+    [
+      sync.isFollowing,
+      sync.isStateChecking,
+      sync.followError,
+      sync.followSyncStatus,
+      sync.toggleFollow,
+    ]
+  );
+
+  const serviceNavigatorSyncSlice = useMemo(
+    () => ({
+      isLive: sync.isLive,
+      onActiveSongChange: sync.onActiveSongChange,
+    }),
+    [sync.isLive, sync.onActiveSongChange]
+  );
+
   return (
     <>
       {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
       <AutoScrollToolbar
         scroll={autoScroll}
-        onScrollStateChange={({ isScrolling, speed }) => {
-          if (sync.isLive) {
-            const scrollDist =
-              document.documentElement.scrollHeight - window.innerHeight;
-            const ratio = scrollDist > 0 ? window.scrollY / scrollDist : 0;
-            const activeJunctionId = songs[0]?.junctionId ?? "";
-            sync.broadcastScrollSync({
-              junctionId: activeJunctionId,
-              isAutoScrolling: isScrolling,
-              speedLevel: speed,
-              scrollPercentage: Math.round(ratio * 100),
-              scrollPositionRatio: ratio,
-              isScrolling,
-              speedMultiplier: speed,
-            });
-          }
-        }}
+        onScrollStateChange={handleScrollStateChange}
       />
 
       {/* ── Section Navigator Deck — fixed floating badge column (TASK-045) ──── */}
@@ -277,13 +330,7 @@ export default function SetlistViewerClient({
         sections={navSections}
         autoScroll={autoScroll}
         onMobileOpenChange={setIsSectionNavOpen}
-        onSectionClick={(target) => {
-          if (sync.isLive) {
-            const junctionId =
-              target.id.split("-")[1] ?? songs[0]?.junctionId ?? "";
-            sync.broadcastSectionChange(junctionId, target.id, target.label);
-          }
-        }}
+        onSectionClick={handleSectionClick}
       />
 
       {/* ── Edit Songs FAB — desktop-only, fixed bottom-left (TASK-038, TASK-20261018-e7m) */}
@@ -324,23 +371,9 @@ export default function SetlistViewerClient({
               isLeader={isLeader}
               isMusicDirector={isMusicDirector}
             />
-            <GoLiveButton
-              sync={{
-                isLive: sync.isLive,
-                isLiveConnecting: sync.isLiveConnecting,
-                liveError: sync.liveError,
-                toggleLive: sync.toggleLive,
-              }}
-              isLeader={isLeader}
-            />
+            <GoLiveButton sync={goLiveSyncSlice} isLeader={isLeader} />
             <FollowLeaderButton
-              sync={{
-                isFollowing: sync.isFollowing,
-                isStateChecking: sync.isStateChecking,
-                followError: sync.followError,
-                followSyncStatus: sync.followSyncStatus,
-                toggleFollow: sync.toggleFollow,
-              }}
+              sync={followLeaderSyncSlice}
               isLeader={isLeader}
             />
             <button
@@ -429,10 +462,7 @@ export default function SetlistViewerClient({
           isLeader={isLeader}
           setlistId={setlistId}
           isAuthenticated={isAuthenticated}
-          sync={{
-            isLive: sync.isLive,
-            onActiveSongChange: sync.onActiveSongChange,
-          }}
+          sync={serviceNavigatorSyncSlice}
           onBeforeNavigate={autoScroll.isActive ? autoScroll.pause : undefined}
           onAfterNavigate={autoScroll.isActive ? autoScroll.resume : undefined}
         />

@@ -131,7 +131,7 @@ describe("Stage Sync Protocol & Realtime Events (AC-1, AC-2, AC-3, AC-4)", () =>
   });
 
   it("evaluates follower override state machine transitions (AC-3)", () => {
-    let isFollowing = true;
+    const isFollowing = true;
     let isOverridingLeader = false;
     let activeKey = "G";
 
