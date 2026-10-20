@@ -27,11 +27,7 @@ import { useChordFontSize } from "@/hooks/useChordFontSize";
 import { useChordColor } from "@/hooks/useChordColor";
 import { useSetlistLayout } from "@/hooks/useSetlistLayout";
 import type { ProcessedLine } from "@/utils/musicLogic";
-import {
-  NOTES,
-  getSemitoneOffset,
-  shiftChord,
-} from "@/utils/musicLogic";
+import { NOTES, getSemitoneOffset, shiftChord } from "@/utils/musicLogic";
 import type { SortableSong } from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 
 const ChordDrawer = dynamic(() => import("@/components/client/ChordDrawer"), {
@@ -230,7 +226,18 @@ export default function SetlistViewerClient({
   const chordColorControls = useChordColor();
   const layoutControls = useSetlistLayout();
 
-  const isPageMode = layoutControls.layoutMode === "page";
+  // Destructure primitive values to satisfy React Compiler and BUG-002 dependency array rules
+  const {
+    lineHeight,
+    contentWidth,
+    layoutMode,
+    pageColumns,
+    overflowBehavior,
+  } = layoutControls;
+  const { fontSize } = fontSizeControls;
+  const { chordFontSize } = chordFontSizeControls;
+
+  const isPageMode = layoutMode === "page";
 
   // When Page View mode is active, autoScroll toolbar and listeners are disabled (AC-9)
   const autoScroll = useAutoScroll({ enabled: !isPageMode });
@@ -240,42 +247,11 @@ export default function SetlistViewerClient({
   const [subPageIndex, setSubPageIndex] = useState(0);
   const [totalSubPages, setTotalSubPages] = useState(1);
   const [fitScale, setFitScale] = useState(1);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   // Popover state for song controls (transpose/capo) in compact header (AC-15)
   const [isSongControlsPopoverOpen, setIsSongControlsPopoverOpen] =
     useState(false);
-
-  // Viewport width state for responsive columns (AC-8)
-  const [viewportWidth, setViewportWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return 1280;
-    return window.innerWidth;
-  });
-
-  useEffect(() => {
-    function handleResize() {
-      setViewportWidth(window.innerWidth);
-    }
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Determine effective columns based on responsive rules (AC-8):
-  // 3-column: >= 1280px -> 3 cols, 1024-1279px -> 2 cols, < 1024px -> 1 col
-  // 2-column: >= 1024px -> 2 cols, < 1024px -> 1 col
-  // 1-column: 1 col
-  const effectiveColumns = useMemo(() => {
-    if (!isPageMode) return 1;
-    if (layoutControls.pageColumns === 3) {
-      if (viewportWidth >= 1280) return 3;
-      if (viewportWidth >= 1024) return 2;
-      return 1;
-    }
-    if (layoutControls.pageColumns === 2) {
-      if (viewportWidth >= 1024) return 2;
-      return 1;
-    }
-    return 1;
-  }, [isPageMode, layoutControls.pageColumns, viewportWidth]);
 
   // Current active song in Page View mode
   const currentSong = songs[activeSongIndex] ?? null;
@@ -287,49 +263,66 @@ export default function SetlistViewerClient({
   const songContainerRef = useRef<HTMLDivElement>(null);
   const songContentRef = useRef<HTMLDivElement>(null);
 
+  // Measure dimensions asynchronously via ResizeObserver to avoid synchronous setState in effect
   useEffect(() => {
-    if (!isPageMode || !songContainerRef.current || !songContentRef.current) {
-      setFitScale(1);
-      setTotalSubPages(1);
+    if (!isPageMode) {
       return;
     }
 
-    const containerHeight = songContainerRef.current.clientHeight;
-    const contentHeight = songContentRef.current.scrollHeight;
+    const containerEl = songContainerRef.current;
+    const contentEl = songContentRef.current;
+    if (!containerEl || !contentEl) {
+      return;
+    }
 
-    if (containerHeight <= 0 || contentHeight <= 0) return;
+    const updateMeasurements = () => {
+      const cHeight = containerEl.clientHeight;
+      const sHeight = contentEl.scrollHeight;
 
-    if (layoutControls.overflowBehavior === "fit") {
-      if (contentHeight > containerHeight) {
-        const scale = Math.max(0.6, containerHeight / contentHeight);
-        setFitScale(scale);
+      if (cHeight <= 0 || sHeight <= 0) return;
+
+      setContainerHeight(cHeight);
+
+      if (overflowBehavior === "fit") {
+        if (sHeight > cHeight) {
+          const scale = Math.max(0.6, cHeight / sHeight);
+          setFitScale(scale);
+        } else {
+          setFitScale(1);
+        }
+        setTotalSubPages(1);
       } else {
         setFitScale(1);
+        const pages = Math.max(1, Math.ceil(sHeight / cHeight));
+        setTotalSubPages(pages);
       }
-      setTotalSubPages(1);
-      setSubPageIndex(0);
-    } else {
-      // Paginate overflow stepping
-      setFitScale(1);
-      const pages = Math.max(1, Math.ceil(contentHeight / containerHeight));
-      setTotalSubPages(pages);
-      if (subPageIndex >= pages) {
-        setSubPageIndex(0);
-      }
-    }
+    };
+
+    // Initial measurement
+    const rafId = requestAnimationFrame(updateMeasurements);
+
+    const observer = new ResizeObserver(() => {
+      updateMeasurements();
+    });
+
+    observer.observe(containerEl);
+    observer.observe(contentEl);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
   }, [
     isPageMode,
     activeSongIndex,
-    layoutControls.overflowBehavior,
-    layoutControls.lineHeight,
-    fontSizeControls.fontSize,
-    chordFontSizeControls.chordFontSize,
-    effectiveColumns,
-    viewportWidth,
-    subPageIndex,
+    overflowBehavior,
+    lineHeight,
+    fontSize,
+    chordFontSize,
+    pageColumns,
   ]);
 
-  // Reset subPageIndex when changing song
+  // Reset subPageIndex when changing song or when subPageIndex exceeds totalSubPages
   const selectSongByIndex = useCallback(
     (index: number) => {
       const nextIndex = Math.max(0, Math.min(songs.length - 1, index));
@@ -346,13 +339,13 @@ export default function SetlistViewerClient({
 
   // Navigation stepping: next and previous (AC-10, AC-12, AC-13)
   const handleNext = useCallback(() => {
-    if (layoutControls.overflowBehavior === "paginate" && subPageIndex < totalSubPages - 1) {
+    if (overflowBehavior === "paginate" && subPageIndex < totalSubPages - 1) {
       setSubPageIndex((prev) => prev + 1);
     } else if (activeSongIndex < songs.length - 1) {
       selectSongByIndex(activeSongIndex + 1);
     }
   }, [
-    layoutControls.overflowBehavior,
+    overflowBehavior,
     subPageIndex,
     totalSubPages,
     activeSongIndex,
@@ -361,19 +354,23 @@ export default function SetlistViewerClient({
   ]);
 
   const handlePrev = useCallback(() => {
-    if (layoutControls.overflowBehavior === "paginate" && subPageIndex > 0) {
+    if (overflowBehavior === "paginate" && subPageIndex > 0) {
       setSubPageIndex((prev) => prev - 1);
     } else if (activeSongIndex > 0) {
       selectSongByIndex(activeSongIndex - 1);
     }
-  }, [layoutControls.overflowBehavior, subPageIndex, activeSongIndex, selectSongByIndex]);
+  }, [overflowBehavior, subPageIndex, activeSongIndex, selectSongByIndex]);
 
   // Keyboard navigation listener (AC-10, AC-11, AM-2)
   useEffect(() => {
     if (!isPageMode) return;
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.code !== "Space" && e.key !== "ArrowRight" && e.key !== "ArrowLeft") {
+      if (
+        e.code !== "Space" &&
+        e.key !== "ArrowRight" &&
+        e.key !== "ArrowLeft"
+      ) {
         return;
       }
 
@@ -412,13 +409,24 @@ export default function SetlistViewerClient({
   const isPrevDisabled = activeSongIndex === 0 && subPageIndex === 0;
   const isNextDisabled =
     activeSongIndex === songs.length - 1 &&
-    (layoutControls.overflowBehavior === "fit" || subPageIndex >= totalSubPages - 1);
+    (overflowBehavior === "fit" || subPageIndex >= totalSubPages - 1);
 
   // Content width class: when 2 or 3 columns in page mode, full width is forced (AC-5)
   const containerWidthClass =
-    layoutControls.contentWidth === "full" || (isPageMode && layoutControls.pageColumns > 1)
+    contentWidth === "full" || (isPageMode && pageColumns > 1)
       ? "w-full px-4 sm:px-6 lg:px-8"
       : "max-w-3xl mx-auto px-4 sm:px-8";
+
+  // Responsive column CSS classes (AC-8):
+  // 3-column: columns-1 lg:columns-2 xl:columns-3
+  // 2-column: columns-1 lg:columns-2
+  // 1-column: columns-1
+  const responsiveColumnsClass =
+    pageColumns === 3
+      ? "columns-1 lg:columns-2 xl:columns-3"
+      : pageColumns === 2
+        ? "columns-1 lg:columns-2"
+        : "columns-1";
 
   return (
     <>
@@ -564,7 +572,9 @@ export default function SetlistViewerClient({
                     Lineup:{" "}
                   </span>
                   <span className="font-bold text-brand-espresso dark:text-brand-cream">
-                    {lineup.map((e) => `${e.name} — ${e.instrument}`).join(", ")}
+                    {lineup
+                      .map((e) => `${e.name} — ${e.instrument}`)
+                      .join(", ")}
                   </span>
                 </p>
               )}
@@ -581,7 +591,9 @@ export default function SetlistViewerClient({
             onSelectSong={
               isPageMode
                 ? (junctionId) => {
-                    const idx = songs.findIndex((s) => s.junctionId === junctionId);
+                    const idx = songs.findIndex(
+                      (s) => s.junctionId === junctionId
+                    );
                     if (idx !== -1) {
                       selectSongByIndex(idx);
                     }
@@ -592,8 +604,12 @@ export default function SetlistViewerClient({
               isLive: sync.isLive,
               onActiveSongChange: sync.onActiveSongChange,
             }}
-            onBeforeNavigate={autoScroll.isActive ? autoScroll.pause : undefined}
-            onAfterNavigate={autoScroll.isActive ? autoScroll.resume : undefined}
+            onBeforeNavigate={
+              autoScroll.isActive ? autoScroll.pause : undefined
+            }
+            onAfterNavigate={
+              autoScroll.isActive ? autoScroll.resume : undefined
+            }
           />
 
           {/* ── Main song display: Continuous Scroll vs Page View ─────────────── */}
@@ -702,8 +718,13 @@ export default function SetlistViewerClient({
                             <button
                               type="button"
                               onClick={() => {
-                                const offset = (songOffsets[currentSong.junctionId] ?? 0) - 1;
-                                handleKeyChangeForDrawer(currentSong.junctionId, offset);
+                                const offset =
+                                  (songOffsets[currentSong.junctionId] ?? 0) -
+                                  1;
+                                handleKeyChangeForDrawer(
+                                  currentSong.junctionId,
+                                  offset
+                                );
                               }}
                               className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
                               aria-label="Transpose down 1 semitone"
@@ -714,8 +735,14 @@ export default function SetlistViewerClient({
                               value={currentSong.performanceKey}
                               onChange={(e) => {
                                 const target = e.target.value;
-                                const offset = getSemitoneOffset(currentSong.originalKey, target);
-                                handleKeyChangeForDrawer(currentSong.junctionId, offset);
+                                const offset = getSemitoneOffset(
+                                  currentSong.originalKey,
+                                  target
+                                );
+                                handleKeyChangeForDrawer(
+                                  currentSong.junctionId,
+                                  offset
+                                );
                               }}
                               aria-label="Select song key"
                               className="flex-1 font-mono font-bold text-xs px-2 py-1.5 rounded-lg border border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream"
@@ -729,8 +756,13 @@ export default function SetlistViewerClient({
                             <button
                               type="button"
                               onClick={() => {
-                                const offset = (songOffsets[currentSong.junctionId] ?? 0) + 1;
-                                handleKeyChangeForDrawer(currentSong.junctionId, offset);
+                                const offset =
+                                  (songOffsets[currentSong.junctionId] ?? 0) +
+                                  1;
+                                handleKeyChangeForDrawer(
+                                  currentSong.junctionId,
+                                  offset
+                                );
                               }}
                               className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
                               aria-label="Transpose up 1 semitone"
@@ -772,19 +804,18 @@ export default function SetlistViewerClient({
                   ref={songContentRef}
                   style={{
                     transform:
-                      layoutControls.overflowBehavior === "fit"
+                      overflowBehavior === "fit"
                         ? `scale(${fitScale})`
-                        : `translateY(-${subPageIndex * 100}%)`,
+                        : `translateY(-${subPageIndex * containerHeight}px)`,
                     transformOrigin: "top left",
                     transition: "transform 0.25s ease-out",
-                    columnCount: effectiveColumns,
                     columnGap: "2.5rem",
                     columnRule:
-                      effectiveColumns > 1
+                      pageColumns > 1
                         ? "1px solid var(--brand-tan-alpha, rgba(139, 99, 71, 0.15))"
                         : "none",
                   }}
-                  className="w-full"
+                  className={`w-full ${responsiveColumnsClass}`}
                 >
                   <SetlistSongSection
                     key={currentSong.junctionId}
@@ -803,17 +834,19 @@ export default function SetlistViewerClient({
                     onKeyChangeLive={
                       isLeader && sync.isLive ? sync.notifyKeyChange : undefined
                     }
-                    liveSyncState={sync.songSyncStates.get(currentSong.junctionId)}
+                    liveSyncState={sync.songSyncStates.get(
+                      currentSong.junctionId
+                    )}
                     externalChordsHidden={globalChordsHidden}
                     autoScroll={autoScroll}
-                    fontSize={fontSizeControls.fontSize}
+                    fontSize={fontSize}
                     onIncreaseFont={fontSizeControls.increase}
                     onDecreaseFont={fontSizeControls.decrease}
                     onResetFont={fontSizeControls.reset}
-                    chordFontSize={chordFontSizeControls.chordFontSize}
+                    chordFontSize={chordFontSize}
                     chordBg={chordColorControls.chordBg}
                     chordColor={chordColorControls.chordColor}
-                    lineHeight={layoutControls.lineHeight}
+                    lineHeight={lineHeight}
                     isCompactHeader={true}
                     hideChordToolbar={true}
                     onChordClick={handleChordClick}
@@ -888,4 +921,3 @@ export default function SetlistViewerClient({
     </>
   );
 }
-

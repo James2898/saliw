@@ -239,7 +239,11 @@ function SetlistSongSection({
                 ].join(" ")}
               >
                 {isPending ? (
-                  <Loader2 size={11} className="animate-spin" aria-hidden="true" />
+                  <Loader2
+                    size={11}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
                 ) : syncSuccess ? (
                   <Check size={11} aria-hidden="true" />
                 ) : (
@@ -260,104 +264,105 @@ function SetlistSongSection({
             </p>
           </div>
 
-        {/* ── Sync button — leader only (AC-12) ──────────────────────────────── */}
-        {isLeader && (
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            {/* ── Per-song Go Live sync status (D-4 / D-5 / D-6) ───────────── */}
-            {liveSyncState && liveSyncState.status !== "idle" && (
-              <div
-                className="inline-flex items-center gap-1 text-xs"
-                aria-live="polite"
+          {/* ── Sync button — leader only (AC-12) ──────────────────────────────── */}
+          {isLeader && (
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {/* ── Per-song Go Live sync status (D-4 / D-5 / D-6) ───────────── */}
+              {liveSyncState && liveSyncState.status !== "idle" && (
+                <div
+                  className="inline-flex items-center gap-1 text-xs"
+                  aria-live="polite"
+                >
+                  {liveSyncState.status === "saving" && (
+                    <>
+                      <Loader2
+                        size={12}
+                        className="animate-spin text-brand-brown dark:text-brand-tan"
+                        aria-hidden="true"
+                      />
+                      <span className="text-brand-brown dark:text-brand-tan">
+                        Saving…
+                      </span>
+                    </>
+                  )}
+                  {liveSyncState.status === "saved" && (
+                    <>
+                      <Check
+                        size={12}
+                        className="text-green-600 dark:text-green-400"
+                        aria-hidden="true"
+                      />
+                      <span className="text-green-600 dark:text-green-400">
+                        Synced
+                      </span>
+                    </>
+                  )}
+                  {liveSyncState.status === "error" && (
+                    <span
+                      role="alert"
+                      className="text-xs text-red-500 max-w-[200px] text-right"
+                    >
+                      {liveSyncState.errorMessage}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSync}
+                disabled={isPending}
+                aria-label={
+                  syncSuccess ? "Key synced" : "Sync current key to setlist"
+                }
+                className={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+                  "text-xs font-semibold",
+                  "border",
+                  "transition-colors duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                  isPending
+                    ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
+                    : syncSuccess
+                      ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
+                      : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                ].join(" ")}
               >
-                {liveSyncState.status === "saving" && (
+                {isPending ? (
                   <>
                     <Loader2
-                      size={12}
-                      className="animate-spin text-brand-brown dark:text-brand-tan"
+                      size={13}
+                      className="animate-spin"
                       aria-hidden="true"
                     />
-                    <span className="text-brand-brown dark:text-brand-tan">
-                      Saving…
-                    </span>
+                    Syncing…
                   </>
-                )}
-                {liveSyncState.status === "saved" && (
+                ) : syncSuccess ? (
                   <>
-                    <Check
-                      size={12}
-                      className="text-green-600 dark:text-green-400"
-                      aria-hidden="true"
-                    />
-                    <span className="text-green-600 dark:text-green-400">
-                      Synced
-                    </span>
+                    <Check size={13} aria-hidden="true" />
+                    Synced
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={13} aria-hidden="true" />
+                    Sync to Setlist
                   </>
                 )}
-                {liveSyncState.status === "error" && (
-                  <span
-                    role="alert"
-                    className="text-xs text-red-500 max-w-[200px] text-right"
-                  >
-                    {liveSyncState.errorMessage}
-                  </span>
-                )}
-              </div>
-            )}
+              </button>
 
-            <button
-              type="button"
-              onClick={handleSync}
-              disabled={isPending}
-              aria-label={
-                syncSuccess ? "Key synced" : "Sync current key to setlist"
-              }
-              className={[
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-                "text-xs font-semibold",
-                "border",
-                "transition-colors duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
-                isPending
-                  ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
-                  : syncSuccess
-                    ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
-                    : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-              ].join(" ")}
-            >
-              {isPending ? (
-                <>
-                  <Loader2
-                    size={13}
-                    className="animate-spin"
-                    aria-hidden="true"
-                  />
-                  Syncing…
-                </>
-              ) : syncSuccess ? (
-                <>
-                  <Check size={13} aria-hidden="true" />
-                  Synced
-                </>
-              ) : (
-                <>
-                  <RefreshCw size={13} aria-hidden="true" />
-                  Sync to Setlist
-                </>
+              {/* ── Inline error state (AC-15) ────────────────────────────────── */}
+              {syncError && (
+                <p
+                  role="alert"
+                  className="text-xs text-red-600 dark:text-red-400 max-w-[200px] text-right"
+                >
+                  {syncError}
+                </p>
               )}
-            </button>
-
-            {/* ── Inline error state (AC-15) ────────────────────────────────── */}
-            {syncError && (
-              <p
-                role="alert"
-                className="text-xs text-red-600 dark:text-red-400 max-w-[200px] text-right"
-              >
-                {syncError}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── YouTube section ──────────────────────────────────────────────────── */}
       {/*
