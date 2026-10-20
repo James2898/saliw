@@ -253,7 +253,7 @@ export default async function SetlistViewerPage({
     <div className="min-h-screen bg-brand-cream dark:bg-brand-darker font-sans">
       {/* ── Main content ───────────────────────────────────────────────────── */}
       <main className="pt-4">
-        <div className="max-w-3xl mx-auto px-4 py-8 sm:px-8">
+        <div className="w-full px-4 py-8 sm:px-8">
           {/* ── Back link ───────────────────────────────────────────────────── */}
           <Link
             href="/setlists"
