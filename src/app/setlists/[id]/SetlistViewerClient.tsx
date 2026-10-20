@@ -8,6 +8,7 @@ import ServiceNavigator from "@/components/client/ServiceNavigator";
 import SetlistSongSection from "@/components/client/SetlistSongSection";
 import GoLiveButton from "@/components/client/GoLiveButton";
 import FollowLeaderButton from "@/components/client/FollowLeaderButton";
+import StageSyncControls from "@/components/client/StageSyncControls";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 import AppendSongsButton from "@/components/client/AppendSongsButton";
 import SectionNavDeck, {
@@ -249,7 +250,26 @@ export default function SetlistViewerClient({
   return (
     <>
       {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
-      <AutoScrollToolbar scroll={autoScroll} />
+      <AutoScrollToolbar
+        scroll={autoScroll}
+        onScrollStateChange={({ isScrolling, speed }) => {
+          if (sync.isLive) {
+            const scrollDist =
+              document.documentElement.scrollHeight - window.innerHeight;
+            const ratio = scrollDist > 0 ? window.scrollY / scrollDist : 0;
+            const activeJunctionId = songs[0]?.junctionId ?? "";
+            sync.broadcastScrollSync({
+              junctionId: activeJunctionId,
+              isAutoScrolling: isScrolling,
+              speedLevel: speed,
+              scrollPercentage: Math.round(ratio * 100),
+              scrollPositionRatio: ratio,
+              isScrolling,
+              speedMultiplier: speed,
+            });
+          }
+        }}
+      />
 
       {/* ── Section Navigator Deck — fixed floating badge column (TASK-045) ──── */}
       {/* BUG-014: passes shared autoScroll instance, does not call useAutoScroll() */}
@@ -257,6 +277,13 @@ export default function SetlistViewerClient({
         sections={navSections}
         autoScroll={autoScroll}
         onMobileOpenChange={setIsSectionNavOpen}
+        onSectionClick={(target) => {
+          if (sync.isLive) {
+            const junctionId =
+              target.id.split("-")[1] ?? songs[0]?.junctionId ?? "";
+            sync.broadcastSectionChange(junctionId, target.id, target.label);
+          }
+        }}
       />
 
       {/* ── Edit Songs FAB — desktop-only, fixed bottom-left (TASK-038, TASK-20261018-e7m) */}
@@ -292,6 +319,11 @@ export default function SetlistViewerClient({
                 Edit Setlist
               </Link>
             )}
+            <StageSyncControls
+              sync={sync}
+              isLeader={isLeader}
+              isMusicDirector={isMusicDirector}
+            />
             <GoLiveButton
               sync={{
                 isLive: sync.isLive,
@@ -425,6 +457,7 @@ export default function SetlistViewerClient({
                 isLeader={isLeader}
                 youtubeUrl={song.youtubeUrl}
                 isMusicDirector={isMusicDirector}
+                isFollowing={sync.isFollowing}
                 overrideKey={overrideKey}
                 onKeyChangeLive={
                   isLeader && sync.isLive ? sync.notifyKeyChange : undefined

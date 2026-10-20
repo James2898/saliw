@@ -11,14 +11,26 @@ import { REALTIME_EVENTS } from "@/utils/realtimeEvents";
 import type {
   SongChangePayload,
   KeyChangePayload,
+  SectionChangePayload,
+  ScrollSyncPayload,
+  StagePresenceState,
 } from "@/utils/realtimeEvents";
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
+export type StageConnectionState =
+  | "CONNECTING"
+  | "CONNECTED"
+  | "DISCONNECTED"
+  | "RECONNECTING";
 
 interface UseSetlistSyncParams {
   setlistId: string;
   isLeader: boolean;
   songs: Array<{ junctionId: string; performanceKey: string }>;
+  deviceId?: string;
+  displayName?: string;
+  userId?: string | null;
 }
 
 export interface UseSetlistSyncReturn {
@@ -35,10 +47,32 @@ export interface UseSetlistSyncReturn {
   followSyncStatus: "synced" | "lost" | "idle";
   toggleFollow: () => void;
 
+  // V2 Stage Sync state & presence
+  connectionState: StageConnectionState;
+  connectedDevices: StagePresenceState[];
+  connectedDeviceCount: number;
+  isDirectorOnline: boolean;
+  role: "leader" | "follower" | "solo";
+
   // Shared / outgoing
   overrideKeys: Map<string, string>;
   broadcastSongChange: (junctionId: string) => void;
   broadcastKeyChange: (junctionId: string, performanceKey: string) => void;
+  broadcastSectionChange: (
+    junctionId: string,
+    sectionId: string,
+    sectionLabel: string,
+    sectionIndex?: number
+  ) => void;
+  broadcastScrollSync: (params: {
+    junctionId: string;
+    isAutoScrolling: boolean;
+    speedLevel: number;
+    scrollPercentage: number;
+    scrollPositionRatio?: number;
+    isScrolling?: boolean;
+    speedMultiplier?: number;
+  }) => void;
   onActiveSongChange: (junctionId: string) => void;
 }
 
@@ -84,7 +118,11 @@ const DEBOUNCE_MS = 400;
  */
 export function useSetlistSync({
   setlistId,
+  isLeader,
   songs,
+  deviceId: initialDeviceId,
+  displayName: initialDisplayName,
+  userId = null,
 }: UseSetlistSyncParams): UseSetlistSyncFullReturn {
   // Supabase browser client — module-level singleton via getRealtimeClient().
   // Survives React Strict Mode remounts (double-mount in dev) because the instance
@@ -92,6 +130,32 @@ export function useSetlistSync({
   // This fixes the D-2 "Starting…" spinner getting stuck when Strict Mode's unmount
   // cleanup removed the channel before SUBSCRIBED could fire.
   const supabase = getRealtimeClient();
+
+  // Stable client identity
+  const [deviceId] = useState<string>(() => {
+    if (initialDeviceId) return initialDeviceId;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("saliw_stage_device_id");
+      if (stored) return stored;
+      const created = `device_${Math.random().toString(36).substring(2, 10)}`;
+      try {
+        localStorage.setItem("saliw_stage_device_id", created);
+      } catch {
+        // storage disabled
+      }
+      return created;
+    }
+    return `device_${Math.random().toString(36).substring(2, 10)}`;
+  });
+
+  const [displayName] = useState<string>(() => {
+    if (initialDisplayName) return initialDisplayName;
+    return isLeader ? "Band Leader" : "Band Member";
+  });
+
+  const [sessionId] = useState<string>(
+    () => `sess_${Math.random().toString(36).substring(2, 10)}`
+  );
 
   // ── Channel ref ──────────────────────────────────────────────────────────
   // Single ref holds the Supabase channel instance — no re-creation on re-renders (AC-35)
@@ -101,6 +165,9 @@ export function useSetlistSync({
   // Ensures that if two debounce windows overlap (rapid tapping), a stale
   // Server Action response cannot broadcast a superseded key.
   const sequenceRef = useRef<Map<string, number>>(new Map());
+
+  // ── AC-2 Monotonic sequence discard: track latest received broadcast timestamp ───
+  const lastProcessedTimestampRef = useRef<number>(0);
 
   // ── RF-5: Latest key per junctionId — stale closure guard ────────────────
   // Written by notifyKeyChange on every displayKey change in SetlistSongSection.
@@ -138,6 +205,13 @@ export function useSetlistSync({
     "synced" | "lost" | "idle"
   >("idle");
 
+  // ── V2 Stage Presence & Lifecycle State (AC-1) ──────────────────────────
+  const [connectionState, setConnectionState] =
+    useState<StageConnectionState>("DISCONNECTED");
+  const [connectedDevices, setConnectedDevices] = useState<
+    StagePresenceState[]
+  >([]);
+
   // State Check snapshot — revert target when Follow Leader is disabled.
   // Initialized empty (never from songs prop synchronously) per MEMORY.md guidance.
   const [stateCheckSnapshot, setStateCheckSnapshot] = useState<
@@ -160,6 +234,21 @@ export function useSetlistSync({
     [songs]
   );
 
+  // Derived presence and role helpers
+  const connectedDeviceCount = connectedDevices.length;
+  const isDirectorOnline = useMemo(
+    () =>
+      connectedDevices.some(
+        (d) => d.role === "director" || d.role === "leader"
+      ),
+    [connectedDevices]
+  );
+  const role: "leader" | "follower" | "solo" = isLive
+    ? "leader"
+    : isFollowing
+      ? "follower"
+      : "solo";
+
   // ── Helper: update per-song sync state ───────────────────────────────────
   const setSongSyncState = useCallback(
     (junctionId: string, state: SongSyncState) => {
@@ -169,16 +258,41 @@ export function useSetlistSync({
     []
   );
 
+  // ── Helper: sync presence state from channel ──────────────────────────────
+  const syncPresenceState = useCallback(
+    (channel: ReturnType<SupabaseClient["channel"]>) => {
+      const state = channel.presenceState();
+      const deviceList: StagePresenceState[] = [];
+      for (const key of Object.keys(state)) {
+        const presences = state[key] as unknown as StagePresenceState[];
+        if (Array.isArray(presences)) {
+          for (const p of presences) {
+            deviceList.push(p);
+          }
+        }
+      }
+      if (isMountedRef.current) {
+        setConnectedDevices(deviceList);
+      }
+    },
+    []
+  );
+
   // ── Director: broadcast KEY_CHANGE (called after SA success) ─────────────
 
   const broadcastKeyChange = useCallback(
     (junctionId: string, performanceKey: string) => {
       if (!channelRef.current) return;
+      const timestamp = Date.now();
       channelRef.current
         .send({
           type: "broadcast",
           event: REALTIME_EVENTS.KEY_CHANGE,
-          payload: { junctionId, performanceKey } satisfies KeyChangePayload,
+          payload: {
+            junctionId,
+            performanceKey,
+            timestamp,
+          } satisfies KeyChangePayload,
         })
         .catch((err: unknown) => {
           console.error("[useSetlistSync] KEY_CHANGE broadcast failed", err);
@@ -191,16 +305,87 @@ export function useSetlistSync({
 
   const broadcastSongChange = useCallback((junctionId: string) => {
     if (!channelRef.current) return;
+    const timestamp = Date.now();
     channelRef.current
       .send({
         type: "broadcast",
         event: REALTIME_EVENTS.SONG_CHANGE,
-        payload: { junctionId } satisfies SongChangePayload,
+        payload: { junctionId, timestamp } satisfies SongChangePayload,
       })
       .catch((err: unknown) => {
         console.error("[useSetlistSync] SONG_CHANGE broadcast failed", err);
       });
   }, []);
+
+  // ── Director: broadcast SECTION_CHANGE ───────────────────────────────────
+
+  const broadcastSectionChange = useCallback(
+    (
+      junctionId: string,
+      sectionId: string,
+      sectionLabel: string,
+      sectionIndex?: number
+    ) => {
+      if (!channelRef.current) return;
+      const timestamp = Date.now();
+      channelRef.current
+        .send({
+          type: "broadcast",
+          event: REALTIME_EVENTS.SECTION_CHANGE,
+          payload: {
+            junctionId,
+            sectionId,
+            sectionLabel,
+            sectionIndex,
+            timestamp,
+          } satisfies SectionChangePayload,
+        })
+        .catch((err: unknown) => {
+          console.error(
+            "[useSetlistSync] SECTION_CHANGE broadcast failed",
+            err
+          );
+        });
+    },
+    []
+  );
+
+  // ── Director: broadcast SCROLL_SYNC ──────────────────────────────────────
+
+  const broadcastScrollSync = useCallback(
+    (params: {
+      junctionId: string;
+      isAutoScrolling: boolean;
+      speedLevel: number;
+      scrollPercentage: number;
+      scrollPositionRatio?: number;
+      isScrolling?: boolean;
+      speedMultiplier?: number;
+    }) => {
+      if (!channelRef.current) return;
+      const timestamp = Date.now();
+      channelRef.current
+        .send({
+          type: "broadcast",
+          event: REALTIME_EVENTS.SCROLL_SYNC,
+          payload: {
+            junctionId: params.junctionId,
+            isAutoScrolling: params.isAutoScrolling,
+            speedLevel: params.speedLevel,
+            scrollPercentage: params.scrollPercentage,
+            scrollPositionRatio:
+              params.scrollPositionRatio ?? params.scrollPercentage / 100,
+            isScrolling: params.isScrolling ?? params.isAutoScrolling,
+            speedMultiplier: params.speedMultiplier ?? params.speedLevel,
+            timestamp,
+          } satisfies ScrollSyncPayload,
+        })
+        .catch((err: unknown) => {
+          console.error("[useSetlistSync] SCROLL_SYNC broadcast failed", err);
+        });
+    },
+    []
+  );
 
   // ── Director: Go Live toggle ──────────────────────────────────────────────
 
@@ -209,25 +394,40 @@ export function useSetlistSync({
     if (isLiveConnecting || isLiveConnectingRef.current) return;
 
     if (isLive) {
-      // Deactivate — remove channel and return to D-1
+      // Deactivate — untrack presence, remove channel and return to solo
       if (channelRef.current) {
+        channelRef.current.untrack().catch(() => {});
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
       setIsLive(false);
       setLiveError(null);
+      setConnectionState("DISCONNECTED");
+      setConnectedDevices([]);
     } else {
       // Activate — transition to D-2 (connecting)
       setLiveError(null);
       setIsLiveConnecting(true);
       isLiveConnectingRef.current = true;
+      setConnectionState("CONNECTING");
 
       try {
         const channel = supabase.channel(`setlist_sync:${setlistId}`, {
-          config: { broadcast: { self: false } },
+          config: { broadcast: { self: false }, presence: { key: deviceId } },
         });
 
         channelRef.current = channel;
+
+        // Presence handlers
+        channel.on("presence", { event: "sync" }, () => {
+          syncPresenceState(channel);
+        });
+        channel.on("presence", { event: "join" }, () => {
+          syncPresenceState(channel);
+        });
+        channel.on("presence", { event: "leave" }, () => {
+          syncPresenceState(channel);
+        });
 
         channel.subscribe((status) => {
           isLiveConnectingRef.current = false;
@@ -236,9 +436,31 @@ export function useSetlistSync({
           if (status === "SUBSCRIBED") {
             setIsLiveConnecting(false);
             setIsLive(true);
+            setConnectionState("CONNECTED");
+            // Track leader identity
+            channel
+              .track({
+                sessionId,
+                deviceId,
+                userId,
+                displayName,
+                role: "leader",
+                deviceType:
+                  typeof window !== "undefined" && window.innerWidth < 768
+                    ? "mobile"
+                    : "desktop",
+                joinedAt: Date.now(),
+              } satisfies StagePresenceState)
+              .catch((err: unknown) => {
+                console.error(
+                  "[useSetlistSync] Leader presence tracking failed",
+                  err
+                );
+              });
           } else if (status === "CHANNEL_ERROR") {
             setIsLiveConnecting(false);
             setIsLive(false);
+            setConnectionState("DISCONNECTED");
             setLiveError("Unable to start live session. Please try again.");
             if (channelRef.current) {
               supabase.removeChannel(channelRef.current);
@@ -246,17 +468,29 @@ export function useSetlistSync({
             }
           } else if (status === "CLOSED") {
             setIsLive(false);
+            setConnectionState("DISCONNECTED");
           }
         });
       } catch {
         isLiveConnectingRef.current = false;
         if (isMountedRef.current) {
           setIsLiveConnecting(false);
+          setConnectionState("DISCONNECTED");
           setLiveError("Unable to start live session. Please try again.");
         }
       }
     }
-  }, [isLive, isLiveConnecting, setlistId, supabase]);
+  }, [
+    isLive,
+    isLiveConnecting,
+    setlistId,
+    supabase,
+    deviceId,
+    displayName,
+    sessionId,
+    userId,
+    syncPresenceState,
+  ]);
 
   // ── Director: active song change → SONG_CHANGE broadcast ─────────────────
 
@@ -373,14 +607,17 @@ export function useSetlistSync({
     if (isStateChecking || isFollowConnectingRef.current) return;
 
     if (isFollowing) {
-      // Disable Follow Leader — remove channel, revert keys to snapshot (AC-26)
+      // Disable Follow Leader — untrack presence, remove channel, revert keys to snapshot (AC-26)
       if (channelRef.current) {
+        channelRef.current.untrack().catch(() => {});
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
       setIsFollowing(false);
       setFollowSyncStatus("idle");
       setFollowError(null);
+      setConnectionState("DISCONNECTED");
+      setConnectedDevices([]);
 
       // Revert each song's override key to the snapshot value (or empty if snapshot empty) (AC-26)
       setOverrideKeys(
@@ -391,6 +628,7 @@ export function useSetlistSync({
       isFollowConnectingRef.current = true;
       setIsStateChecking(true);
       setFollowError(null);
+      setConnectionState("CONNECTING");
       (async () => {
         try {
           const { data, error } = await getSetlistWithSongs({
@@ -434,17 +672,33 @@ export function useSetlistSync({
         try {
           // Subscribe to incoming broadcasts regardless of State Check outcome (AC-23)
           const channel = supabase.channel(`setlist_sync:${setlistId}`, {
-            config: { broadcast: { self: false } },
+            config: { broadcast: { self: false }, presence: { key: deviceId } },
           });
 
           channelRef.current = channel;
+
+          // Presence handlers
+          channel.on("presence", { event: "sync" }, () => {
+            syncPresenceState(channel);
+          });
+          channel.on("presence", { event: "join" }, () => {
+            syncPresenceState(channel);
+          });
+          channel.on("presence", { event: "leave" }, () => {
+            syncPresenceState(channel);
+          });
 
           // Handle SONG_CHANGE — scroll to song element (AC-28)
           channel.on(
             "broadcast",
             { event: REALTIME_EVENTS.SONG_CHANGE },
             (payload: { payload: SongChangePayload }) => {
-              const { junctionId } = payload.payload;
+              const { junctionId, timestamp } = payload.payload;
+              // Monotonic sequencing check
+              if (timestamp && timestamp <= lastProcessedTimestampRef.current)
+                return;
+              if (timestamp) lastProcessedTimestampRef.current = timestamp;
+
               // Silent skip if junctionId not in rendered set (AC-31)
               if (!validJunctionIdsRef.current.has(junctionId)) return;
               document
@@ -458,12 +712,69 @@ export function useSetlistSync({
             "broadcast",
             { event: REALTIME_EVENTS.KEY_CHANGE },
             (payload: { payload: KeyChangePayload }) => {
-              const { junctionId, performanceKey } = payload.payload;
+              const { junctionId, performanceKey, timestamp } = payload.payload;
+              // Monotonic sequencing check
+              if (timestamp && timestamp <= lastProcessedTimestampRef.current)
+                return;
+              if (timestamp) lastProcessedTimestampRef.current = timestamp;
+
               // Silent skip if junctionId not in rendered set (AC-31)
               if (!validJunctionIdsRef.current.has(junctionId)) return;
               setOverrideKeys((prev) =>
                 new Map(prev).set(junctionId, performanceKey)
               );
+            }
+          );
+
+          // Handle SECTION_CHANGE — jump follower viewport to section (AC-2)
+          channel.on(
+            "broadcast",
+            { event: REALTIME_EVENTS.SECTION_CHANGE },
+            (payload: { payload: SectionChangePayload }) => {
+              const { junctionId, sectionId, timestamp } = payload.payload;
+              if (timestamp && timestamp <= lastProcessedTimestampRef.current)
+                return;
+              if (timestamp) lastProcessedTimestampRef.current = timestamp;
+
+              if (!validJunctionIdsRef.current.has(junctionId)) return;
+              const sectionEl =
+                document.getElementById(sectionId) ??
+                document.getElementById(`song-${junctionId}`);
+              sectionEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          );
+
+          // Handle SCROLL_SYNC — ratio-based autoscroll alignment (AC-4)
+          channel.on(
+            "broadcast",
+            { event: REALTIME_EVENTS.SCROLL_SYNC },
+            (payload: { payload: ScrollSyncPayload }) => {
+              const { scrollPositionRatio, scrollPercentage, timestamp } =
+                payload.payload;
+              if (timestamp && timestamp <= lastProcessedTimestampRef.current)
+                return;
+              if (timestamp) lastProcessedTimestampRef.current = timestamp;
+
+              const targetRatio = scrollPositionRatio ?? scrollPercentage / 100;
+              if (
+                typeof window === "undefined" ||
+                targetRatio < 0 ||
+                targetRatio > 1
+              )
+                return;
+
+              const scrollableDist =
+                document.documentElement.scrollHeight - window.innerHeight;
+              if (scrollableDist <= 0) return;
+
+              const currentRatio = window.scrollY / scrollableDist;
+              // Apply ratio alignment if drift exceeds 5% threshold without jumpy disruption
+              if (Math.abs(currentRatio - targetRatio) > 0.05) {
+                window.scrollTo({
+                  top: targetRatio * scrollableDist,
+                  behavior: "smooth",
+                });
+              }
             }
           );
 
@@ -473,21 +784,56 @@ export function useSetlistSync({
             if (status === "SUBSCRIBED") {
               setIsFollowing(true);
               setFollowSyncStatus("synced");
+              setConnectionState("CONNECTED");
+              // Track follower identity
+              channel
+                .track({
+                  sessionId,
+                  deviceId,
+                  userId,
+                  displayName,
+                  role: "follower",
+                  deviceType:
+                    typeof window !== "undefined" && window.innerWidth < 768
+                      ? "mobile"
+                      : "desktop",
+                  joinedAt: Date.now(),
+                } satisfies StagePresenceState)
+                .catch((err: unknown) => {
+                  console.error(
+                    "[useSetlistSync] Follower presence tracking failed",
+                    err
+                  );
+                });
             } else if (status === "CLOSED") {
               setFollowSyncStatus("lost");
+              setConnectionState("DISCONNECTED");
             } else if (status === "CHANNEL_ERROR") {
               setFollowSyncStatus("lost");
+              setConnectionState("DISCONNECTED");
             }
           });
         } catch {
           isFollowConnectingRef.current = false;
           if (isMountedRef.current) {
             setFollowSyncStatus("lost");
+            setConnectionState("DISCONNECTED");
           }
         }
       })();
     }
-  }, [isFollowing, isStateChecking, setlistId, stateCheckSnapshot, supabase]);
+  }, [
+    isFollowing,
+    isStateChecking,
+    setlistId,
+    stateCheckSnapshot,
+    supabase,
+    deviceId,
+    displayName,
+    sessionId,
+    userId,
+    syncPresenceState,
+  ]);
 
   // ── Keep validJunctionIdsRef in sync with validJunctionIds (RF-3) ───────────
   useEffect(() => {
@@ -537,10 +883,19 @@ export function useSetlistSync({
     followSyncStatus,
     toggleFollow,
 
+    // V2 Stage Sync state & presence
+    connectionState,
+    connectedDevices,
+    connectedDeviceCount,
+    isDirectorOnline,
+    role,
+
     // Shared
     overrideKeys,
     broadcastSongChange,
     broadcastKeyChange,
+    broadcastSectionChange,
+    broadcastScrollSync,
     onActiveSongChange,
 
     // Per-song live sync status
