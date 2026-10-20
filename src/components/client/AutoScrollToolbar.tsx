@@ -8,6 +8,12 @@ import type { UseAutoScrollReturn } from "@/hooks/useAutoScroll";
 export interface AutoScrollToolbarProps {
   /** The full return value of useAutoScroll, passed from the parent viewer. */
   scroll: UseAutoScrollReturn;
+  /** Optional callback fired when auto-scroll is toggled, paused, resumed, or speed changed. */
+  onScrollStateChange?: (state: {
+    isActive: boolean;
+    isScrolling: boolean;
+    speed: number;
+  }) => void;
 }
 
 // ── Module-level CSS class constants (avoids per-render string allocations) ────
@@ -108,7 +114,10 @@ const keyboardHintClass = [
  * AC 21–23: CSS-variable colors; brand-espresso bg, brand-cream text, brand-tan accent.
  * AC 25: Client Component only — no Supabase calls.
  */
-export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
+export default function AutoScrollToolbar({
+  scroll,
+  onScrollStateChange,
+}: AutoScrollToolbarProps) {
   const {
     isActive,
     isScrolling,
@@ -131,6 +140,10 @@ export default function AutoScrollToolbar({ scroll }: AutoScrollToolbarProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    onScrollStateChange?.({ isActive, isScrolling, speed });
+  }, [isActive, isScrolling, speed, onScrollStateChange]);
 
   return (
     <div
