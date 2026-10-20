@@ -71,9 +71,9 @@ export default function ServiceNavigator({
   onBeforeNavigate,
   onAfterNavigate,
 }: ServiceNavigatorProps) {
-  const [internalActiveSongId, setInternalActiveSongId] = useState<string | null>(
-    songs.length > 0 ? songs[0].junctionId : null
-  );
+  const [internalActiveSongId, setInternalActiveSongId] = useState<
+    string | null
+  >(songs.length > 0 ? songs[0].junctionId : null);
   const activeSongId = activeSongIdProp ?? internalActiveSongId;
   const ratiosRef = useRef<Map<string, number>>(new Map());
 
@@ -162,7 +162,7 @@ export default function ServiceNavigator({
     return () => {
       observer.disconnect();
     };
-  }, [songs]);
+  }, [songs, activeSongIdProp]);
 
   const navRef = useRef<HTMLDivElement>(null);
 
