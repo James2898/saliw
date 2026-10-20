@@ -321,7 +321,7 @@ export default function SetlistViewerClient({
           <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
             {setlistName}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {formattedDate && (
               <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
                 {formattedDate}
