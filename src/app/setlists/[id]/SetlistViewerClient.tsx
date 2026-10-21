@@ -240,6 +240,8 @@ export default function SetlistViewerClient({
     layoutMode,
     pageColumns,
     overflowBehavior,
+    songColumnOverrides,
+    setSongColumns,
   } = layoutControls;
   const { fontSize } = fontSizeControls;
   const { chordFontSize } = chordFontSizeControls;
@@ -269,9 +271,24 @@ export default function SetlistViewerClient({
 
   // Current active song in Page View mode
   const currentSong = songs[activeSongIndex] ?? null;
+  const currentSongKey = currentSong?.songId || currentSong?.junctionId || "";
+
+  // Effective columns for the active song (per-song override or setlist default)
+  const effectiveColumns =
+    currentSongKey && songColumnOverrides[currentSongKey] !== undefined
+      ? songColumnOverrides[currentSongKey]
+      : pageColumns;
 
   // Active song ID synchronization with ServiceNavigator & Go Live
   const activeSongId = currentSong?.junctionId ?? null;
+
+  // Calculate effective font size when fit-to-screen scaling is active
+  const effectiveFontSize = useMemo(() => {
+    if (overflowBehavior === "fit" && fitScale < 1) {
+      return Math.max(12, Math.round(fontSize * fitScale));
+    }
+    return fontSize;
+  }, [overflowBehavior, fitScale, fontSize]);
 
   // Measure song height and calculate sub-pages or fit-to-screen scale (AC-13, AC-14)
   const songContainerRef = useRef<HTMLDivElement>(null);
@@ -297,21 +314,23 @@ export default function SetlistViewerClient({
 
       setContainerHeight(cHeight);
 
-      if (overflowBehavior === "fit") {
-        const sHeight = contentEl.scrollHeight;
-        if (sHeight > cHeight) {
-          const scale = Math.max(0.6, cHeight / sHeight);
-          setFitScale(scale);
-        } else {
-          setFitScale(1);
-        }
-        setTotalSubPages(1);
+      const scrollWidth = contentEl.scrollWidth;
+      // Horizontal column pagination: each page advances by 1 screen (clientWidth)
+      const pages = Math.max(1, Math.ceil((scrollWidth - 10) / cWidth));
+      setTotalSubPages(pages);
+      setSubPageIndex((prev) => (prev >= pages ? 0 : prev));
+
+      if (overflowBehavior === "fit" && scrollWidth > cWidth) {
+        const ratio = cWidth / scrollWidth;
+        const newScale = Math.min(
+          1,
+          Math.max(0.8, Math.round(ratio * 100) / 100)
+        );
+        setFitScale((current) =>
+          Math.abs(current - newScale) > 0.05 ? newScale : current
+        );
       } else {
         setFitScale(1);
-        const scrollWidth = contentEl.scrollWidth;
-        // Horizontal column pagination: each page advances by 1 screen (clientWidth)
-        const pages = Math.max(1, Math.ceil((scrollWidth - 10) / cWidth));
-        setTotalSubPages(pages);
       }
     };
 
@@ -334,9 +353,9 @@ export default function SetlistViewerClient({
     activeSongIndex,
     overflowBehavior,
     lineHeight,
-    fontSize,
+    effectiveFontSize,
     chordFontSize,
-    pageColumns,
+    effectiveColumns,
   ]);
 
   // Reset subPageIndex when changing song or when subPageIndex exceeds totalSubPages
@@ -356,13 +375,12 @@ export default function SetlistViewerClient({
 
   // Navigation stepping: next and previous (AC-10, AC-12, AC-13)
   const handleNext = useCallback(() => {
-    if (overflowBehavior === "paginate" && subPageIndex < totalSubPages - 1) {
+    if (subPageIndex < totalSubPages - 1) {
       setSubPageIndex((prev) => prev + 1);
     } else if (activeSongIndex < songs.length - 1) {
       selectSongByIndex(activeSongIndex + 1);
     }
   }, [
-    overflowBehavior,
     subPageIndex,
     totalSubPages,
     activeSongIndex,
@@ -371,12 +389,12 @@ export default function SetlistViewerClient({
   ]);
 
   const handlePrev = useCallback(() => {
-    if (overflowBehavior === "paginate" && subPageIndex > 0) {
+    if (subPageIndex > 0) {
       setSubPageIndex((prev) => prev - 1);
     } else if (activeSongIndex > 0) {
       selectSongByIndex(activeSongIndex - 1);
     }
-  }, [overflowBehavior, subPageIndex, activeSongIndex, selectSongByIndex]);
+  }, [subPageIndex, activeSongIndex, selectSongByIndex]);
 
   // Keyboard navigation listener (AC-10, AC-11, AM-2)
   useEffect(() => {
@@ -425,12 +443,12 @@ export default function SetlistViewerClient({
 
   const isPrevDisabled = activeSongIndex === 0 && subPageIndex === 0;
   const isNextDisabled =
-    activeSongIndex === songs.length - 1 &&
-    (overflowBehavior === "fit" || subPageIndex >= totalSubPages - 1);
+    activeSongIndex === songs.length - 1 && subPageIndex >= totalSubPages - 1;
 
   // Content width class: when 2 or 3 columns in page mode, full width is forced (AC-5)
   const containerWidthClass =
-    contentWidth === "full" || (isPageMode && pageColumns > 1)
+    contentWidth === "full" ||
+    (isPageMode && (effectiveColumns > 1 || pageColumns > 1))
       ? "w-full px-4 sm:px-6 lg:px-8"
       : "max-w-3xl mx-auto px-4 sm:px-8";
 
@@ -438,12 +456,14 @@ export default function SetlistViewerClient({
   // 3-column: columns-1 lg:columns-2 xl:columns-3
   // 2-column: columns-1 lg:columns-2
   // 1-column: columns-1
-  const responsiveColumnsClass =
-    pageColumns === 3
+  const responsiveColumnsClass = useMemo(() => {
+    if (!isPageMode) return "";
+    return effectiveColumns === 3
       ? "columns-1 lg:columns-2 xl:columns-3"
-      : pageColumns === 2
+      : effectiveColumns === 2
         ? "columns-1 lg:columns-2"
         : "columns-1";
+  }, [isPageMode, effectiveColumns]);
 
   return (
     <>
@@ -682,141 +702,213 @@ export default function SetlistViewerClient({
                 className="h-[calc(100vh-210px)] min-h-[460px] overflow-hidden relative select-text"
               >
                 {/* Popover Controls trigger in Page View mode (AC-15) */}
-                <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center justify-between mb-2 px-2 flex-wrap gap-2">
                   <div className="flex items-center gap-2 text-xs font-semibold text-brand-brown dark:text-brand-tan">
                     <span>
                       Song {activeSongIndex + 1} of {songs.length}
                     </span>
                     {totalSubPages > 1 && (
-                      <span className="px-2 py-0.5 rounded-full bg-brand-brown/10 dark:bg-brand-tan/10 text-xs">
+                      <span className="px-2 py-0.5 rounded-full bg-brand-brown/10 dark:bg-brand-tan/10 text-xs font-mono">
                         Page {subPageIndex + 1} / {totalSubPages}
                       </span>
                     )}
                   </div>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsSongControlsPopoverOpen((v) => !v)}
-                      aria-expanded={isSongControlsPopoverOpen}
-                      aria-label="Toggle song transpose and capo controls"
-                      className={[
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors duration-200",
-                        "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
-                      ].join(" ")}
+                  <div className="flex items-center gap-2">
+                    {/* Per-song column switcher */}
+                    <div
+                      className="flex items-center gap-1 bg-brand-brown/10 dark:bg-brand-tan/10 p-0.5 rounded-lg border border-brand-brown/15 dark:border-brand-tan/15"
+                      role="group"
+                      aria-label="Columns for this song"
                     >
-                      <SlidersHorizontal size={13} aria-hidden="true" />
-                      Transpose / Capo
-                    </button>
-
-                    {/* Popover content (AC-15) */}
-                    {isSongControlsPopoverOpen && (
-                      <div className="absolute right-0 top-full mt-2 z-50 w-72 p-4 rounded-xl shadow-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/20 dark:border-brand-tan/20">
-                        <div className="flex items-center justify-between mb-3 border-b border-brand-brown/15 dark:border-brand-tan/15 pb-2">
-                          <p className="text-xs font-bold uppercase tracking-wider text-brand-brown dark:text-brand-tan">
-                            Song Controls
-                          </p>
+                      <span className="text-[11px] font-semibold text-brand-brown/70 dark:text-brand-tan/70 px-1.5 hidden sm:inline">
+                        Cols:
+                      </span>
+                      {([1, 2, 3] as const).map((cols) => {
+                        const isSelected = effectiveColumns === cols;
+                        return (
                           <button
+                            key={cols}
                             type="button"
-                            onClick={() => setIsSongControlsPopoverOpen(false)}
-                            aria-label="Close controls popover"
-                            className="text-xs text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream font-bold"
+                            onClick={() => {
+                              if (currentSongKey) {
+                                setSongColumns(currentSongKey, cols);
+                              }
+                            }}
+                            className={[
+                              "px-2 py-0.5 text-xs font-bold rounded transition-colors duration-150",
+                              isSelected
+                                ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso shadow-sm"
+                                : "text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream",
+                            ].join(" ")}
+                            aria-pressed={isSelected}
+                            aria-label={`Display in ${cols} column${cols > 1 ? "s" : ""}`}
                           >
-                            ✕
+                            {cols} {cols === 1 ? "Col" : "Cols"}
                           </button>
-                        </div>
-                        {/* Transposition & Capo controls inside popover */}
-                        <div className="flex flex-col gap-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan">
-                              Transposed Key
-                            </span>
-                            <span className="font-mono font-bold text-sm text-brand-espresso dark:text-brand-cream">
-                              {currentSong.performanceKey}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
+                        );
+                      })}
+                    </div>
+
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsSongControlsPopoverOpen((v) => !v)}
+                        aria-expanded={isSongControlsPopoverOpen}
+                        aria-label="Toggle song transpose and capo controls"
+                        className={[
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors duration-200",
+                          "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
+                        ].join(" ")}
+                      >
+                        <SlidersHorizontal size={13} aria-hidden="true" />
+                        Transpose / Capo
+                      </button>
+
+                      {/* Popover content (AC-15) */}
+                      {isSongControlsPopoverOpen && (
+                        <div className="absolute right-0 top-full mt-2 z-50 w-72 p-4 rounded-xl shadow-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/20 dark:border-brand-tan/20">
+                          <div className="flex items-center justify-between mb-3 border-b border-brand-brown/15 dark:border-brand-tan/15 pb-2">
+                            <p className="text-xs font-bold uppercase tracking-wider text-brand-brown dark:text-brand-tan">
+                              Song Controls
+                            </p>
                             <button
                               type="button"
-                              onClick={() => {
-                                const offset =
-                                  (songOffsets[currentSong.junctionId] ?? 0) -
-                                  1;
-                                handleKeyChangeForDrawer(
-                                  currentSong.junctionId,
-                                  offset
-                                );
-                              }}
-                              className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
-                              aria-label="Transpose down 1 semitone"
+                              onClick={() => setIsSongControlsPopoverOpen(false)}
+                              aria-label="Close controls popover"
+                              className="text-xs text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream font-bold"
                             >
-                              −1
-                            </button>
-                            <select
-                              value={currentSong.performanceKey}
-                              onChange={(e) => {
-                                const target = e.target.value;
-                                const offset = getSemitoneOffset(
-                                  currentSong.originalKey,
-                                  target
-                                );
-                                handleKeyChangeForDrawer(
-                                  currentSong.junctionId,
-                                  offset
-                                );
-                              }}
-                              aria-label="Select song key"
-                              className="flex-1 font-mono font-bold text-xs px-2 py-1.5 rounded-lg border border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream"
-                            >
-                              {NOTES.map((k) => (
-                                <option key={k} value={k}>
-                                  {k}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const offset =
-                                  (songOffsets[currentSong.junctionId] ?? 0) +
-                                  1;
-                                handleKeyChangeForDrawer(
-                                  currentSong.junctionId,
-                                  offset
-                                );
-                              }}
-                              className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
-                              aria-label="Transpose up 1 semitone"
-                            >
-                              +1
+                              ✕
                             </button>
                           </div>
-                          {/* Capo selector */}
-                          <div>
-                            <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan mb-1 block">
-                              Capo
-                            </span>
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {CAPO_FRETS.map((fret) => (
-                                <button
-                                  key={fret}
-                                  type="button"
-                                  onClick={() => {
-                                    handleKeyChangeForDrawer(
-                                      currentSong.junctionId,
-                                      fret === 0 ? 0 : -fret
-                                    );
-                                  }}
-                                  className="w-7 h-7 rounded text-xs font-mono font-bold border border-brand-brown/20 dark:border-brand-tan/20 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream"
-                                >
-                                  {fret}
-                                </button>
-                              ))}
+                          {/* Transposition & Capo controls inside popover */}
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan">
+                                Transposed Key
+                              </span>
+                              <span className="font-mono font-bold text-sm text-brand-espresso dark:text-brand-cream">
+                                {currentSong.performanceKey}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const offset =
+                                    (songOffsets[currentSong.junctionId] ?? 0) -
+                                    1;
+                                  handleKeyChangeForDrawer(
+                                    currentSong.junctionId,
+                                    offset
+                                  );
+                                }}
+                                className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
+                                aria-label="Transpose down 1 semitone"
+                              >
+                                −1
+                              </button>
+                              <select
+                                value={currentSong.performanceKey}
+                                onChange={(e) => {
+                                  const target = e.target.value;
+                                  const offset = getSemitoneOffset(
+                                    currentSong.originalKey,
+                                    target
+                                  );
+                                  handleKeyChangeForDrawer(
+                                    currentSong.junctionId,
+                                    offset
+                                  );
+                                }}
+                                aria-label="Select song key"
+                                className="flex-1 font-mono font-bold text-xs px-2 py-1.5 rounded-lg border border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream"
+                              >
+                                {NOTES.map((k) => (
+                                  <option key={k} value={k}>
+                                    {k}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const offset =
+                                    (songOffsets[currentSong.junctionId] ?? 0) +
+                                    1;
+                                  handleKeyChangeForDrawer(
+                                    currentSong.junctionId,
+                                    offset
+                                  );
+                                }}
+                                className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
+                                aria-label="Transpose up 1 semitone"
+                              >
+                                +1
+                              </button>
+                            </div>
+                            {/* Capo selector */}
+                            <div>
+                              <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan mb-1 block">
+                                Capo
+                              </span>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {CAPO_FRETS.map((fret) => (
+                                  <button
+                                    key={fret}
+                                    type="button"
+                                    onClick={() => {
+                                      handleKeyChangeForDrawer(
+                                        currentSong.junctionId,
+                                        fret === 0 ? 0 : -fret
+                                      );
+                                    }}
+                                    className="w-7 h-7 rounded text-xs font-mono font-bold border border-brand-brown/20 dark:border-brand-tan/20 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream"
+                                  >
+                                    {fret}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            {/* Per-song columns inside popover */}
+                            <div className="border-t border-brand-brown/15 dark:border-brand-tan/15 pt-3">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan">
+                                  Columns (This Song)
+                                </span>
+                                <span className="text-[10px] text-brand-brown/60 dark:text-brand-tan/60 font-mono">
+                                  {currentSongKey &&
+                                  songColumnOverrides[currentSongKey]
+                                    ? "Saved override"
+                                    : "Default"}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                {([1, 2, 3] as const).map((cols) => (
+                                  <button
+                                    key={cols}
+                                    type="button"
+                                    onClick={() => {
+                                      if (currentSongKey) {
+                                        setSongColumns(currentSongKey, cols);
+                                      }
+                                    }}
+                                    className={[
+                                      "py-1 text-xs font-bold rounded-lg border transition-colors",
+                                      effectiveColumns === cols
+                                        ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso border-transparent shadow-sm"
+                                        : "border-brand-brown/20 dark:border-brand-tan/20 text-brand-espresso dark:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                                    ].join(" ")}
+                                  >
+                                    {cols} {cols === 1 ? "Col" : "Cols"}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -825,21 +917,16 @@ export default function SetlistViewerClient({
                   ref={songContentRef}
                   style={{
                     height:
-                      isPageMode &&
-                      overflowBehavior === "paginate" &&
-                      containerHeight > 0
+                      isPageMode && containerHeight > 0
                         ? `${Math.max(200, containerHeight - 44)}px`
                         : undefined,
                     columnFill: isPageMode ? "auto" : undefined,
-                    transform:
-                      overflowBehavior === "fit"
-                        ? `scale(${fitScale})`
-                        : `translateX(-${subPageIndex * 100}%)`,
+                    transform: `translateX(-${subPageIndex * 100}%)`,
                     transformOrigin: "top left",
                     transition: "transform 0.25s ease-out",
                     columnGap: "2.5rem",
                     columnRule:
-                      pageColumns > 1
+                      effectiveColumns > 1
                         ? "1px solid var(--brand-tan-alpha, rgba(139, 99, 71, 0.15))"
                         : "none",
                   }}
@@ -867,7 +954,7 @@ export default function SetlistViewerClient({
                     )}
                     externalChordsHidden={globalChordsHidden}
                     autoScroll={autoScroll}
-                    fontSize={fontSize}
+                    fontSize={effectiveFontSize}
                     onIncreaseFont={fontSizeControls.increase}
                     onDecreaseFont={fontSizeControls.decrease}
                     onResetFont={fontSizeControls.reset}
