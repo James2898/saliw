@@ -706,11 +706,28 @@ export default function SetlistSettingsModal({
                       </div>
                       <p className="mt-1.5 text-xs text-brand-brown/60 dark:text-brand-tan/60">
                         {layoutControls.pageColumns === 3
-                          ? "3 cols on ≥1280px screen; collapses to 2 on 1024–1279px, 1 on <1024px."
+                          ? "Default: 3 cols on ≥1280px screen; collapses to 2 on 1024–1279px, 1 on <1024px."
                           : layoutControls.pageColumns === 2
-                            ? "2 cols on ≥1024px screen; collapses to 1 on <1024px."
-                            : "Standard 1 column single page."}
+                            ? "Default: 2 cols on ≥1024px screen; collapses to 1 on <1024px."
+                            : "Default: 1 column single page."}
                       </p>
+                      <p className="text-xs text-brand-brown/50 dark:text-brand-tan/50 mt-1">
+                        You can also customize columns per song directly in Page View.
+                      </p>
+                      {Object.keys(layoutControls.songColumnOverrides).length > 0 && (
+                        <div className="mt-2 flex items-center justify-between pt-1 border-t border-brand-brown/10 dark:border-brand-tan/10">
+                          <span className="text-xs text-brand-brown/70 dark:text-brand-tan/70">
+                            {Object.keys(layoutControls.songColumnOverrides).length} song(s) have custom columns
+                          </span>
+                          <button
+                            type="button"
+                            onClick={layoutControls.clearAllSongColumns}
+                            className="text-xs text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream underline cursor-pointer"
+                          >
+                            Reset per-song columns
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -738,7 +755,7 @@ export default function SetlistSettingsModal({
                     </label>
                     <p className="text-xs text-brand-brown/60 dark:text-brand-tan/60">
                       {layoutControls.overflowBehavior === "fit"
-                        ? "Scales chord sheet font size down dynamically to fit the entire song on one screen without pagination."
+                        ? "Scales chord sheet font size down dynamically to fit more content on screen while paginating any remaining overflow."
                         : "Paginate overflow across screens (advance through sub-pages via Space/Arrows)."}
                     </p>
                   </div>

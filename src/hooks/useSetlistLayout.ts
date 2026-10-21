@@ -20,6 +20,10 @@ export interface UseSetlistLayoutReturn {
   layoutMode: LayoutMode;
   pageColumns: PageColumns;
   overflowBehavior: OverflowBehavior;
+  songColumnOverrides: Record<string, PageColumns>;
+  setSongColumns: (songId: string, columns: PageColumns) => void;
+  resetSongColumns: (songId: string) => void;
+  clearAllSongColumns: () => void;
   increaseLineHeight: () => void;
   decreaseLineHeight: () => void;
   resetLineHeight: () => void;
@@ -30,6 +34,7 @@ export interface UseSetlistLayoutReturn {
 }
 
 const STORAGE_KEY = "saliw-layout-settings";
+const SONG_COLUMNS_STORAGE_KEY = "saliw-song-columns";
 
 export const MIN_LINE_HEIGHT = 1.2;
 export const MAX_LINE_HEIGHT = 2.4;
@@ -88,8 +93,75 @@ function readStoredSettings(): SetlistLayoutSettings {
   return DEFAULT_LAYOUT_SETTINGS;
 }
 
+function readStoredSongColumns(): Record<string, PageColumns> {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = localStorage.getItem(SONG_COLUMNS_STORAGE_KEY);
+    if (stored !== null) {
+      const parsed = JSON.parse(stored);
+      if (typeof parsed === "object" && parsed !== null) {
+        const result: Record<string, PageColumns> = {};
+        for (const [key, val] of Object.entries(parsed)) {
+          if (val === 1 || val === 2 || val === 3) {
+            result[key] = val;
+          }
+        }
+        return result;
+      }
+    }
+  } catch {
+    // localStorage unavailable or invalid JSON — fallback to empty map
+  }
+  return {};
+}
+
 export function useSetlistLayout(): UseSetlistLayoutReturn {
   const [settings, setSettings] = useState<SetlistLayoutSettings>(readStoredSettings);
+  const [songColumnOverrides, setSongColumnOverrides] = useState<Record<string, PageColumns>>(readStoredSongColumns);
+
+  const persistSongColumns = useCallback((overrides: Record<string, PageColumns>) => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SONG_COLUMNS_STORAGE_KEY, JSON.stringify(overrides));
+      }
+    } catch {
+      // localStorage unavailable — non-fatal
+    }
+  }, []);
+
+  const setSongColumns = useCallback(
+    (songId: string, columns: PageColumns) => {
+      setSongColumnOverrides((prev) => {
+        const next = { ...prev, [songId]: columns };
+        persistSongColumns(next);
+        return next;
+      });
+    },
+    [persistSongColumns]
+  );
+
+  const resetSongColumns = useCallback(
+    (songId: string) => {
+      setSongColumnOverrides((prev) => {
+        const next = { ...prev };
+        delete next[songId];
+        persistSongColumns(next);
+        return next;
+      });
+    },
+    [persistSongColumns]
+  );
+
+  const clearAllSongColumns = useCallback(() => {
+    setSongColumnOverrides({});
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(SONG_COLUMNS_STORAGE_KEY);
+      }
+    } catch {
+      // localStorage unavailable — non-fatal
+    }
+  }, []);
 
   const persist = useCallback((nextSettings: SetlistLayoutSettings) => {
     try {
@@ -190,6 +262,10 @@ export function useSetlistLayout(): UseSetlistLayoutReturn {
     layoutMode: settings.layoutMode,
     pageColumns: settings.pageColumns,
     overflowBehavior: settings.overflowBehavior,
+    songColumnOverrides,
+    setSongColumns,
+    resetSongColumns,
+    clearAllSongColumns,
     increaseLineHeight,
     decreaseLineHeight,
     resetLineHeight,
