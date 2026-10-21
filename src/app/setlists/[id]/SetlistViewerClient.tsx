@@ -291,13 +291,14 @@ export default function SetlistViewerClient({
 
     const updateMeasurements = () => {
       const cHeight = containerEl.clientHeight;
-      const sHeight = contentEl.scrollHeight;
+      const cWidth = containerEl.clientWidth;
 
-      if (cHeight <= 0 || sHeight <= 0) return;
+      if (cHeight <= 0 || cWidth <= 0) return;
 
       setContainerHeight(cHeight);
 
       if (overflowBehavior === "fit") {
+        const sHeight = contentEl.scrollHeight;
         if (sHeight > cHeight) {
           const scale = Math.max(0.6, cHeight / sHeight);
           setFitScale(scale);
@@ -307,7 +308,9 @@ export default function SetlistViewerClient({
         setTotalSubPages(1);
       } else {
         setFitScale(1);
-        const pages = Math.max(1, Math.ceil(sHeight / cHeight));
+        const scrollWidth = contentEl.scrollWidth;
+        // Horizontal column pagination: each page advances by 1 screen (clientWidth)
+        const pages = Math.max(1, Math.ceil((scrollWidth - 10) / cWidth));
         setTotalSubPages(pages);
       }
     };
@@ -473,8 +476,12 @@ export default function SetlistViewerClient({
       >
         <div className={containerWidthClass}>
           {/* ── Setlist header (name + date + actions) ───────────────────────── */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
+          <div className={isPageMode ? "mb-2" : "mb-6"}>
+            <h1
+              className={`${
+                isPageMode ? "text-xl sm:text-2xl" : "text-3xl"
+              } font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1`}
+            >
               {setlistName}
             </h1>
             <div className="flex items-center gap-3 flex-wrap">
@@ -567,8 +574,8 @@ export default function SetlistViewerClient({
             layoutControls={layoutControls}
           />
 
-          {/* ── People block ─────────────────────────────────────────────────── */}
-          {(worshipLeaderName || lineup.length > 0) && (
+          {/* ── People block (worship leader + lineup) ──────────────────────── */}
+          {!isPageMode && (worshipLeaderName || lineup.length > 0) && (
             <div className="mb-6 flex flex-col gap-1">
               {worshipLeaderName && (
                 <p className="text-sm">
@@ -672,7 +679,7 @@ export default function SetlistViewerClient({
               {/* Single Song Container with multi-column styling & paging */}
               <div
                 ref={songContainerRef}
-                className="min-h-[70vh] max-h-[82vh] overflow-hidden relative select-text"
+                className="h-[calc(100vh-210px)] min-h-[460px] overflow-hidden relative select-text"
               >
                 {/* Popover Controls trigger in Page View mode (AC-15) */}
                 <div className="flex items-center justify-between mb-2 px-2">
@@ -817,10 +824,17 @@ export default function SetlistViewerClient({
                 <div
                   ref={songContentRef}
                   style={{
+                    height:
+                      isPageMode &&
+                      overflowBehavior === "paginate" &&
+                      containerHeight > 0
+                        ? `${Math.max(200, containerHeight - 44)}px`
+                        : undefined,
+                    columnFill: isPageMode ? "auto" : undefined,
                     transform:
                       overflowBehavior === "fit"
                         ? `scale(${fitScale})`
-                        : `translateY(-${subPageIndex * containerHeight}px)`,
+                        : `translateX(-${subPageIndex * 100}%)`,
                     transformOrigin: "top left",
                     transition: "transform 0.25s ease-out",
                     columnGap: "2.5rem",

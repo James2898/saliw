@@ -691,7 +691,7 @@ export default function ChordSheetClient({
                 return (
                   <div
                     key={lineIndex}
-                    className="text-brand-espresso dark:text-brand-cream leading-snug"
+                    className="lyric-row text-brand-espresso dark:text-brand-cream leading-snug"
                   >
                     {line.raw}
                   </div>
