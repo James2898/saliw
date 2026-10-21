@@ -27,6 +27,7 @@ export type DbSong = {
   created_by: string | null;
   singer: string | null;
   youtube_url: string | null;
+  tags: string[];
   created_at: string;
   updated_at: string;
 };
@@ -108,6 +109,7 @@ export interface Database {
           created_by?: string | null;
           singer?: string | null;
           youtube_url?: string | null;
+          tags?: string[];
           created_at?: string;
           updated_at?: string;
         };
