@@ -6,8 +6,7 @@ import { Pencil, Settings } from "lucide-react";
 import dynamic from "next/dynamic";
 import ServiceNavigator from "@/components/client/ServiceNavigator";
 import SetlistSongSection from "@/components/client/SetlistSongSection";
-import GoLiveButton from "@/components/client/GoLiveButton";
-import FollowLeaderButton from "@/components/client/FollowLeaderButton";
+import StageSyncControls from "@/components/client/StageSyncControls";
 import AutoScrollToolbar from "@/components/client/AutoScrollToolbar";
 import AppendSongsButton from "@/components/client/AppendSongsButton";
 import SectionNavDeck, {
@@ -246,10 +245,54 @@ export default function SetlistViewerClient({
   // useMemo dep is just `songs`. Recomputes only when songs array changes.
   const navSections = useMemo(() => deriveSections(songs), [songs]);
 
+  // Memoized scroll state change handler (prevents unsolicited broadcast spam)
+  const handleScrollStateChange = useCallback(
+    ({ isScrolling, speed }: { isScrolling: boolean; speed: number }) => {
+      if (sync.isLive) {
+        const scrollDist =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = scrollDist > 0 ? window.scrollY / scrollDist : 0;
+        const activeJunctionId = songs[0]?.junctionId ?? "";
+        sync.broadcastScrollSync({
+          junctionId: activeJunctionId,
+          isAutoScrolling: isScrolling,
+          speedLevel: speed,
+          scrollPercentage: Math.round(ratio * 100),
+          scrollPositionRatio: ratio,
+          isScrolling,
+          speedMultiplier: speed,
+        });
+      }
+    },
+    [sync, songs]
+  );
+
+  const handleSectionClick = useCallback(
+    (target: { id: string; label: string }) => {
+      if (sync.isLive) {
+        const junctionId =
+          target.id.split("-")[1] ?? songs[0]?.junctionId ?? "";
+        sync.broadcastSectionChange(junctionId, target.id, target.label);
+      }
+    },
+    [sync, songs]
+  );
+
+  const serviceNavigatorSyncSlice = useMemo(
+    () => ({
+      isLive: sync.isLive,
+      onActiveSongChange: sync.onActiveSongChange,
+    }),
+    [sync.isLive, sync.onActiveSongChange]
+  );
+
   return (
     <>
       {/* ── Auto-scroll toolbar — fixed bottom-right (AC 1) ─────────────────── */}
-      <AutoScrollToolbar scroll={autoScroll} />
+      <AutoScrollToolbar
+        scroll={autoScroll}
+        onScrollStateChange={handleScrollStateChange}
+      />
 
       {/* ── Section Navigator Deck — fixed floating badge column (TASK-045) ──── */}
       {/* BUG-014: passes shared autoScroll instance, does not call useAutoScroll() */}
@@ -257,6 +300,7 @@ export default function SetlistViewerClient({
         sections={navSections}
         autoScroll={autoScroll}
         onMobileOpenChange={setIsSectionNavOpen}
+        onSectionClick={handleSectionClick}
       />
 
       {/* ── Edit Songs FAB — desktop-only, fixed bottom-left (TASK-038, TASK-20261018-e7m) */}
@@ -277,7 +321,7 @@ export default function SetlistViewerClient({
           <h1 className="text-3xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-1">
             {setlistName}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {formattedDate && (
               <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
                 {formattedDate}
@@ -292,24 +336,10 @@ export default function SetlistViewerClient({
                 Edit Setlist
               </Link>
             )}
-            <GoLiveButton
-              sync={{
-                isLive: sync.isLive,
-                isLiveConnecting: sync.isLiveConnecting,
-                liveError: sync.liveError,
-                toggleLive: sync.toggleLive,
-              }}
+            <StageSyncControls
+              sync={sync}
               isLeader={isLeader}
-            />
-            <FollowLeaderButton
-              sync={{
-                isFollowing: sync.isFollowing,
-                isStateChecking: sync.isStateChecking,
-                followError: sync.followError,
-                followSyncStatus: sync.followSyncStatus,
-                toggleFollow: sync.toggleFollow,
-              }}
-              isLeader={isLeader}
+              isMusicDirector={isMusicDirector}
             />
             <button
               type="button"
@@ -397,10 +427,7 @@ export default function SetlistViewerClient({
           isLeader={isLeader}
           setlistId={setlistId}
           isAuthenticated={isAuthenticated}
-          sync={{
-            isLive: sync.isLive,
-            onActiveSongChange: sync.onActiveSongChange,
-          }}
+          sync={serviceNavigatorSyncSlice}
           onBeforeNavigate={autoScroll.isActive ? autoScroll.pause : undefined}
           onAfterNavigate={autoScroll.isActive ? autoScroll.resume : undefined}
         />
@@ -425,6 +452,7 @@ export default function SetlistViewerClient({
                 isLeader={isLeader}
                 youtubeUrl={song.youtubeUrl}
                 isMusicDirector={isMusicDirector}
+                isFollowing={sync.isFollowing}
                 overrideKey={overrideKey}
                 onKeyChangeLive={
                   isLeader && sync.isLive ? sync.notifyKeyChange : undefined
