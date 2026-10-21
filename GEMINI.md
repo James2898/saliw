@@ -19,6 +19,9 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   if (input) { const val = input.value; }
   ```
 
+### zsh Globs
+- **zsh globs:** quote glob arguments (`--include='*.ts'`). Unquoted, zsh aborts with `no matches found`.
+
 ---
 
 ## 2. Dev Server & Build Management
@@ -40,3 +43,9 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 - **Worktree Awareness:** Antigravity often works in dedicated git worktrees (e.g. under `~/.gemini/antigravity/worktrees/`). Ensure commands and dev servers execute inside the active worktree root.
 - **Untracked Directories:** Keep test plans, verification traces, and Playwright screenshots in `.qa/` or `.playwright-mcp/` (both gitignored).
 - **Domain Memory:** For general codebase bugs (SSR hydration, Supabase `timestamptz`, React Compiler rules), refer to and update [`MEMORY.md`](./MEMORY.md).
+- **Fresh worktree setup:** a new worktree has no `node_modules` or `.env.local`. Before running `tsc`, `eslint` or `next dev`, link them from the main checkout (do not `npm install`):
+  ```bash
+  ln -s node_modules node_modules
+  ln -s .env.local .env.local
+  ```
+  Start the dev server with `npx next dev -p <port>` (no `--turbopack`, see MEMORY.md) and use a port other than the main checkout's.

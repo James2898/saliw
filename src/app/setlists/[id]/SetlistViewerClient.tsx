@@ -241,6 +241,7 @@ export default function SetlistViewerClient({
     overflowBehavior,
     songColumnOverrides,
     setSongColumns,
+    resetSongColumns,
   } = layoutControls;
   const { fontSize } = fontSizeControls;
   const { chordFontSize } = chordFontSizeControls;
@@ -486,11 +487,15 @@ export default function SetlistViewerClient({
     activeSongIndex === songs.length - 1 && subPageIndex >= totalSubPages - 1;
 
   // Content width class: when 2 or 3 columns in page mode, full width is forced (AC-5)
-  const containerWidthClass =
+  // Hidden until mounted so the server-rendered default width never flashes
+  // before the stored layout settings are applied.
+  const containerWidthClass = [
     contentWidth === "full" ||
     (isPageMode && (effectiveColumns > 1 || pageColumns > 1))
       ? "w-full px-4 sm:px-6 lg:px-8"
-      : "max-w-3xl mx-auto px-4 sm:px-8";
+      : "max-w-3xl mx-auto px-4 sm:px-8",
+    isMounted ? "" : "invisible",
+  ].join(" ");
 
   // Responsive column CSS classes (AC-8):
   // 3-column: columns-1 lg:columns-2 xl:columns-3
@@ -695,12 +700,12 @@ export default function SetlistViewerClient({
                 className={[
                   "fixed left-2 top-1/2 -translate-y-1/2 z-30",
                   "flex items-center justify-center w-10 h-16 rounded-r-xl",
-                  "bg-brand-espresso/20 hover:bg-brand-espresso/60 text-brand-cream dark:bg-brand-tan/20 dark:hover:bg-brand-tan/60 dark:text-brand-espresso",
+                  "bg-brand-brown/90 hover:bg-brand-brown text-brand-cream dark:bg-brand-tan/90 dark:hover:bg-brand-tan dark:text-brand-espresso shadow-md",
                   "backdrop-blur-sm transition-all duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
                   isPrevDisabled
                     ? "opacity-0 pointer-events-none"
-                    : "opacity-40 hover:opacity-100",
+                    : "opacity-90 hover:opacity-100",
                 ].join(" ")}
               >
                 <ChevronLeft size={24} strokeWidth={2.5} aria-hidden="true" />
@@ -714,12 +719,12 @@ export default function SetlistViewerClient({
                 className={[
                   "fixed right-2 top-1/2 -translate-y-1/2 z-30",
                   "flex items-center justify-center w-10 h-16 rounded-l-xl",
-                  "bg-brand-espresso/20 hover:bg-brand-espresso/60 text-brand-cream dark:bg-brand-tan/20 dark:hover:bg-brand-tan/60 dark:text-brand-espresso",
+                  "bg-brand-brown/90 hover:bg-brand-brown text-brand-cream dark:bg-brand-tan/90 dark:hover:bg-brand-tan dark:text-brand-espresso shadow-md",
                   "backdrop-blur-sm transition-all duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
                   isNextDisabled
                     ? "opacity-0 pointer-events-none"
-                    : "opacity-40 hover:opacity-100",
+                    : "opacity-90 hover:opacity-100",
                 ].join(" ")}
               >
                 <ChevronRight size={24} strokeWidth={2.5} aria-hidden="true" />
@@ -759,12 +764,18 @@ export default function SetlistViewerClient({
                             key={cols}
                             type="button"
                             onClick={() => {
-                              if (currentSongKey) {
+                              if (!currentSongKey) return;
+                              if (songColumnOverrides[currentSongKey] === cols) {
+                                resetSongColumns(currentSongKey);
+                              } else {
                                 setSongColumns(currentSongKey, cols);
                               }
                             }}
                             className={[
                               "px-2 py-0.5 text-xs font-bold rounded transition-colors duration-150",
+                              currentSongKey && songColumnOverrides[currentSongKey] === cols
+                                ? "ring-2 ring-brand-brown dark:ring-brand-tan"
+                                : "",
                               isSelected
                                 ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso shadow-sm"
                                 : "text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream",
@@ -918,12 +929,18 @@ export default function SetlistViewerClient({
                                     key={cols}
                                     type="button"
                                     onClick={() => {
-                                      if (currentSongKey) {
+                                      if (!currentSongKey) return;
+                                      if (songColumnOverrides[currentSongKey] === cols) {
+                                        resetSongColumns(currentSongKey);
+                                      } else {
                                         setSongColumns(currentSongKey, cols);
                                       }
                                     }}
                                     className={[
                                       "py-1 text-xs font-bold rounded-lg border transition-colors",
+                                      currentSongKey && songColumnOverrides[currentSongKey] === cols
+                                        ? "ring-2 ring-brand-brown dark:ring-brand-tan"
+                                        : "",
                                       effectiveColumns === cols
                                         ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso border-transparent shadow-sm"
                                         : "border-brand-brown/20 dark:border-brand-tan/20 text-brand-espresso dark:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
