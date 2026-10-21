@@ -4,6 +4,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-20
+
+### Added
+- Saliw V2: Real-time Multi-Device Stage Sync (`TASK-20261020-7db`)
+  - Multiplexed Supabase Realtime channel (`setlist_sync:${setlistId}`) for Broadcast and Presence tracking, with connection lifecycle states (`CONNECTING`, `CONNECTED`, `DISCONNECTED`, `RECONNECTING`) and explicit untrack on unmount (`channel.untrack()`) (AC-1, AM-1)
+  - Leader broadcast coordination for song navigation (`SONG_CHANGE`), transposition key changes (`KEY_CHANGE`), section jumps (`SECTION_CHANGE`), and ratio-based autoscroll (`SCROLL_SYNC`) with monotonic sequence counter timestamps (AC-2, AM-2)
+  - Follower mode safe synchronization with manual key override protection, `"Overriding leader • [Reset to Leader]"` badge, and isolated offline solo mode default (AC-3)
+  - Normalized ratio-based autoscroll alignment across heterogeneous device viewports with 5% threshold smooth adjustment (AC-4)
+  - `StageSyncControls` compact touch pill component with 44px touch targets, live device counter, role authorization check (leader restricted to setlist owner / music director), and WCAG AA contrast (AC-5, AM-3)
+  - React 19 / Compiler compliance with memoized sync slice handlers (`BUG-019`), dependency hygiene, and comprehensive Vitest test coverage (AC-6)
+  - Affected files: `src/hooks/useSetlistSync.ts`, `src/utils/realtimeEvents.ts`, `src/components/client/StageSyncControls.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/components/client/SectionNavDeck.tsx`, `src/components/client/AutoScrollToolbar.tsx`, `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/hooks/__tests__/useSetlistSync.test.ts`
+
+---
+
 ## [Unreleased] — 2026-10-18
 
 ### Changed
