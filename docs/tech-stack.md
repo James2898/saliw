@@ -31,4 +31,4 @@
 ## Vercel Deployment Notes
 
 - Optimized for Vercel's edge network.
-- Environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are managed in the Vercel Dashboard.
+- Environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) are managed in the Vercel Dashboard.

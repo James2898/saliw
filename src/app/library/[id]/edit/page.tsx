@@ -62,11 +62,19 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
   }
 
   // ── Fetch song ──────────────────────────────────────────────────────────────
-  const songResult = await supabase
+  let songResult = await supabase
     .from("songs")
-    .select("id, title, artist, original_key, content, singer, youtube_url")
+    .select("id, title, artist, original_key, content, singer, youtube_url, tags")
     .eq("id", id)
     .single();
+
+  if (songResult.error && songResult.error.code === "42703") {
+    songResult = (await supabase
+      .from("songs")
+      .select("id, title, artist, original_key, content, singer, youtube_url")
+      .eq("id", id)
+      .single()) as typeof songResult;
+  }
 
   const songData = songResult.data;
   const songError = songResult.error;
@@ -100,6 +108,7 @@ export default async function SongEditPage({ params }: SongEditPageProps) {
     content: songData.content,
     singer: songData.singer ?? undefined,
     youtube_url: songData.youtube_url ?? null,
+    tags: (songData.tags ?? []) as Song["tags"],
   };
 
   return (

@@ -7,7 +7,14 @@ import { preProcessChords, NOTES } from "@/utils/musicLogic";
 import { updateSong } from "@/app/actions/songActions";
 import { normaliseYouTubeUrl } from "@/utils/youtube";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
+import SongTagSelector from "@/components/SongTags/SongTagSelector";
 import type { Song } from "@/types/Song";
+
+function areTagsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b.map((t) => t.trim().toLowerCase()));
+  return a.every((t) => setB.has(t.trim().toLowerCase()));
+}
 
 const inputBaseClass = [
   "w-full px-3 py-2 rounded-xl",
@@ -64,14 +71,19 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
     () => song.youtube_url ?? ""
   );
 
-  // isDirty: true if content, singer, original key, title, artist, or youtube_url diverge from last saved state
+  // ── Tags state ──────────────────────────────────────────────────────────────
+  const [tags, setTags] = useState<string[]>(() => song.tags ?? []);
+  const [savedTags, setSavedTags] = useState<string[]>(() => song.tags ?? []);
+
+  // isDirty: true if content, singer, original key, title, artist, youtube_url, or tags diverge from last saved state
   const isDirty =
     currentContent !== savedBaseline ||
     singer !== savedSinger ||
     originalKey !== savedOriginalKey ||
     title !== savedTitle ||
     artist !== savedArtist ||
-    youtubeUrl !== savedYoutubeUrl;
+    youtubeUrl !== savedYoutubeUrl ||
+    !areTagsEqual(tags, savedTags);
 
   // ── Mobile tab state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MobileTab>("edit");
@@ -182,6 +194,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       original_key: originalKey,
       content: currentContent,
       singer: singer || undefined,
+      tags,
       ...(youtubeUrlChanged ? { youtube_url: normalisedYoutubeUrl } : {}),
     });
 
@@ -196,6 +209,7 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
       setSavedTitle(title);
       setSavedArtist(artist);
       setSavedYoutubeUrl(youtubeUrl);
+      setSavedTags(tags);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     }
@@ -352,6 +366,22 @@ export default function SongEditorClient({ song }: SongEditorClientProps) {
           />
           <p className="mt-1 text-xs text-brand-brown/60 dark:text-brand-tan/60">
             Leave blank to remove. Saved as a canonical embed URL.
+          </p>
+        </div>
+
+        {/* Tags selector — spans full width on sm+ */}
+        <div className="sm:col-span-2">
+          <span className={labelClass}>Tags</span>
+          <SongTagSelector
+            selectedTags={tags}
+            onChange={(newTags) => {
+              setTags(newTags);
+              if (saveError) setSaveError(null);
+            }}
+            disabled={isSaving}
+          />
+          <p className="mt-1 text-xs text-brand-brown/60 dark:text-brand-tan/60">
+            Categorize musical vibe and genre for setlist curation.
           </p>
         </div>
       </div>

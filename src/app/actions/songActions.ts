@@ -33,6 +33,7 @@ export async function createSong(input: {
   content: string;
   singer?: string;
   youtube_url?: string | null;
+  tags?: string[];
 }): Promise<{ data: DbSong | null; error: string | null }> {
   try {
     const supabase = await createClient();
@@ -76,7 +77,16 @@ export async function createSong(input: {
       }
     }
 
-    const { data, error } = await supabase
+    let validatedTags: string[] = [];
+    if (input.tags !== undefined) {
+      if (Array.isArray(input.tags)) {
+        validatedTags = input.tags
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+      }
+    }
+
+    const insertRes = await supabase
       .from("songs")
       .insert({
         title: input.title,
@@ -86,11 +96,41 @@ export async function createSong(input: {
         created_by: user.id,
         singer: input.singer ?? null,
         youtube_url: validatedYoutubeUrl,
+        tags: validatedTags,
       })
       .select(
-        "id, title, artist, original_key, content, created_by, singer, youtube_url"
+        "id, title, artist, original_key, content, created_by, singer, youtube_url, tags"
       )
       .single();
+
+    const data = insertRes.data;
+    let error = insertRes.error;
+
+    if (error && error.code === "42703") {
+      const fallback = await supabase
+        .from("songs")
+        .insert({
+          title: input.title,
+          artist: input.artist,
+          original_key: input.original_key,
+          content: input.content,
+          created_by: user.id,
+          singer: input.singer ?? null,
+          youtube_url: validatedYoutubeUrl,
+        })
+        .select(
+          "id, title, artist, original_key, content, created_by, singer, youtube_url"
+        )
+        .single();
+
+      if (fallback.data) {
+        return {
+          data: { ...fallback.data, tags: [] } as unknown as DbSong,
+          error: null,
+        };
+      }
+      error = fallback.error;
+    }
 
     if (error) {
       if (error.code === "42501") {
@@ -128,6 +168,7 @@ export async function updateSong(input: {
   content?: string;
   singer?: string;
   youtube_url?: string | null;
+  tags?: string[];
 }): Promise<{ data: DbSong | null; error: string | null }> {
   try {
     const supabase = await createClient();
@@ -158,6 +199,16 @@ export async function updateSong(input: {
 
     const { id, ...fields } = input;
 
+    if (fields.tags !== undefined) {
+      if (Array.isArray(fields.tags)) {
+        fields.tags = fields.tags
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+      } else {
+        fields.tags = [];
+      }
+    }
+
     if (fields.youtube_url !== undefined) {
       if (fields.youtube_url === null) {
         fields.youtube_url = null;
@@ -182,14 +233,38 @@ export async function updateSong(input: {
       Object.entries(fields).filter(([, v]) => v !== undefined)
     ) as Partial<DbSong>;
 
-    const { data, error } = await supabase
+    const updateRes = await supabase
       .from("songs")
       .update(updatePayload)
       .eq("id", id)
       .select(
-        "id, title, artist, original_key, content, created_by, singer, youtube_url"
+        "id, title, artist, original_key, content, created_by, singer, youtube_url, tags"
       )
       .single();
+
+    const data = updateRes.data;
+    let error = updateRes.error;
+
+    if (error && error.code === "42703") {
+      const fallbackPayload = { ...updatePayload };
+      delete fallbackPayload.tags;
+      const fallback = await supabase
+        .from("songs")
+        .update(fallbackPayload)
+        .eq("id", id)
+        .select(
+          "id, title, artist, original_key, content, created_by, singer, youtube_url"
+        )
+        .single();
+
+      if (fallback.data) {
+        return {
+          data: { ...fallback.data, tags: [] } as unknown as DbSong,
+          error: null,
+        };
+      }
+      error = fallback.error;
+    }
 
     if (error) {
       if (error.code === "42501") {
@@ -234,19 +309,40 @@ export async function getAllSongs(): Promise<{
   try {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    const selectRes = await supabase
       .from("songs")
-      .select("id, title, artist, original_key")
+      .select("id, title, artist, original_key, tags")
       .order("title", { ascending: true });
 
-    if (error) {
+    if (selectRes.error && selectRes.error.code === "42703") {
+      const fallback = await supabase
+        .from("songs")
+        .select("id, title, artist, original_key")
+        .order("title", { ascending: true });
+
+      if (fallback.error) {
+        return {
+          data: null,
+          error: "Unable to load song library. Please try again.",
+        };
+      }
+      return {
+        data: ((fallback.data ?? []) as unknown as SongSummary[]).map((s) => ({
+          ...s,
+          tags: [],
+        })),
+        error: null,
+      };
+    }
+
+    if (selectRes.error) {
       return {
         data: null,
         error: "Unable to load song library. Please try again.",
       };
     }
 
-    return { data: data ?? [], error: null };
+    return { data: (selectRes.data ?? []) as SongSummary[], error: null };
   } catch {
     return {
       data: null,
