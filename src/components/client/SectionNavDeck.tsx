@@ -43,6 +43,8 @@ interface SectionNavDeckProps {
    * pushes content rather than overlaying it.
    */
   onMobileOpenChange?: (isOpen: boolean) => void;
+  /** Optional callback fired when a section badge is clicked (e.g. to broadcast section change). */
+  onSectionClick?: (section: SectionTarget) => void;
 }
 
 // ── Module-scope constants (AC-18: static data at module scope, not inline) ──
@@ -258,6 +260,7 @@ export default function SectionNavDeck({
   isDrawerOpen = false,
   isEditMode = false,
   onMobileOpenChange,
+  onSectionClick,
 }: SectionNavDeckProps) {
   // AC-16: SSR safety — render null on server and first hydration.
   const [mounted, setMounted] = useState(false);
@@ -473,6 +476,7 @@ export default function SectionNavDeck({
 
     const handleClick = () => {
       handleScrollToSection(section.id);
+      onSectionClick?.(section);
     };
 
     return (
