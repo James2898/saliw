@@ -12,6 +12,8 @@ interface SearchBarProps {
   pageSize?: number;
   /** Pass current letter filter so search navigation preserves it (AC-19 / AM-2) */
   letter?: string;
+  /** Pass current tag filter so search navigation preserves it */
+  tag?: string;
   placeholder?: string;
   ariaLabel?: string;
 }
@@ -21,7 +23,8 @@ function buildSearchUrl(
   basePath: string,
   term: string,
   pageSize: number | undefined,
-  letter: string | undefined
+  letter: string | undefined,
+  tag: string | undefined
 ): string {
   const params = new URLSearchParams();
   if (term) params.set("q", term);
@@ -29,6 +32,7 @@ function buildSearchUrl(
   // Always reset to page 1 on new search
   params.set("page", "1");
   if (letter) params.set("letter", letter);
+  if (tag) params.set("tag", tag);
   const qs = params.toString();
   return qs ? `${basePath}?${qs}` : basePath;
 }
@@ -48,6 +52,7 @@ export default function SearchBar({
   basePath = "/library",
   pageSize,
   letter,
+  tag,
   placeholder = "Search by title or artist…",
   ariaLabel = "Search songs by title or artist",
 }: SearchBarProps) {
@@ -57,9 +62,9 @@ export default function SearchBar({
 
   const handleSearch = useCallback(
     (term: string) => {
-      router.replace(buildSearchUrl(basePath, term.trim(), pageSize, letter));
+      router.replace(buildSearchUrl(basePath, term.trim(), pageSize, letter, tag));
     },
-    [router, basePath, pageSize, letter]
+    [router, basePath, pageSize, letter, tag]
   );
 
   const handleSubmit = useCallback(
