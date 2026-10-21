@@ -61,3 +61,5 @@ All agents are defined globally in ~/.claude/agents/. This repository does not c
 7. Post-implementation: @release-manager reviews against requirements and updates CHANGELOG.md.
 8. Post-implementation: @validator-agent audits for RLS security and UI contrast.
 9. On bug resolution: @debug-memory records root cause and fix in MEMORY.md.
+10. **Security & Secrets:** Never embed Supabase API keys (especially service role or secret keys) directly in source files, HTML tools, or documentation. Ad-hoc scripts and utilities must be gitignored and prompt for credentials via `sessionStorage` or local environment variables.
+
