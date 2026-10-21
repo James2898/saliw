@@ -157,8 +157,7 @@ cp .env.example .env.local  # or create manually
 Populate the required Supabase credentials:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key-here
 ```
 
 ### 4. Apply Database Migrations
