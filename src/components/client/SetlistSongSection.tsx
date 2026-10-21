@@ -52,6 +52,12 @@ interface SetlistSongSectionProps {
   chordBg?: string;
   /** Chord font color CSS value (hex). */
   chordColor?: string;
+  /** Line height multiplier for chord and lyric lines (e.g. 1.8). */
+  lineHeight?: number;
+  /** Whether to render the header in compact format (for Page View mode). */
+  isCompactHeader?: boolean;
+  /** Whether to hide the chord toolbar inside ChordSheetClient. */
+  hideChordToolbar?: boolean;
   /**
    * Callback fired when a chord token is clicked in the chord sheet.
    * Receives the transposed (displayed) chord name as the performer sees it.
@@ -104,6 +110,9 @@ function SetlistSongSection({
   chordFontSize,
   chordBg,
   chordColor,
+  lineHeight,
+  isCompactHeader = false,
+  hideChordToolbar = false,
   onChordClick,
   onOffsetChange,
 }: SetlistSongSectionProps) {
@@ -198,115 +207,165 @@ function SetlistSongSection({
       className="scroll-mt-16 lg:scroll-mt-0 rounded-xl px-4 py-5"
       aria-label={title}
     >
-      {/* ── Song header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-0.5">
-            {title}
-          </h2>
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
-            {artist}
-          </p>
-        </div>
-
-        {/* ── Sync button — leader only (AC-12) ──────────────────────────────── */}
-        {isLeader && (
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            {/* ── Per-song Go Live sync status (D-4 / D-5 / D-6) ───────────── */}
-            {liveSyncState && liveSyncState.status !== "idle" && (
-              <div
-                className="inline-flex items-center gap-1 text-xs"
-                aria-live="polite"
+      {/* ── Song header (Standard or Compact) (AC-15) ──────────────────────── */}
+      {isCompactHeader ? (
+        <div className="flex items-center justify-between gap-3 mb-3 border-b border-brand-brown/15 dark:border-brand-tan/15 pb-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <h2 className="text-lg font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream truncate">
+              {title}
+            </h2>
+            <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan truncate">
+              {artist}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-brand-brown/10 dark:bg-brand-tan/10 text-brand-brown dark:text-brand-tan">
+              Key: {currentKey}
+            </span>
+            {isLeader && (
+              <button
+                type="button"
+                onClick={handleSync}
+                disabled={isPending}
+                aria-label={
+                  syncSuccess ? "Key synced" : "Sync current key to setlist"
+                }
+                title="Sync key to setlist"
+                className={[
+                  "inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border transition-colors duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan",
+                  isPending
+                    ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
+                    : syncSuccess
+                      ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
+                      : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                ].join(" ")}
               >
-                {liveSyncState.status === "saving" && (
-                  <>
-                    <Loader2
-                      size={12}
-                      className="animate-spin text-brand-brown dark:text-brand-tan"
-                      aria-hidden="true"
-                    />
-                    <span className="text-brand-brown dark:text-brand-tan">
-                      Saving…
-                    </span>
-                  </>
-                )}
-                {liveSyncState.status === "saved" && (
-                  <>
-                    <Check
-                      size={12}
-                      className="text-green-600 dark:text-green-400"
-                      aria-hidden="true"
-                    />
-                    <span className="text-green-600 dark:text-green-400">
-                      Synced
-                    </span>
-                  </>
-                )}
-                {liveSyncState.status === "error" && (
-                  <span
-                    role="alert"
-                    className="text-xs text-red-500 max-w-[200px] text-right"
-                  >
-                    {liveSyncState.errorMessage}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleSync}
-              disabled={isPending}
-              aria-label={
-                syncSuccess ? "Key synced" : "Sync current key to setlist"
-              }
-              className={[
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-                "text-xs font-semibold",
-                "border",
-                "transition-colors duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
-                isPending
-                  ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
-                  : syncSuccess
-                    ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
-                    : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-              ].join(" ")}
-            >
-              {isPending ? (
-                <>
+                {isPending ? (
                   <Loader2
-                    size={13}
+                    size={11}
                     className="animate-spin"
                     aria-hidden="true"
                   />
-                  Syncing…
-                </>
-              ) : syncSuccess ? (
-                <>
-                  <Check size={13} aria-hidden="true" />
-                  Synced
-                </>
-              ) : (
-                <>
-                  <RefreshCw size={13} aria-hidden="true" />
-                  Sync to Setlist
-                </>
-              )}
-            </button>
-
-            {/* ── Inline error state (AC-15) ────────────────────────────────── */}
-            {syncError && (
-              <p
-                role="alert"
-                className="text-xs text-red-600 dark:text-red-400 max-w-[200px] text-right"
-              >
-                {syncError}
-              </p>
+                ) : syncSuccess ? (
+                  <Check size={11} aria-hidden="true" />
+                ) : (
+                  <RefreshCw size={11} aria-hidden="true" />
+                )}
+              </button>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-brand-espresso dark:text-brand-cream mb-0.5">
+              {title}
+            </h2>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan">
+              {artist}
+            </p>
+          </div>
+
+          {/* ── Sync button — leader only (AC-12) ──────────────────────────────── */}
+          {isLeader && (
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {/* ── Per-song Go Live sync status (D-4 / D-5 / D-6) ───────────── */}
+              {liveSyncState && liveSyncState.status !== "idle" && (
+                <div
+                  className="inline-flex items-center gap-1 text-xs"
+                  aria-live="polite"
+                >
+                  {liveSyncState.status === "saving" && (
+                    <>
+                      <Loader2
+                        size={12}
+                        className="animate-spin text-brand-brown dark:text-brand-tan"
+                        aria-hidden="true"
+                      />
+                      <span className="text-brand-brown dark:text-brand-tan">
+                        Saving…
+                      </span>
+                    </>
+                  )}
+                  {liveSyncState.status === "saved" && (
+                    <>
+                      <Check
+                        size={12}
+                        className="text-green-600 dark:text-green-400"
+                        aria-hidden="true"
+                      />
+                      <span className="text-green-600 dark:text-green-400">
+                        Synced
+                      </span>
+                    </>
+                  )}
+                  {liveSyncState.status === "error" && (
+                    <span
+                      role="alert"
+                      className="text-xs text-red-500 max-w-[200px] text-right"
+                    >
+                      {liveSyncState.errorMessage}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSync}
+                disabled={isPending}
+                aria-label={
+                  syncSuccess ? "Key synced" : "Sync current key to setlist"
+                }
+                className={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+                  "text-xs font-semibold",
+                  "border",
+                  "transition-colors duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                  isPending
+                    ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
+                    : syncSuccess
+                      ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
+                      : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                ].join(" ")}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2
+                      size={13}
+                      className="animate-spin"
+                      aria-hidden="true"
+                    />
+                    Syncing…
+                  </>
+                ) : syncSuccess ? (
+                  <>
+                    <Check size={13} aria-hidden="true" />
+                    Synced
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={13} aria-hidden="true" />
+                    Sync to Setlist
+                  </>
+                )}
+              </button>
+
+              {/* ── Inline error state (AC-15) ────────────────────────────────── */}
+              {syncError && (
+                <p
+                  role="alert"
+                  className="text-xs text-red-600 dark:text-red-400 max-w-[200px] text-right"
+                >
+                  {syncError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── YouTube section ──────────────────────────────────────────────────── */}
       {/*
@@ -499,6 +558,8 @@ function SetlistSongSection({
         chordFontSize={chordFontSize}
         chordBg={chordBg}
         chordColor={chordColor}
+        lineHeight={lineHeight}
+        hideToolbar={hideChordToolbar}
         sectionIdPrefix={junctionId}
       />
 
