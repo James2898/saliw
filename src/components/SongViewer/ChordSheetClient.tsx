@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import type { ProcessedLine } from "@/utils/musicLogic";
 import { NOTES, shiftChord, getSemitoneOffset } from "@/utils/musicLogic";
 import { useTranspose } from "@/hooks/useTranspose";
@@ -102,6 +102,9 @@ interface ChordSheetClientProps {
    * RF-2 guard: effect must NOT call setTargetKey when externalKey === displayKey.
    */
   externalKey?: string;
+  /** Whether the viewer is currently following a live leader */
+  isFollowing?: boolean;
+
   /**
    * Optional callback for Go Live auto-persist.
    * Fired alongside onKeyChange in the same useEffect. Only when provided.
@@ -172,6 +175,7 @@ export default function ChordSheetClient({
   onKeyChange,
   onChordClick,
   externalKey,
+  isFollowing = false,
   onKeyChangeLive,
   externalChordsHidden,
   injectedAutoScroll,
@@ -189,11 +193,45 @@ export default function ChordSheetClient({
   const {
     semitoneOffset,
     displayKey,
-    increment,
-    decrement,
-    setTargetKey,
+    increment: baseIncrement,
+    decrement: baseDecrement,
+    setTargetKey: baseSetTargetKey,
     reset,
   } = useTranspose(originalKey, initialKey);
+
+  // Manual override tracking: if follower manually transposes, lock out incoming leader keys
+  const [isOverridingLeader, setIsOverridingLeader] = useState(false);
+
+  const increment = useCallback(() => {
+    if (isFollowing) {
+      setIsOverridingLeader(true);
+    }
+    baseIncrement();
+  }, [isFollowing, baseIncrement]);
+
+  const decrement = useCallback(() => {
+    if (isFollowing) {
+      setIsOverridingLeader(true);
+    }
+    baseDecrement();
+  }, [isFollowing, baseDecrement]);
+
+  const setTargetKey = useCallback(
+    (key: string) => {
+      if (isFollowing) {
+        setIsOverridingLeader(true);
+      }
+      baseSetTargetKey(key);
+    },
+    [isFollowing, baseSetTargetKey]
+  );
+
+  const handleResetToLeader = useCallback(() => {
+    setIsOverridingLeader(false);
+    if (externalKey !== undefined) {
+      baseSetTargetKey(externalKey);
+    }
+  }, [externalKey, baseSetTargetKey]);
 
   // When font size is controlled externally (setlist viewer), use the injected values.
   // When used standalone (single song viewer / song editor), fall back to the internal hook.
@@ -290,14 +328,22 @@ export default function ChordSheetClient({
   // RF-2 guard: react to externally injected key changes from Follow Leader mode.
   // Must NOT fire on initial mount when externalKey === originalKey to avoid
   // a redundant DOM chord mutation for every song in the setlist.
+  // AC-3: If follower is manually overriding leader, ignore incoming externalKey updates.
   useEffect(() => {
     if (externalKey !== undefined && externalKey !== displayKey) {
-      setTargetKey(externalKey);
+      if (!isOverridingLeader) {
+        baseSetTargetKey(externalKey);
+      }
     }
-    // Intentionally omit displayKey from deps — we only want to react when externalKey changes.
-    // Including displayKey would cause a feedback loop: setTargetKey → displayKey changes → effect re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalKey]);
+  }, [externalKey, isOverridingLeader]);
+
+  // When follower mode is turned off, clear any active key override
+  useEffect(() => {
+    if (!isFollowing) {
+      setIsOverridingLeader(false);
+    }
+  }, [isFollowing]);
 
   // Sync local chordsHidden state when the global toolbar toggle changes.
   useEffect(() => {
@@ -498,6 +544,21 @@ export default function ChordSheetClient({
                   >
                     Reset
                   </button>
+                )}
+
+                {/* AC-3: Follower override badge and Reset to Leader button */}
+                {isFollowing && isOverridingLeader && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
+                    <span>Overriding leader •</span>
+                    <button
+                      type="button"
+                      onClick={handleResetToLeader}
+                      aria-label="Reset to leader's key"
+                      className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded"
+                    >
+                      [Reset to Leader]
+                    </button>
+                  </span>
                 )}
 
                 {/* Original key indicator */}

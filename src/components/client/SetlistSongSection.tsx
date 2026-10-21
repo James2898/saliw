@@ -25,6 +25,8 @@ interface SetlistSongSectionProps {
   youtubeUrl?: string | null;
   /** True when the authenticated viewer is a music_director. */
   isMusicDirector?: boolean;
+  /** Whether the viewer is currently following a live leader */
+  isFollowing?: boolean;
   /** NEW — Key override from Follow Leader mode. Passed to ChordSheetClient as externalKey. */
   overrideKey?: string;
   /** NEW — Callback for every key change for debounced Go Live persist. */
@@ -95,6 +97,7 @@ function SetlistSongSection({
   isLeader,
   youtubeUrl: initialYoutubeUrl = null,
   isMusicDirector = false,
+  isFollowing = false,
   overrideKey,
   onKeyChangeLive,
   liveSyncState,
@@ -544,6 +547,7 @@ function SetlistSongSection({
         onKeyChange={handleKeyChange}
         onChordClick={onChordClick}
         externalKey={overrideKey}
+        isFollowing={isFollowing}
         onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
         externalChordsHidden={externalChordsHidden}
         injectedAutoScroll={autoScroll}
