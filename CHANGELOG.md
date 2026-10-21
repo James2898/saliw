@@ -7,6 +7,15 @@ All notable changes to the Saliw Music Portal are documented here.
 ## [Unreleased] — 2026-10-20
 
 ### Added
+- Setlist Display Layout Settings, Line Spacing Stepper, and Page View Mode (`TASK-20261020-347`)
+  - Layout tab in `SetlistSettingsModal` with line spacing stepper (1.2–2.4, default 1.8), content width toggle (Centered vs Full Width), layout mode selection (Continuous Scroll vs Page View), and column options (1, 2, or 3 side-by-side columns) (AC-1, AC-2, AC-3, AC-5, AC-6, AC-18)
+  - Dynamic `--chord-line-height` variable injection on `.chord-display`, `.chord-row`, and `.lyric-row` for real-time line spacing updates without reload (AC-4)
+  - Single song display in Page View mode with responsive column collapse (`columns-1 lg:columns-2 xl:columns-3`), auto-scroll toolbar deactivation, and sticky `ServiceNavigator` direct selection integration (AC-7, AC-8, AC-9)
+  - Centralized keyboard navigation (`Space`, `ArrowRight`, `ArrowLeft`) with input and modal guards, and subtle on-screen edge navigation hitboxes (AC-10, AC-11, AC-12, AM-2)
+  - Long song multi-page overflow stepping via horizontal CSS multi-column pagination and container width translation, plus optional fit-to-screen dynamic font scaling (AC-13, AC-14)
+  - Compact song header with Key badge, setlist sync button, and Transpose & Capo expandable controls popover (AC-15)
+  - Client-side preference persistence in `localStorage` under `saliw-layout-settings` and per-song column overrides under `saliw-song-columns` with SSR-safe lazy initialization and full-width container delegation (AC-16, AC-17, AM-1, AM-3)
+  - Affected files: `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/app/setlists/[id]/page.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/ServiceNavigator.tsx`, `src/components/client/SetlistSettingsModal.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/hooks/useSetlistLayout.ts`, `src/styles/globals.css`
 - Saliw V2: Real-time Multi-Device Stage Sync (`TASK-20261020-7db`)
   - Multiplexed Supabase Realtime channel (`setlist_sync:${setlistId}`) for Broadcast and Presence tracking, with connection lifecycle states (`CONNECTING`, `CONNECTED`, `DISCONNECTED`, `RECONNECTING`) and explicit untrack on unmount (`channel.untrack()`) (AC-1, AM-1)
   - Leader broadcast coordination for song navigation (`SONG_CHANGE`), transposition key changes (`KEY_CHANGE`), section jumps (`SECTION_CHANGE`), and ratio-based autoscroll (`SCROLL_SYNC`) with monotonic sequence counter timestamps (AC-2, AM-2)
