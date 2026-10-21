@@ -1,6 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import SongTagBadge from "@/components/SongTags/SongTagBadge";
+import { STANDARD_SONG_TAGS } from "@/types/Song";
 import type { SongLibraryItem } from "./SetlistBuilderClient";
+
+const TAG_OPTIONS = [
+  { label: "All", value: null },
+  ...STANDARD_SONG_TAGS.map((t) => ({ label: t.label, value: t.value })),
+];
 
 interface LibraryPanelProps {
   songs: SongLibraryItem[];
@@ -23,6 +31,8 @@ export default function LibraryPanel({
   libraryError,
   listClassName,
 }: LibraryPanelProps) {
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
   // ── Library fetch error ────────────────────────────────────────────────────
   if (libraryError) {
     return (
@@ -53,20 +63,59 @@ export default function LibraryPanel({
 
   // ── Client-side filtered list ──────────────────────────────────────────────
   const lowerQuery = query.toLowerCase();
-  const filtered =
-    query.trim() === ""
-      ? songs
-      : songs.filter(
-          (s) =>
-            s.title.toLowerCase().includes(lowerQuery) ||
-            s.artist.toLowerCase().includes(lowerQuery)
-        );
+  const filtered = songs.filter((s) => {
+    const matchesQuery =
+      query.trim() === "" ||
+      s.title.toLowerCase().includes(lowerQuery) ||
+      s.artist.toLowerCase().includes(lowerQuery);
+
+    const matchesTag =
+      !selectedTag ||
+      (s.tags &&
+        s.tags.some(
+          (t) => t.trim().toLowerCase() === selectedTag.toLowerCase()
+        ));
+
+    return matchesQuery && matchesTag;
+  });
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest">
         Song Library
       </p>
+
+      {/* Tag quick filter bar */}
+      <div
+        className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none"
+        role="group"
+        aria-label="Filter library by tag"
+      >
+        {TAG_OPTIONS.map(({ label, value }) => {
+          const isActive =
+            value === null
+              ? !selectedTag
+              : selectedTag?.toLowerCase() === value.toLowerCase();
+
+          return (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => setSelectedTag(value)}
+              className={[
+                "px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 border transition-all duration-200 cursor-pointer select-none",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                isActive
+                  ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-cream dark:text-brand-espresso dark:border-brand-cream shadow-xs"
+                  : "bg-brand-cream/60 dark:bg-brand-espresso/60 text-brand-brown dark:text-brand-tan border-brand-brown/20 dark:border-brand-tan/20 hover:border-brand-brown hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Search input */}
       <input
@@ -103,9 +152,18 @@ export default function LibraryPanel({
                 className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/10 dark:border-brand-tan/15"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">
-                    {song.title}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">
+                      {song.title}
+                    </p>
+                    {song.tags && song.tags.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {song.tags.map((t) => (
+                          <SongTagBadge key={t} tag={t} size="sm" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {song.artist && (
                     <p className="text-brand-brown/70 dark:text-brand-tan/70 text-xs truncate">
                       {song.artist}

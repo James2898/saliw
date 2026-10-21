@@ -16,6 +16,7 @@ interface PaginationControlsProps {
   q?: string;
   basePath?: string;
   letter?: string;
+  tag?: string;
 }
 
 // BUG-007: buildUrl declared before useRouter hook reference below
@@ -24,13 +25,15 @@ function buildUrl(
   basePath: string,
   pageSize: number,
   q?: string,
-  letter?: string
+  letter?: string,
+  tag?: string
 ): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   params.set("pageSize", String(pageSize));
   params.set("page", String(page));
   if (letter) params.set("letter", letter);
+  if (tag) params.set("tag", tag);
   return `${basePath}?${params.toString()}`;
 }
 
@@ -41,6 +44,7 @@ export default function PaginationControls({
   q,
   basePath = "/library",
   letter,
+  tag,
 }: PaginationControlsProps) {
   const router = useRouter();
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -57,7 +61,7 @@ export default function PaginationControls({
         variant="ghost"
         size="sm"
         onClick={() =>
-          router.replace(buildUrl(1, basePath, pageSize, q, letter))
+          router.replace(buildUrl(1, basePath, pageSize, q, letter, tag))
         }
         disabled={isFirst}
         aria-label="Go to first page"
@@ -71,7 +75,7 @@ export default function PaginationControls({
         size="sm"
         onClick={() =>
           router.replace(
-            buildUrl(currentPage - 1, basePath, pageSize, q, letter)
+            buildUrl(currentPage - 1, basePath, pageSize, q, letter, tag)
           )
         }
         disabled={isFirst}
@@ -93,7 +97,7 @@ export default function PaginationControls({
         size="sm"
         onClick={() =>
           router.replace(
-            buildUrl(currentPage + 1, basePath, pageSize, q, letter)
+            buildUrl(currentPage + 1, basePath, pageSize, q, letter, tag)
           )
         }
         disabled={isLast}
@@ -107,7 +111,7 @@ export default function PaginationControls({
         variant="ghost"
         size="sm"
         onClick={() =>
-          router.replace(buildUrl(totalPages, basePath, pageSize, q, letter))
+          router.replace(buildUrl(totalPages, basePath, pageSize, q, letter, tag))
         }
         disabled={isLast}
         aria-label="Go to last page"
