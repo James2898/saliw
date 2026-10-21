@@ -23,6 +23,7 @@ supabase/.temp
 
 # Playwright MCP artifacts
 .playwright-mcp/
+.qa/
 
 # Claude Code local settings
 .claude/settings.local.json
