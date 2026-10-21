@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import {
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
 import {
   Pencil,
@@ -237,7 +244,14 @@ export default function SetlistViewerClient({
   const { fontSize } = fontSizeControls;
   const { chordFontSize } = chordFontSizeControls;
 
-  const isPageMode = layoutMode === "page";
+  // SSR hydration mount guard (BUG-020): useSyncExternalStore avoids react-hooks/set-state-in-effect
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
+  const isPageMode = isMounted && layoutMode === "page";
 
   // When Page View mode is active, autoScroll toolbar and listeners are disabled (AC-9)
   const autoScroll = useAutoScroll({ enabled: !isPageMode });
