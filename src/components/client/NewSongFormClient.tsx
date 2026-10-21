@@ -7,6 +7,7 @@ import { NOTES, preProcessChords } from "@/utils/musicLogic";
 import { createSong } from "@/app/actions/songActions";
 import { normaliseYouTubeUrl } from "@/utils/youtube";
 import ChordSheetClient from "@/components/SongViewer/ChordSheetClient";
+import SongTagSelector from "@/components/SongTags/SongTagSelector";
 
 const inputBaseClass = [
   "w-full px-3 py-2 rounded-xl",
@@ -42,6 +43,7 @@ export default function NewSongFormClient() {
   const [originalKey, setOriginalKey] = useState<string>(NOTES[0]);
   const [singer, setSinger] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export default function NewSongFormClient() {
         content,
         singer: singer.trim() || undefined,
         youtube_url: normalisedYoutubeUrl,
+        tags,
       });
 
       if (result.error) {
@@ -187,6 +190,22 @@ export default function NewSongFormClient() {
           />
           <p className="mt-1 text-xs text-brand-brown/60 dark:text-brand-tan/60">
             Optional. Saved as a canonical embed URL.
+          </p>
+        </div>
+
+        {/* Tags selector — spans full width on sm+ */}
+        <div className="sm:col-span-2">
+          <span className={labelClass}>Tags</span>
+          <SongTagSelector
+            selectedTags={tags}
+            onChange={(newTags) => {
+              setTags(newTags);
+              if (error) setError(null);
+            }}
+            disabled={isSaving}
+          />
+          <p className="mt-1 text-xs text-brand-brown/60 dark:text-brand-tan/60">
+            Categorize musical vibe and genre for setlist curation.
           </p>
         </div>
       </div>

@@ -47,6 +47,8 @@ interface AlphabetFilterProps {
   q?: string;
   /** Pass current page size so navigation preserves it */
   pageSize?: number;
+  /** Pass current tag so navigation preserves it */
+  tag?: string;
 }
 
 // BUG-007: buildUrl declared above any hook that references it.
@@ -54,7 +56,8 @@ function buildUrl(
   basePath: string,
   letter: string | null,
   q: string | undefined,
-  pageSize: number | undefined
+  pageSize: number | undefined,
+  tag: string | undefined
 ): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
@@ -62,6 +65,7 @@ function buildUrl(
   // Always reset page to 1 when changing letter filter (AC-6)
   params.set("page", "1");
   if (letter) params.set("letter", letter);
+  if (tag) params.set("tag", tag);
   return `${basePath}?${params.toString()}`;
 }
 
@@ -82,6 +86,7 @@ export default function AlphabetFilter({
   basePath,
   q,
   pageSize,
+  tag,
 }: AlphabetFilterProps) {
   const router = useRouter();
 
@@ -90,9 +95,9 @@ export default function AlphabetFilter({
     (letter: string | null) => {
       // Clicking an active letter deselects it (AC-5)
       const next = letter === activeLetter ? null : letter;
-      router.replace(buildUrl(basePath, next, q, pageSize));
+      router.replace(buildUrl(basePath, next, q, pageSize, tag));
     },
-    [router, activeLetter, basePath, q, pageSize]
+    [router, activeLetter, basePath, q, pageSize, tag]
   );
 
   return (

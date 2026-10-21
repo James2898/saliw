@@ -5,6 +5,7 @@ import { preProcessChords } from "@/utils/musicLogic";
 import Card from "@/components/server/card";
 import SongDetailClient from "./SongDetailClient";
 import SongYouTubeSection from "@/components/client/SongYouTubeSection";
+import SongTagBadge from "@/components/SongTags/SongTagBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -61,11 +62,19 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
   }
 
   // ── Fetch song ──────────────────────────────────────────────────────────────
-  const songResult = await supabase
+  let songResult = await supabase
     .from("songs")
-    .select("id, title, artist, original_key, content, youtube_url")
+    .select("id, title, artist, original_key, content, youtube_url, tags")
     .eq("id", id)
     .single();
+
+  if (songResult.error && songResult.error.code === "42703") {
+    songResult = (await supabase
+      .from("songs")
+      .select("id, title, artist, original_key, content, youtube_url")
+      .eq("id", id)
+      .single()) as typeof songResult;
+  }
 
   const song = songResult.data;
   const songError = songResult.error;
@@ -155,6 +164,14 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
             <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan bg-brand-cream dark:bg-brand-espresso rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
               Key of {song.original_key}
             </span>
+            {/* Active tag badges */}
+            {song.tags && song.tags.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {song.tags.map((tag: string) => (
+                  <SongTagBadge key={tag} tag={tag} size="md" />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
