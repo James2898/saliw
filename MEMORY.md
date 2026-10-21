@@ -33,6 +33,16 @@
   - **Resolution:** In `src/app/setlists/[id]/SetlistViewerClient.tsx`, measured the viewport container height (`clientHeight`) and stepped translation in explicit pixels: `translateY(-${subPageIndex * containerHeight}px)`. Used `ResizeObserver` with `requestAnimationFrame` to measure container and content dimensions asynchronously, avoiding synchronous `setState` in `useEffect` recursion.
   - **Prevention:** In CSS, percentage offsets in `transform: translateY(N%)` are always relative to the element's own bounding box, not its overflow parent. When implementing virtualized pagination or multi-page sliding containers where content overflows a fixed container, never use percentage-based transforms to step through pages. Always step in explicit pixels derived from the measured container viewport height (`subPageIndex * containerHeight`), and observe dimension changes via `ResizeObserver` decoupled with `requestAnimationFrame` to avoid `set-state-in-effect` loops.
 
+- **BUG-022** | 2026-10-21 | Feature: `Setlist Layout (TASK-20261020-347)`
+  - **Root Cause:** Running `next build` while `next dev` was actively running in the same workspace directory overwrote `.next/` with production chunk manifests, corrupting the dev server Webpack runtime cache and throwing `Cannot find module './vendor-chunks/@supabase.js'`.
+  - **Resolution:** Terminated the background dev process, purged `.next/` (`rm -rf .next`), and restarted the dev server cleanly.
+  - **Prevention:** Never run `next build` in a workspace where `next dev` is actively running. Either terminate the dev process before running production build verification, or clean `.next/` before resuming `next dev`.
+
+- **BUG-023** | 2026-10-21 | Feature: `Setlist Layout & Page View (TASK-20261020-347)`
+  - **Root Cause:** Applying CSS `transform: scale(fitScale)` to a multi-column container (`columns: N; column-fill: auto;`) does not trigger column text reflow because transforms are post-layout visual compositing operations. Hardcoding `totalSubPages = 1` trapped users on page 1 and cut off overflowing content.
+  - **Resolution:** Maintained fixed viewport container height (`containerHeight - 44px`), adjusted font size directly (`--chord-font-size`) so browser layout reflows text naturally into columns, and dynamically derived `totalSubPages` from measured `scrollWidth / clientWidth` using horizontal translation (`translateX(-${subPageIndex * 100}%)`).
+  - **Prevention:** Never use CSS `transform: scale()` to reflow text in CSS multi-column layouts. To adjust how much text fits into columns, adjust font size or line height. Never hardcode `totalSubPages = 1` on overflow-fit features; always calculate sub-pages from measured scroll dimensions so overflowing content can always be navigated.
+
 ---
 
 ## Architecture
