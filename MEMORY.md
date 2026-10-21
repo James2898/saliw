@@ -52,9 +52,19 @@
   - **Resolution:** Replaced all wildcard class pattern strings with concrete specific examples (e.g. `bg-[var(--brand-tan-alpha)]`) so Tailwind no longer generates invalid classes from documentation text.
   - **Prevention:** Never write Tailwind arbitrary-value class patterns with a wildcard asterisk as literal strings in any file at or below the project root — including `.md` docs and inline code comments. Tailwind v4 will treat them as real classes and attempt to emit CSS. Use a concrete specific value or describe the pattern in prose.
 
+- **BUG-025** | 2026-10-21 | Feature: `Git Worktree Dev Server`
+  - **Root Cause:** Running `npm run dev -- --turbopack` inside a git worktree where `node_modules` is a symlink fails with `TurbopackInternalError: Symlink node_modules is invalid`.
+  - **Resolution:** Run standard Next.js dev server without Turbopack (`npx next dev -p <port>`) in worktrees.
+  - **Prevention:** When starting a development server in a git worktree with symlinked `node_modules`, do not pass `--turbopack`. Always invoke standard Webpack Next dev: `npx next dev -p <port>`.
+
 ---
 
 ## Auth & Permissions
+
+- **BUG-023** | 2026-10-21 | Feature: `Song Tags Batch Tagger Tooling`
+  - **Root Cause:** A standalone helper HTML file (`batch-tagger.html`) created for bulk data updates hardcoded the Supabase `service_role` secret in client JavaScript and was committed to git, exposing root database credentials on a public repository and pull request.
+  - **Resolution:** Immediately performed `git reset --hard` to the pre-leak commit, force-pushed to origin to purge the commits from git history and PR diff, rotated the `service_role` key in the Supabase dashboard, added `batch-tagger.html` to `.gitignore`, and updated the HTML tool to read API keys exclusively from `sessionStorage` via an in-browser password prompt.
+  - **Prevention:** Never hardcode Supabase API keys (especially `service_role` or secret keys) in standalone scripts, HTML files, scratch files, or documentation. Any ad-hoc administrative or data curation scripts must: (1) load keys dynamically from local environment variables or in-browser `sessionStorage`, (2) never be placed in `public/` web root, and (3) be explicitly added to `.gitignore` before creation.
 
 - **BUG-011** | 2026-04-27 | Feature: `Setlist Lineup UI (TASK-033)`
   - **Root Cause:** When the `musicians` table SELECT policy was widened from `auth.role() = 'authenticated'` to `USING (true)` (migration `supabase/migrations/20260427000001_widen_lineup_select_to_public.sql`), only `listMusicians()` was narrowed to `'id, name'`. `getMusicianById()` in `src/app/actions/musicianActions.ts` was not audited and continues to select all columns including `notes` (free-text) and `created_by` (raw `auth.users` UUID). Because the table is now publicly readable, any future public-facing code path that calls this action will leak internal fields to unauthenticated callers.
@@ -93,3 +103,9 @@
   - **Root Cause:** In `src/hooks/useSetlistSync.ts`, unmount and channel cleanup invoked `supabase.removeChannel(channel)` without first calling `channel.untrack()`. Supabase Realtime Presence does not immediately evict client presence on channel removal alone; presence records remain active on the channel until the server-side heartbeat timeout expires (30–60s), causing "zombie" leader/follower device counts in live stage sessions.
   - **Resolution:** Added `channelRef.current.untrack().catch(() => {})` in the unmount/cleanup handler of `src/hooks/useSetlistSync.ts` immediately before calling `supabase.removeChannel(channelRef.current)`.
   - **Prevention:** When using Supabase Realtime Presence (`channel.track()`), always explicitly call `channel.untrack()` in the component unmount or channel teardown cleanup block before `supabase.removeChannel()`. Never rely on `removeChannel()` alone to purge presence state, as presence persists on the channel topic until server heartbeat timeout.
+
+- **BUG-024** | 2026-10-21 | Feature: `Supabase Auth & API Key Migration`
+  - **Root Cause:** The remote Supabase instance disabled legacy JWT API keys (`anon`, `service_role`), returning `HTTP 401 UNAUTHORIZED_DISABLED_LEGACY_KEY`. Application client factories initially assumed `NEXT_PUBLIC_SUPABASE_ANON_KEY`, causing connection failures when legacy keys were revoked.
+  - **Resolution:** Updated client factories (`client.ts`, `server.ts`, `middleware.ts`) to prioritize `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_...`), updated `.env.local`, and updated documentation (`README.md`, `docs/tech-stack.md`).
+  - **Prevention:** This Supabase project exclusively uses modern Publishable Keys (`sb_publishable_...`) and Secret Keys (`sb_secret_...`). Legacy JWT `anon` and `service_role` keys are disabled and will always return 401. Always check for `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in environment configurations.
+
