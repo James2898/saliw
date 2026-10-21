@@ -182,8 +182,22 @@ body {
 }
 
 .chord-display .chord-row,
-.chord-display .lyric-row {
+.chord-display .lyric-row,
+.chord-display .section-title {
   line-height: var(--chord-line-height, 1.8);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Prevent orphan chord lines and headers from breaking at column boundaries */
+.chord-display .chord-row {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.chord-display .section-title {
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 /* ── Stage-Ready Controls ───────────────────────────────────────────────── */
