@@ -46,6 +46,17 @@
 - **Dark Mode:** In dark mode, the page background is `--brand-darker` while card containers use `--brand-espresso` for depth.
 - **Typography:** Use 'Plus Jakarta Sans' for UI and 'JetBrains Mono' for chord sheets to ensure alignment.
 
+### Toolbar & Action Strips (Mobile Responsive)
+
+- **Flex Wrapping:** Never use fixed `flex items-center` without `flex-wrap` on header toolbars with 3+ actions. Always use `flex flex-wrap items-center gap-2 sm:gap-3` to prevent mobile horizontal clipping.
+- **Unified Button Height:** Sibling toolbar buttons must align to standard 32px height (`h-8` or `px-3 py-1.5 text-xs font-semibold rounded-lg`). Composite pills must match this baseline rather than creating oversized widgets.
+
+### Component Replacement & Cleanup
+
+When introducing a composite component that supersedes existing individual controls (e.g., `StageSyncControls` replacing `GoLiveButton` and `FollowLeaderButton`):
+- Explicitly delete the superseded component callsites and their unused prop/state slices from parent wrappers.
+- Do not keep redundant legacy buttons mounted in parallel unless an explicit backward-compatibility flag is requested.
+
 ---
 
 ## Musical Integrity
