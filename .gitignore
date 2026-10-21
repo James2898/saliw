@@ -37,3 +37,7 @@ supabase/.temp
 *.njsproj
 *.sln
 *.sw?
+
+# Local Admin Tools
+batch-tagger.html
+
