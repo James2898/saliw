@@ -7,6 +7,8 @@ import NewSongButton from "@/components/library/NewSongButton";
 import PaginationControls from "@/components/client/PaginationControls";
 import PageSizeSelect from "@/components/client/PageSizeSelect";
 import AlphabetFilter from "@/components/client/AlphabetFilter";
+import TagFilterBar from "@/components/SongTags/TagFilterBar";
+import SongTagBadge from "@/components/SongTags/SongTagBadge";
 import type { SongSummary } from "@/types/Song";
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ interface LibraryPageProps {
     page?: string;
     pageSize?: string;
     letter?: string;
+    tag?: string;
   }>;
 }
 
@@ -46,6 +49,10 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     rawLetter.length === 1 && rawLetter >= "A" && rawLetter <= "Z"
       ? rawLetter
       : null;
+
+  // Sanitize tag param
+  const rawTag = params.tag?.trim().toLowerCase() ?? "";
+  const tag = rawTag.length > 0 ? rawTag : null;
 
   // Parse pageSize param — validate against allowed set, default to 10
   const rawPageSize = parseInt(params.pageSize ?? "10", 10);
@@ -85,7 +92,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   try {
     let query = supabase
       .from("songs")
-      .select("id, title, artist, original_key", {
+      .select("id, title, artist, original_key, tags", {
         count: "exact",
         head: false,
       })
@@ -100,6 +107,11 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       query = query.ilike("title", `${letter}%`);
     }
 
+    // Tag filter: contains tag in text[] array
+    if (tag) {
+      query = query.contains("tags", [tag]);
+    }
+
     const offset = (requestedPage - 1) * pageSize;
     const {
       data,
@@ -107,7 +119,33 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       count: rowCount,
     } = await query.range(offset, offset + pageSize - 1);
 
-    if (error) {
+    if (error && error.code === "42703") {
+      let fallbackQuery = supabase
+        .from("songs")
+        .select("id, title, artist, original_key", {
+          count: "exact",
+          head: false,
+        })
+        .order("title", { ascending: true });
+
+      if (q) {
+        fallbackQuery = fallbackQuery.or(`title.ilike.%${q}%,artist.ilike.%${q}%`);
+      }
+      if (letter) {
+        fallbackQuery = fallbackQuery.ilike("title", `${letter}%`);
+      }
+
+      const fallbackRes = await fallbackQuery.range(offset, offset + pageSize - 1);
+      if (fallbackRes.error) {
+        fetchError = true;
+      } else {
+        songs = ((fallbackRes.data ?? []) as SongRow[]).map((s) => ({
+          ...s,
+          tags: [],
+        }));
+        count = fallbackRes.count;
+      }
+    } else if (error) {
       fetchError = true;
     } else {
       songs = (data ?? []) as SongRow[];
@@ -126,13 +164,21 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   // ── Derived empty-state message ─────────────────────────────────────────────
   const emptyMessage = fetchError
     ? "Unable to load songs. Please try again."
-    : letter && q
-      ? `No songs starting with '${letter}' matching "${q}".`
-      : letter
-        ? `No songs starting with '${letter}'.`
-        : q
-          ? "No songs match your search."
-          : "No songs in the library yet.";
+    : tag && letter && q
+      ? `No songs tagged '${tag}' starting with '${letter}' matching "${q}".`
+      : tag && q
+        ? `No songs tagged '${tag}' matching "${q}".`
+        : tag && letter
+          ? `No songs tagged '${tag}' starting with '${letter}'.`
+          : tag
+            ? `No songs tagged '${tag}'.`
+            : letter && q
+              ? `No songs starting with '${letter}' matching "${q}".`
+              : letter
+                ? `No songs starting with '${letter}'.`
+                : q
+                  ? "No songs match your search."
+                  : "No songs in the library yet.";
 
   return (
     <main className="min-h-screen bg-brand-cream dark:bg-brand-darker px-4 py-8 sm:px-8 font-sans">
@@ -147,18 +193,20 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
         </div>
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-4">
           {totalCount} {totalCount === 1 ? "song" : "songs"}
+          {tag ? ` tagged '${tag}'` : ""}
           {letter ? ` starting with '${letter}'` : ""}
-          {q ? ` matching "${q}"` : !letter ? " in library" : ""}
+          {q ? ` matching "${q}"` : !letter && !tag ? " in library" : ""}
         </p>
 
         {/* ── Search bar + page size ───────────────────────────────────────── */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3">
           <div className="flex-1">
             <SearchBar
               defaultValue={q}
               basePath="/library"
               pageSize={pageSize}
               letter={letter ?? undefined}
+              tag={tag ?? undefined}
             />
           </div>
           <PageSizeSelect
@@ -166,8 +214,18 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
             q={q || undefined}
             basePath="/library"
             letter={letter ?? undefined}
+            tag={tag ?? undefined}
           />
         </div>
+
+        {/* ── Tag quick filter bar ─────────────────────────────────────────── */}
+        <TagFilterBar
+          activeTag={tag}
+          basePath="/library"
+          q={q || undefined}
+          letter={letter ?? undefined}
+          pageSize={pageSize}
+        />
 
         {/* ── Alphabet filter bar ──────────────────────────────────────────── */}
         <AlphabetFilter
@@ -175,6 +233,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           basePath="/library"
           q={q || undefined}
           pageSize={pageSize}
+          tag={tag ?? undefined}
         />
 
         {/* ── Song list ────────────────────────────────────────────────────── */}
@@ -206,9 +265,18 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                     aria-label={`View ${song.title} by ${song.artist}`}
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
-                        {song.title}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
+                          {song.title}
+                        </p>
+                        {song.tags && song.tags.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            {song.tags.map((t) => (
+                              <SongTagBadge key={t} tag={t} size="sm" />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <p className="truncate text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5">
                         {song.artist}
                       </p>
@@ -249,6 +317,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
               q={q || undefined}
               basePath="/library"
               letter={letter ?? undefined}
+              tag={tag ?? undefined}
             />
           </div>
         )}
