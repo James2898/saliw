@@ -124,3 +124,9 @@
   - **Resolution:** Updated client factories (`client.ts`, `server.ts`, `middleware.ts`) to prioritize `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_...`), updated `.env.local`, and updated documentation (`README.md`, `docs/tech-stack.md`).
   - **Prevention:** This Supabase project exclusively uses modern Publishable Keys (`sb_publishable_...`) and Secret Keys (`sb_secret_...`). Legacy JWT `anon` and `service_role` keys are disabled and will always return 401. Always check for `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in environment configurations.
 
+- **BUG-026** | 2026-10-23 | Feature: `English Hymnal Artist Numbering Update`
+  - **Root Cause:** When migrating legacy seeder records to new column values (e.g. `artist = 'English Hymnal #N'`), updating title strings in the migration to "cleaner" names while the seeder markdown retained old names creates duplicate rows on subsequent seeder runs (`onConflict: 'title,artist'`).
+  - **Resolution:** Re-aligned migration titles to match the source seeder titles exactly (173/173 match), and updated `import-hymns.ts` to construct `English Hymnal #<N>` dynamically so subsequent upserts match `(title, artist)` cleanly without creating duplicate rows.
+  - **Prevention:** When updating columns that form a composite unique key (like `title, artist`), always ensure both data migrations and bulk seeders share identical title matching logic and target strings.
+
+
