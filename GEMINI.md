@@ -40,6 +40,18 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 - **Worktree Awareness:** Antigravity often works in dedicated git worktrees (e.g. under `~/.gemini/antigravity/worktrees/`). Ensure commands and dev servers execute inside the active worktree root.
 - **Untracked Directories:** Keep test plans, verification traces, and Playwright screenshots in `.qa/` or `.playwright-mcp/` (both gitignored).
 - **Domain Memory:** For general codebase bugs (SSR hydration, Supabase `timestamptz`, React Compiler rules), refer to and update [`MEMORY.md`](./MEMORY.md).
+- **Fresh worktree setup & test commands:** A new worktree has no `node_modules` or `.env.local`. Before running `npm run test:unit` (note: there is no `npm test` script), `npm run lint`, `npx tsc --noEmit`, or `next dev`, link them from the main checkout (do not `npm install`):
+  ```bash
+  ln -sf node_modules node_modules
+  ln -sf .env.local .env.local
+  ```
+  Start the dev server with `./node_modules/.bin/next dev -p <port>` (no `--turbopack`, see MEMORY.md) and use a port other than the main checkout's. Remove the temporary symlinks (`rm -f node_modules .env.local`) before `git status` / committing so untracked symlinks are never staged.
+- **Merging PRs from a worktree:** Do not pass `--delete-branch` to `gh pr merge` when `main` is checked out in `projects/saliw` (`gh` attempts `git checkout main` locally and fails with `fatal: 'main' is already used by worktree`). Instead run:
+  ```bash
+  gh pr merge <n> --merge
+  git push origin --delete <head-branch>
+  git -C projects/saliw pull --ff-only origin main
+  ```
 
 ---
 
