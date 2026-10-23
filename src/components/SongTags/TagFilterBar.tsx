@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useOptimistic } from "react";
+import { useFilterTransition } from "@/components/library/LibraryFilterTransition";
 import { STANDARD_SONG_TAGS } from "@/types/Song";
 
 interface TagFilterBarProps {
@@ -43,12 +44,21 @@ export default function TagFilterBar({
   pageSize,
 }: TagFilterBarProps) {
   const router = useRouter();
+  const { startTransition } = useFilterTransition();
+  const [optimisticTag, setOptimisticTag] = useOptimistic(
+    activeTag,
+    (_currentTag: string | null, nextTag: string | null) => nextTag
+  );
 
   const handleSelect = useCallback(
     (tag: string | null) => {
-      router.push(buildUrl(basePath, tag, q, letter, pageSize));
+      const url = buildUrl(basePath, tag, q, letter, pageSize);
+      startTransition(() => {
+        setOptimisticTag(tag);
+        router.replace(url, { scroll: false });
+      });
     },
-    [basePath, q, letter, pageSize, router]
+    [basePath, q, letter, pageSize, router, startTransition, setOptimisticTag]
   );
 
   return (
@@ -63,8 +73,8 @@ export default function TagFilterBar({
       {TAG_OPTIONS.map(({ label, value }) => {
         const isActive =
           value === null
-            ? !activeTag
-            : activeTag?.toLowerCase() === value.toLowerCase();
+            ? !optimisticTag
+            : optimisticTag?.toLowerCase() === value.toLowerCase();
 
         return (
           <button
@@ -77,7 +87,7 @@ export default function TagFilterBar({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
               isActive
                 ? "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-cream dark:text-brand-espresso dark:border-brand-cream shadow-xs"
-                : "bg-brand-cream/60 dark:bg-brand-espresso/60 text-brand-brown dark:text-brand-tan border-brand-brown/20 dark:border-brand-tan/20 hover:border-brand-brown hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                : "bg-brand-cream/60 dark:bg-brand-espresso/60 text-brand-brown dark:text-brand-tan border-brand-brown/20 dark:border-brand-tan/20 hover:border-brand-brown dark:hover:border-brand-tan hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
             ].join(" ")}
           >
             {label}
