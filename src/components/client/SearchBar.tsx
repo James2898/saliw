@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import Button from "@/components/client/button";
+import { useFilterTransition } from "@/components/library/LibraryFilterTransition";
 
 interface SearchBarProps {
   defaultValue: string;
@@ -57,14 +58,18 @@ export default function SearchBar({
   ariaLabel = "Search songs by title or artist",
 }: SearchBarProps) {
   const router = useRouter();
+  const { startTransition } = useFilterTransition();
   // BUG-001: useState lazy initializer for values derived from props
   const [query, setQuery] = useState(() => defaultValue ?? "");
 
   const handleSearch = useCallback(
     (term: string) => {
-      router.replace(buildSearchUrl(basePath, term.trim(), pageSize, letter, tag));
+      const url = buildSearchUrl(basePath, term.trim(), pageSize, letter, tag);
+      startTransition(() => {
+        router.replace(url, { scroll: false });
+      });
     },
-    [router, basePath, pageSize, letter, tag]
+    [router, basePath, pageSize, letter, tag, startTransition]
   );
 
   const handleSubmit = useCallback(
@@ -96,10 +101,10 @@ export default function SearchBar({
           className={[
             "w-full pl-4 pr-9 py-2 rounded-xl",
             "bg-brand-cream dark:bg-brand-espresso",
-            "border border-brand-tan",
+            "border border-brand-tan dark:border-brand-tan/40",
             "font-sans text-sm text-brand-espresso dark:text-brand-cream",
-            "placeholder:text-brand-tan",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-2",
+            "placeholder:text-brand-tan dark:placeholder:text-brand-tan/60",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-2",
             "transition-colors duration-200",
           ].join(" ")}
         />
