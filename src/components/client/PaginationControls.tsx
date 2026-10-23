@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import {
   ChevronsLeft,
   ChevronLeft,
@@ -8,6 +9,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import Button from "@/components/client/button";
+import { useFilterTransition } from "@/components/library/LibraryFilterTransition";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -19,7 +21,7 @@ interface PaginationControlsProps {
   tag?: string;
 }
 
-// BUG-007: buildUrl declared before useRouter hook reference below
+// BUG-007: buildUrl declared before hooks below
 function buildUrl(
   page: number,
   basePath: string,
@@ -47,10 +49,21 @@ export default function PaginationControls({
   tag,
 }: PaginationControlsProps) {
   const router = useRouter();
+  const { startTransition } = useFilterTransition();
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const isFirst = currentPage === 1;
   const isLast = totalPages === 0 || currentPage === totalPages;
+
+  const handlePageChange = useCallback(
+    (targetPage: number) => {
+      const url = buildUrl(targetPage, basePath, pageSize, q, letter, tag);
+      startTransition(() => {
+        router.replace(url, { scroll: false });
+      });
+    },
+    [basePath, pageSize, q, letter, tag, router, startTransition]
+  );
 
   return (
     <nav
@@ -60,9 +73,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() =>
-          router.replace(buildUrl(1, basePath, pageSize, q, letter, tag))
-        }
+        onClick={() => handlePageChange(1)}
         disabled={isFirst}
         aria-label="Go to first page"
         aria-disabled={isFirst}
@@ -73,11 +84,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() =>
-          router.replace(
-            buildUrl(currentPage - 1, basePath, pageSize, q, letter, tag)
-          )
-        }
+        onClick={() => handlePageChange(currentPage - 1)}
         disabled={isFirst}
         aria-label="Go to previous page"
         aria-disabled={isFirst}
@@ -86,7 +93,7 @@ export default function PaginationControls({
       </Button>
 
       <span
-        className="px-3 py-1.5 text-sm font-semibold text-brand-brown select-none"
+        className="px-3 py-1.5 text-sm font-semibold text-brand-brown dark:text-brand-tan select-none"
         aria-live="polite"
       >
         Page {currentPage} of {totalPages}
@@ -95,11 +102,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() =>
-          router.replace(
-            buildUrl(currentPage + 1, basePath, pageSize, q, letter, tag)
-          )
-        }
+        onClick={() => handlePageChange(currentPage + 1)}
         disabled={isLast}
         aria-label="Go to next page"
         aria-disabled={isLast}
@@ -110,9 +113,7 @@ export default function PaginationControls({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() =>
-          router.replace(buildUrl(totalPages, basePath, pageSize, q, letter, tag))
-        }
+        onClick={() => handlePageChange(totalPages)}
         disabled={isLast}
         aria-label="Go to last page"
         aria-disabled={isLast}

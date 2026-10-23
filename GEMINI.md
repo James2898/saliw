@@ -19,6 +19,9 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   if (input) { const val = input.value; }
   ```
 
+### zsh Globs
+- **zsh globs:** quote glob arguments (`--include='*.ts'`). Unquoted, zsh aborts with `no matches found`.
+
 ---
 
 ## 2. Dev Server & Build Management

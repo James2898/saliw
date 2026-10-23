@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
+import { useFilterTransition } from "@/components/library/LibraryFilterTransition";
 
 interface PageSizeSelectProps {
   pageSize: number;
@@ -11,7 +13,7 @@ interface PageSizeSelectProps {
 }
 
 const selectClass =
-  "text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso";
+  "text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 dark:border-brand-tan/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso dark:focus:ring-brand-tan";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
@@ -39,6 +41,18 @@ export default function PageSizeSelect({
   tag,
 }: PageSizeSelectProps) {
   const router = useRouter();
+  const { startTransition } = useFilterTransition();
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newSize = Number(e.target.value);
+      const url = buildUrl(basePath, newSize, q, letter, tag);
+      startTransition(() => {
+        router.replace(url, { scroll: false });
+      });
+    },
+    [basePath, q, letter, tag, router, startTransition]
+  );
 
   return (
     <div className="flex items-center gap-2 shrink-0">
@@ -51,10 +65,7 @@ export default function PageSizeSelect({
       <select
         id="pageSize"
         value={pageSize}
-        onChange={(e) => {
-          const newSize = Number(e.target.value);
-          router.replace(buildUrl(basePath, newSize, q, letter, tag));
-        }}
+        onChange={handleChange}
         className={selectClass}
       >
         {PAGE_SIZE_OPTIONS.map((size) => (
