@@ -4,6 +4,19 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-23
+
+### Added / Changed
+- Library Tag Filter Optimistic UI & Skeleton Loading State (`TASK-20261023-ckk`)
+  - Immediate optimistic selection state (`useOptimistic` inside `startTransition`) on tag chips in `TagFilterBar` and letter chips in `AlphabetFilter`, updating `aria-pressed` and active Artisan chip styles before server navigation completes (AC-1, AC-3, AC-5)
+  - Switched `TagFilterBar` URL updates from `router.push` to `router.replace(url, { scroll: false })` with `page=1` reset so rapid tag switching does not pollute browser history (AC-2)
+  - Extracted shared 10-row animated `SongListSkeleton` (`animate-pulse`, `aria-busy="true"`, `aria-label="Loading songs"`, module-scoped `SKELETON_ROWS`) reused by both `src/app/library/loading.tsx` and client filter transitions (AC-4, AC-7)
+  - Added `LibraryFilterTransitionProvider`, `useFilterTransition` (with standalone local `useTransition()` fallback for `/setlists`), and `LibrarySongListSlot` so pending transitions from `TagFilterBar`, `AlphabetFilter`, `SearchBar`, `PaginationControls`, or `PageSizeSelect` on `/library` immediately swap the song list or empty state for `SongListSkeleton` (AC-4, AC-5, AC-6)
+  - Completed explicit `dark:` Artisan palette counterparts across touched components and `PaginationControls` page indicator (`AM-1`, `AM-2`, `AC-7`)
+  - Affected files: `src/components/library/SongListSkeleton.tsx`, `src/components/library/LibraryFilterTransition.tsx`, `src/app/library/loading.tsx`, `src/app/library/page.tsx`, `src/components/SongTags/TagFilterBar.tsx`, `src/components/client/AlphabetFilter.tsx`, `src/components/client/SearchBar.tsx`, `src/components/client/PaginationControls.tsx`, `src/components/client/PageSizeSelect.tsx`
+
+---
+
 ## [Unreleased] — 2026-10-20
 
 ### Added
