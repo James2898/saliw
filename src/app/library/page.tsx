@@ -9,6 +9,10 @@ import PageSizeSelect from "@/components/client/PageSizeSelect";
 import AlphabetFilter from "@/components/client/AlphabetFilter";
 import TagFilterBar from "@/components/SongTags/TagFilterBar";
 import SongTagBadge from "@/components/SongTags/SongTagBadge";
+import {
+  LibraryFilterTransitionProvider,
+  LibrarySongListSlot,
+} from "@/components/library/LibraryFilterTransition";
 import type { SongSummary } from "@/types/Song";
 
 export const metadata: Metadata = {
@@ -129,13 +133,18 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
         .order("title", { ascending: true });
 
       if (q) {
-        fallbackQuery = fallbackQuery.or(`title.ilike.%${q}%,artist.ilike.%${q}%`);
+        fallbackQuery = fallbackQuery.or(
+          `title.ilike.%${q}%,artist.ilike.%${q}%`
+        );
       }
       if (letter) {
         fallbackQuery = fallbackQuery.ilike("title", `${letter}%`);
       }
 
-      const fallbackRes = await fallbackQuery.range(offset, offset + pageSize - 1);
+      const fallbackRes = await fallbackQuery.range(
+        offset,
+        offset + pageSize - 1
+      );
       if (fallbackRes.error) {
         fetchError = true;
       } else {
@@ -198,121 +207,19 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           {q ? ` matching "${q}"` : !letter && !tag ? " in library" : ""}
         </p>
 
-        {/* ── Search bar + page size ───────────────────────────────────────── */}
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex-1">
-            <SearchBar
-              defaultValue={q}
-              basePath="/library"
-              pageSize={pageSize}
-              letter={letter ?? undefined}
-              tag={tag ?? undefined}
-            />
-          </div>
-          <PageSizeSelect
-            pageSize={pageSize}
-            q={q || undefined}
-            basePath="/library"
-            letter={letter ?? undefined}
-            tag={tag ?? undefined}
-          />
-        </div>
-
-        {/* ── Tag quick filter bar ─────────────────────────────────────────── */}
-        <TagFilterBar
-          activeTag={tag}
-          basePath="/library"
-          q={q || undefined}
-          letter={letter ?? undefined}
-          pageSize={pageSize}
-        />
-
-        {/* ── Alphabet filter bar ──────────────────────────────────────────── */}
-        <AlphabetFilter
-          activeLetter={letter}
-          basePath="/library"
-          q={q || undefined}
-          pageSize={pageSize}
-          tag={tag ?? undefined}
-        />
-
-        {/* ── Song list ────────────────────────────────────────────────────── */}
-        {songs.length === 0 ? (
-          /* ── Empty state ─────────────────────────────────────────────────── */
-          <div
-            className="rounded-2xl border border-brand-brown/20 bg-[var(--brand-tan-alpha)] px-6 py-10 text-center"
-            role="status"
-            aria-live="polite"
-          >
-            <p className="text-sm font-semibold text-brand-brown dark:text-brand-tan">
-              {emptyMessage}
-            </p>
-          </div>
-        ) : (
-          /* ── Song rows ───────────────────────────────────────────────────── */
-          <ul className="flex flex-col gap-2" role="list">
-            {songs.map((song) => (
-              <li key={song.id}>
-                <div className="flex items-center gap-2 rounded-xl bg-[var(--brand-tan-alpha)] border border-brand-brown/10 hover:border-brand-tan transition-colors duration-200">
-                  {/* Row hit-area — navigates to viewer */}
-                  <Link
-                    href={`/library/${song.id}`}
-                    className={[
-                      "flex-1 flex items-center justify-between px-4 py-3 rounded-xl",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1",
-                      "min-w-0",
-                    ].join(" ")}
-                    aria-label={`View ${song.title} by ${song.artist}`}
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
-                          {song.title}
-                        </p>
-                        {song.tags && song.tags.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            {song.tags.map((t) => (
-                              <SongTagBadge key={t} tag={t} size="sm" />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <p className="truncate text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5">
-                        {song.artist}
-                      </p>
-                    </div>
-                    <span className="ml-4 shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-cream bg-brand-cream dark:bg-brand-espresso rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
-                      {song.original_key}
-                    </span>
-                  </Link>
-
-                  {/* Edit shortcut — music_director only */}
-                  {isMusicDirector && (
-                    <Link
-                      href={`/library/${song.id}/edit`}
-                      className={[
-                        "shrink-0 flex items-center justify-center w-9 h-9 mr-2 rounded-lg",
-                        "text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
-                        "transition-colors duration-200",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso focus-visible:ring-offset-1",
-                      ].join(" ")}
-                      aria-label={`Edit ${song.title}`}
-                    >
-                      <Pencil size={15} strokeWidth={2} aria-hidden="true" />
-                    </Link>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* ── Pagination controls ───────────────────────────────────────────── */}
-        {!fetchError && (
-          <div className="mt-6">
-            <PaginationControls
-              currentPage={currentPage}
-              totalCount={totalCount}
+        <LibraryFilterTransitionProvider>
+          {/* ── Search bar + page size ───────────────────────────────────────── */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex-1">
+              <SearchBar
+                defaultValue={q}
+                basePath="/library"
+                pageSize={pageSize}
+                letter={letter ?? undefined}
+                tag={tag ?? undefined}
+              />
+            </div>
+            <PageSizeSelect
               pageSize={pageSize}
               q={q || undefined}
               basePath="/library"
@@ -320,7 +227,117 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
               tag={tag ?? undefined}
             />
           </div>
-        )}
+
+          {/* ── Tag quick filter bar ─────────────────────────────────────────── */}
+          <TagFilterBar
+            activeTag={tag}
+            basePath="/library"
+            q={q || undefined}
+            letter={letter ?? undefined}
+            pageSize={pageSize}
+          />
+
+          {/* ── Alphabet filter bar ──────────────────────────────────────────── */}
+          <AlphabetFilter
+            activeLetter={letter}
+            basePath="/library"
+            q={q || undefined}
+            pageSize={pageSize}
+            tag={tag ?? undefined}
+          />
+
+          {/* ── Song list (swapped with skeleton during filter transitions) ─── */}
+          <LibrarySongListSlot>
+            {songs.length === 0 ? (
+              /* ── Empty state ─────────────────────────────────────────────────── */
+              <div
+                className="rounded-2xl border border-brand-brown/20 dark:border-brand-tan/20 bg-[var(--brand-tan-alpha)] px-6 py-10 text-center"
+                role="status"
+                aria-live="polite"
+              >
+                <p className="text-sm font-semibold text-brand-brown dark:text-brand-tan">
+                  {emptyMessage}
+                </p>
+              </div>
+            ) : (
+              /* ── Song rows ───────────────────────────────────────────────────── */
+              <ul className="flex flex-col gap-2" role="list">
+                {songs.map((song) => (
+                  <li key={song.id}>
+                    <div className="flex items-center gap-2 rounded-xl bg-[var(--brand-tan-alpha)] border border-brand-brown/10 dark:border-brand-tan/10 hover:border-brand-tan dark:hover:border-brand-tan transition-colors duration-200">
+                      {/* Row hit-area — navigates to viewer */}
+                      <Link
+                        href={`/library/${song.id}`}
+                        className={[
+                          "flex-1 flex items-center justify-between px-4 py-3 rounded-xl",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                          "min-w-0",
+                        ].join(" ")}
+                        aria-label={`View ${song.title} by ${song.artist}`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="truncate text-sm font-bold text-brand-espresso dark:text-brand-cream leading-snug">
+                              {song.title}
+                            </p>
+                            {song.tags && song.tags.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                {song.tags.map((t) => (
+                                  <SongTagBadge key={t} tag={t} size="sm" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <p className="truncate text-xs font-medium text-brand-brown dark:text-brand-tan mt-0.5">
+                            {song.artist}
+                          </p>
+                        </div>
+                        <span className="ml-4 shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-cream bg-brand-cream dark:bg-brand-espresso rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
+                          {song.original_key}
+                        </span>
+                      </Link>
+
+                      {/* Edit shortcut — music_director only */}
+                      {isMusicDirector && (
+                        <Link
+                          href={`/library/${song.id}/edit`}
+                          className={[
+                            "shrink-0 flex items-center justify-center w-9 h-9 mr-2 rounded-lg",
+                            "text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
+                            "transition-colors duration-200",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan focus-visible:ring-offset-1",
+                          ].join(" ")}
+                          aria-label={`Edit ${song.title}`}
+                        >
+                          <Pencil
+                            size={15}
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </LibrarySongListSlot>
+
+          {/* ── Pagination controls ───────────────────────────────────────────── */}
+          {!fetchError && (
+            <div className="mt-6">
+              <PaginationControls
+                currentPage={currentPage}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                q={q || undefined}
+                basePath="/library"
+                letter={letter ?? undefined}
+                tag={tag ?? undefined}
+              />
+            </div>
+          )}
+        </LibraryFilterTransitionProvider>
       </div>
     </main>
   );
