@@ -40,3 +40,14 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 - **Worktree Awareness:** Antigravity often works in dedicated git worktrees (e.g. under `~/.gemini/antigravity/worktrees/`). Ensure commands and dev servers execute inside the active worktree root.
 - **Untracked Directories:** Keep test plans, verification traces, and Playwright screenshots in `.qa/` or `.playwright-mcp/` (both gitignored).
 - **Domain Memory:** For general codebase bugs (SSR hydration, Supabase `timestamptz`, React Compiler rules), refer to and update [`MEMORY.md`](./MEMORY.md).
+
+---
+
+## 4. Worktree Environment & Tooling Guidelines
+
+- **Table Formatting Guard:** Never use literal pipes `||` inside markdown table cells (even inside backticks). Escape them as `\|\|` or use prose/concatenation functions (e.g. `CONCAT()`) to prevent broken table rendering.
+- **Node & Environment in Worktrees:** Worktrees do not automatically contain `.env.local` or `node_modules`. When running one-off node/tsx scripts in a worktree, point to the primary project root:
+  ```bash
+  NODE_PATH=node_modules node --env-file=.env.local -e '...'
+  ```
+- **Supabase Migrations:** Always use the eager/lazy Supabase MCP tool (`call_mcp_tool` with `apply_migration` or `execute_sql`) rather than attempting interactive `npx supabase` shell prompts.
