@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useOptimistic } from "react";
+import { useFilterTransition } from "@/components/library/LibraryFilterTransition";
 
 // BUG-016: Use ALPHABET (not LETTERS) to avoid shadowing any dynamic variable
 // derived from searchParams in the same scope.
@@ -89,15 +90,33 @@ export default function AlphabetFilter({
   tag,
 }: AlphabetFilterProps) {
   const router = useRouter();
+  const { startTransition } = useFilterTransition();
+  const [optimisticLetter, setOptimisticLetter] = useOptimistic(
+    activeLetter,
+    (_currentLetter: string | null, nextLetter: string | null) => nextLetter
+  );
 
-  // BUG-002: dependency array uses [router], not [router.replace]
+  // BUG-002: dependency array uses whole/destructured identifiers, not property paths
   const handleSelect = useCallback(
     (letter: string | null) => {
       // Clicking an active letter deselects it (AC-5)
-      const next = letter === activeLetter ? null : letter;
-      router.replace(buildUrl(basePath, next, q, pageSize, tag));
+      const next = letter === optimisticLetter ? null : letter;
+      const url = buildUrl(basePath, next, q, pageSize, tag);
+      startTransition(() => {
+        setOptimisticLetter(next);
+        router.replace(url, { scroll: false });
+      });
     },
-    [router, activeLetter, basePath, q, pageSize, tag]
+    [
+      router,
+      optimisticLetter,
+      basePath,
+      q,
+      pageSize,
+      tag,
+      startTransition,
+      setOptimisticLetter,
+    ]
   );
 
   return (
@@ -106,11 +125,14 @@ export default function AlphabetFilter({
       <div className="flex flex-wrap justify-between">
         {chips.map(({ label, value }) => {
           const isActive =
-            value === null ? activeLetter === null : activeLetter === value;
+            value === null
+              ? optimisticLetter === null
+              : optimisticLetter === value;
 
           return (
             <button
               key={label}
+              type="button"
               aria-pressed={isActive}
               aria-label={
                 value === null
