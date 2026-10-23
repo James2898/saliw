@@ -32,7 +32,7 @@ import { chordRegex, NOTES } from "../src/utils/musicLogic";
 // ── Configuration constants ──────────────────────────────────────────────────
 
 const SOURCE_PATH = "data/English Hymns.md";
-const ARTIST = "English Hymnal";
+const ARTIST_PREFIX = "English Hymnal #";
 const DEFAULT_KEY = "C";
 const BATCH_SIZE = 50;
 const KEY_SCAN_LINE_COUNT = 30;
@@ -129,9 +129,12 @@ function buildRecord(hymn: Hymn): SongInsertRecord {
     ? extractOriginalKey(hymn.content)
     : DEFAULT_KEY;
 
+  const unpaddedNumber = parseInt(hymn.number, 10);
+  const artist = `${ARTIST_PREFIX}${unpaddedNumber}`;
+
   return {
     title: hymn.title,
-    artist: ARTIST,
+    artist,
     original_key,
     content: hymn.content,
     created_by: null,
@@ -194,15 +197,15 @@ async function upsertBatch(
   batch: SongInsertRecord[]
 ): Promise<UpsertOutcome> {
   const titles = batch.map((r) => r.title);
+  const artists = batch.map((r) => r.artist);
 
-  // Pre-fetch existing rows in this batch. We need to scope by both title
-  // and artist; a single `.in('title', titles)` followed by an artist filter
-  // returns only the rows we care about.
+  // Pre-fetch existing rows in this batch. We scope by titles and artists
+  // to determine existing vs new entries for this batch.
   const { data: existingRows, error: existingError } = await client
     .from("songs")
     .select("title, artist")
     .in("title", titles)
-    .eq("artist", ARTIST);
+    .in("artist", artists);
 
   // BUG-008: explicit error guard FIRST.
   if (existingError) {
