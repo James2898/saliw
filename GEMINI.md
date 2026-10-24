@@ -6,7 +6,11 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 
 ## 1. Tooling & MCP Guidelines
 
-### Playwright MCP (`browser_evaluate`)
+### Playwright MCP (`browser_evaluate`, `browser_click`)
+- **Tool Argument Schemas:**
+  - `browser_click`: uses `{ target: string }` (CSS selector or element ref), **never** `{ selector }`.
+  - `browser_evaluate`: uses `{ function: string }` (e.g. `"() => { ... }"`), **never** `{ script }`.
+  - `browser_select_option`: uses `{ target: string, values: string[] }`.
 - **Pure JavaScript Only:** Always write scripts passed to `browser_evaluate` in standard ECMAScript / ES6.
 - **Never use TypeScript Syntax:** Do not use `as HTMLElement`, `as HTMLInputElement`, interface declarations, or type annotations in evaluated strings. The browser's native JavaScript engine will throw `SyntaxError: Unexpected identifier 'as'`.
 - **Safe Element Casts:** Use standard DOM existence checks or plain property lookups:

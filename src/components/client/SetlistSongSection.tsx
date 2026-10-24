@@ -58,6 +58,20 @@ interface SetlistSongSectionProps {
   isCompactHeader?: boolean;
   /** Whether to hide the chord toolbar inside ChordSheetClient. */
   hideChordToolbar?: boolean;
+  /** Controlled target key from parent (SetlistViewerClient). */
+  targetKey?: string;
+  /** Controlled capo fret offset (0 = no capo, 1-7 = capo at fret N). */
+  capo?: number;
+  /**
+   * Callback fired when this song's display key changes.
+   * Receives the junctionId and the new key string.
+   */
+  onKeyChange?: (junctionId: string, newKey: string) => void;
+  /**
+   * Callback fired when this song's capo fret changes.
+   * Receives the junctionId and the new capo fret.
+   */
+  onCapoChange?: (junctionId: string, newCapo: number) => void;
   /**
    * Callback fired when a chord token is clicked in the chord sheet.
    * Receives the transposed (displayed) chord name as the performer sees it.
@@ -99,6 +113,10 @@ function SetlistSongSection({
   isMusicDirector = false,
   isFollowing = false,
   overrideKey,
+  targetKey,
+  capo,
+  onKeyChange: onKeyChangeProp,
+  onCapoChange: onCapoChangeProp,
   onKeyChangeLive,
   liveSyncState,
   externalChordsHidden,
@@ -141,10 +159,18 @@ function SetlistSongSection({
   // getSemitoneOffset imported from musicLogic (read-only, BUG-007: declared before hooks).
   const handleKeyChange = useCallback(
     (key: string) => {
-      setCurrentKey(key);
+      setCurrentKey((prev) => (prev === key ? prev : key));
+      onKeyChangeProp?.(junctionId, key);
       onOffsetChange?.(junctionId, getSemitoneOffset(originalKey, key));
     },
-    [junctionId, originalKey, onOffsetChange]
+    [junctionId, originalKey, onKeyChangeProp, onOffsetChange]
+  );
+
+  const handleCapoChange = useCallback(
+    (newCapo: number) => {
+      onCapoChangeProp?.(junctionId, newCapo);
+    },
+    [junctionId, onCapoChangeProp]
   );
 
   const handleKeyChangeLive = useCallback(
@@ -544,7 +570,10 @@ function SetlistSongSection({
         processedLines={processedLines}
         originalKey={originalKey}
         initialKey={performanceKey}
+        targetKey={targetKey}
+        capo={capo}
         onKeyChange={handleKeyChange}
+        onCapoChange={handleCapoChange}
         onChordClick={onChordClick}
         externalKey={overrideKey}
         isFollowing={isFollowing}
