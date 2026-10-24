@@ -167,31 +167,41 @@ export default function SetlistViewerClient({
     []
   );
 
-  // Track per-song semitone offsets so transposed chord names can be computed.
-  const [songOffsets, setSongOffsets] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
+  // Track per-song active keys so transposed chords and controls stay in sync
+  const [songKeys, setSongKeys] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
     for (const song of songs) {
-      initial[song.junctionId] = getSemitoneOffset(
-        song.originalKey,
-        song.performanceKey ?? song.originalKey
-      );
+      initial[song.junctionId] = song.performanceKey ?? song.originalKey;
     }
     return initial;
   });
 
-  // Unique chords calculation
+  // Track per-song capo offsets (0 = no capo; 1-7 = capo at that fret)
+  const [songCapos, setSongCapos] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    for (const song of songs) {
+      initial[song.junctionId] = 0;
+    }
+    return initial;
+  });
+
+  // Unique chords calculation across all songs in the setlist
   const uniqueChords = useMemo(() => {
     const seen = new Set<string>();
     for (const song of songs) {
-      const offset = songOffsets[song.junctionId] ?? 0;
+      const activeKey =
+        songKeys[song.junctionId] ?? song.performanceKey ?? song.originalKey;
+      const semitoneOffset = getSemitoneOffset(song.originalKey, activeKey);
+      const capoOffset = songCapos[song.junctionId] ?? 0;
+      const effectiveOffset = semitoneOffset - capoOffset;
       for (const line of song.processedLines) {
         if (line.type === "chord") {
           for (const token of line.tokens) {
             if (token.isChord && token.originalChord) {
               const transposed =
-                offset === 0
+                effectiveOffset === 0
                   ? token.originalChord
-                  : shiftChord(token.originalChord, offset);
+                  : shiftChord(token.originalChord, effectiveOffset);
               seen.add(transposed);
             }
           }
@@ -199,19 +209,32 @@ export default function SetlistViewerClient({
       }
     }
     return Array.from(seen);
-  }, [songs, songOffsets]);
+  }, [songs, songKeys, songCapos]);
 
   const handleChordClick = useCallback((chordName: string) => {
     setFocusedChord(chordName);
     setIsDrawerOpen(true);
   }, []);
 
-  const handleKeyChangeForDrawer = useCallback(
-    (junctionId: string, newOffset: number) => {
-      setSongOffsets((prev) => ({ ...prev, [junctionId]: newOffset }));
+  const handleSongKeyChange = useCallback(
+    (junctionId: string, newKey: string) => {
+      setSongKeys((prev) =>
+        prev[junctionId] === newKey ? prev : { ...prev, [junctionId]: newKey }
+      );
     },
     []
   );
+
+  const handleSongCapoChange = useCallback(
+    (junctionId: string, newCapo: number) => {
+      setSongCapos((prev) =>
+        prev[junctionId] === newCapo ? prev : { ...prev, [junctionId]: newCapo }
+      );
+    },
+    []
+  );
+
+  const handleKeyChangeForDrawer = useCallback(() => {}, []);
 
   const handleDrawerToggle = useCallback(() => setIsDrawerOpen((v) => !v), []);
 
@@ -272,6 +295,55 @@ export default function SetlistViewerClient({
   // Current active song in Page View mode
   const currentSong = songs[activeSongIndex] ?? null;
   const currentSongKey = currentSong?.songId || currentSong?.junctionId || "";
+  const currentJunctionId = currentSong?.junctionId ?? "";
+  const currentSongActiveKey =
+    currentJunctionId && songKeys[currentJunctionId]
+      ? songKeys[currentJunctionId]
+      : (currentSong?.performanceKey ?? currentSong?.originalKey ?? "");
+  const currentSongCapo =
+    currentJunctionId && songCapos[currentJunctionId] !== undefined
+      ? songCapos[currentJunctionId]
+      : 0;
+
+  const isLive = sync.isLive;
+  const notifyKeyChange = sync.notifyKeyChange;
+
+  const handlePageTransposeDown = useCallback(() => {
+    if (!currentJunctionId) return;
+    const newKey = shiftChord(currentSongActiveKey, -1);
+    setSongKeys((prev) => ({ ...prev, [currentJunctionId]: newKey }));
+    if (isLeader && isLive) {
+      notifyKeyChange(currentJunctionId, newKey);
+    }
+  }, [currentJunctionId, currentSongActiveKey, isLeader, isLive, notifyKeyChange]);
+
+  const handlePageTransposeUp = useCallback(() => {
+    if (!currentJunctionId) return;
+    const newKey = shiftChord(currentSongActiveKey, 1);
+    setSongKeys((prev) => ({ ...prev, [currentJunctionId]: newKey }));
+    if (isLeader && isLive) {
+      notifyKeyChange(currentJunctionId, newKey);
+    }
+  }, [currentJunctionId, currentSongActiveKey, isLeader, isLive, notifyKeyChange]);
+
+  const handlePageKeySelect = useCallback(
+    (targetKey: string) => {
+      if (!currentJunctionId) return;
+      setSongKeys((prev) => ({ ...prev, [currentJunctionId]: targetKey }));
+      if (isLeader && isLive) {
+        notifyKeyChange(currentJunctionId, targetKey);
+      }
+    },
+    [currentJunctionId, isLeader, isLive, notifyKeyChange]
+  );
+
+  const handlePageCapoSelect = useCallback(
+    (fret: number) => {
+      if (!currentJunctionId) return;
+      setSongCapos((prev) => ({ ...prev, [currentJunctionId]: fret }));
+    },
+    [currentJunctionId]
+  );
 
   // Effective columns for the active song (per-song override or setlist default)
   const effectiveColumns =
@@ -828,39 +900,21 @@ export default function SetlistViewerClient({
                                 Transposed Key
                               </span>
                               <span className="font-mono font-bold text-sm text-brand-espresso dark:text-brand-cream">
-                                {currentSong.performanceKey}
+                                {currentSongActiveKey}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const offset =
-                                    (songOffsets[currentSong.junctionId] ?? 0) -
-                                    1;
-                                  handleKeyChangeForDrawer(
-                                    currentSong.junctionId,
-                                    offset
-                                  );
-                                }}
+                                onClick={handlePageTransposeDown}
                                 className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
                                 aria-label="Transpose down 1 semitone"
                               >
                                 −1
                               </button>
                               <select
-                                value={currentSong.performanceKey}
-                                onChange={(e) => {
-                                  const target = e.target.value;
-                                  const offset = getSemitoneOffset(
-                                    currentSong.originalKey,
-                                    target
-                                  );
-                                  handleKeyChangeForDrawer(
-                                    currentSong.junctionId,
-                                    offset
-                                  );
-                                }}
+                                value={currentSongActiveKey}
+                                onChange={(e) => handlePageKeySelect(e.target.value)}
                                 aria-label="Select song key"
                                 className="flex-1 font-mono font-bold text-xs px-2 py-1.5 rounded-lg border border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream"
                               >
@@ -872,15 +926,7 @@ export default function SetlistViewerClient({
                               </select>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const offset =
-                                    (songOffsets[currentSong.junctionId] ?? 0) +
-                                    1;
-                                  handleKeyChangeForDrawer(
-                                    currentSong.junctionId,
-                                    offset
-                                  );
-                                }}
+                                onClick={handlePageTransposeUp}
                                 className={[ctrlBtnClass, "w-8 h-8"].join(" ")}
                                 aria-label="Transpose up 1 semitone"
                               >
@@ -893,21 +939,26 @@ export default function SetlistViewerClient({
                                 Capo
                               </span>
                               <div className="flex items-center gap-1 flex-wrap">
-                                {CAPO_FRETS.map((fret) => (
-                                  <button
-                                    key={fret}
-                                    type="button"
-                                    onClick={() => {
-                                      handleKeyChangeForDrawer(
-                                        currentSong.junctionId,
-                                        fret === 0 ? 0 : -fret
-                                      );
-                                    }}
-                                    className="w-7 h-7 rounded text-xs font-mono font-bold border border-brand-brown/20 dark:border-brand-tan/20 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream"
-                                  >
-                                    {fret}
-                                  </button>
-                                ))}
+                                {CAPO_FRETS.map((fret) => {
+                                  const isSelected = currentSongCapo === fret;
+                                  return (
+                                    <button
+                                      key={fret}
+                                      type="button"
+                                      onClick={() => handlePageCapoSelect(fret)}
+                                      aria-label={`Capo fret ${fret}${fret === 0 ? " (no capo)" : ""}${isSelected ? " (selected)" : ""}`}
+                                      aria-pressed={isSelected}
+                                      className={[
+                                        "w-7 h-7 rounded text-xs font-mono font-bold border transition-colors",
+                                        isSelected
+                                          ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso border-transparent shadow-sm"
+                                          : "border-brand-brown/20 dark:border-brand-tan/20 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream",
+                                      ].join(" ")}
+                                    >
+                                      {fret}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
                             {/* Per-song columns inside popover */}
@@ -988,6 +1039,10 @@ export default function SetlistViewerClient({
                     originalKey={currentSong.originalKey}
                     processedLines={currentSong.processedLines}
                     performanceKey={currentSong.performanceKey}
+                    targetKey={songKeys[currentSong.junctionId]}
+                    capo={songCapos[currentSong.junctionId]}
+                    onKeyChange={handleSongKeyChange}
+                    onCapoChange={handleSongCapoChange}
                     isLeader={isLeader}
                     youtubeUrl={currentSong.youtubeUrl}
                     isMusicDirector={isMusicDirector}
@@ -1035,6 +1090,10 @@ export default function SetlistViewerClient({
                     originalKey={song.originalKey}
                     processedLines={song.processedLines}
                     performanceKey={song.performanceKey}
+                    targetKey={songKeys[song.junctionId]}
+                    capo={songCapos[song.junctionId]}
+                    onKeyChange={handleSongKeyChange}
+                    onCapoChange={handleSongCapoChange}
                     isLeader={isLeader}
                     youtubeUrl={song.youtubeUrl}
                     isMusicDirector={isMusicDirector}
