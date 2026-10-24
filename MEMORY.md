@@ -43,6 +43,11 @@
   - **Resolution:** Maintained fixed viewport container height (`containerHeight - 44px`), adjusted font size directly (`--chord-font-size`) so browser layout reflows text naturally into columns, and dynamically derived `totalSubPages` from measured `scrollWidth / clientWidth` using horizontal translation (`translateX(-${subPageIndex * 100}%)`).
   - **Prevention:** Never use CSS `transform: scale()` to reflow text in CSS multi-column layouts. To adjust how much text fits into columns, adjust font size or line height. Never hardcode `totalSubPages = 1` on overflow-fit features; always calculate sub-pages from measured scroll dimensions so overflowing content can always be navigated.
 
+- **BUG-027** | 2026-10-24 | Feature: `Setlist Transpose & Page View Mode`
+  - **Root Cause:** When connecting controlled/uncontrolled hybrid state (`targetKey`, `onKeyChange`) between `SetlistViewerClient` and `ChordSheetClient`, `ChordSheetClient` placed callback props in `useEffect(() => { onKeyChange?.(displayKey) }, [displayKey, onKeyChange])`. When switching songs, new callback references re-fired the effect on mount, calling `setCurrentKey` and `setSongKeys`, which triggered parent re-renders in a circular loop (`Maximum update depth exceeded`).
+  - **Resolution:** (1) In `ChordSheetClient`, captured callback props in `useRef` and added `prevDisplayKeyRef` guard so `onKeyChange` fires only when `displayKey` actually changes value (skipping initial mount). (2) In parent callers, guarded `setState` with `prev === next ? prev : next` to avoid re-renders from no-op state updates.
+  - **Prevention:** When a child component provides an `onStateChange` callback to notify parent of internal state transitions: (1) Never put raw callback props in the notification effect's dependency array; capture them in a `useRef` updated on render. (2) Track previous values via `useRef` and only fire the callback on actual value transitions, never on initial mount. (3) Always guard parent state setters with `prev[id] === next ? prev : { ...prev, [id]: next }` to preserve object references on no-ops.
+
 ---
 
 ## Architecture

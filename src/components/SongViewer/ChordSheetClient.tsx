@@ -89,8 +89,14 @@ interface ChordSheetClientProps {
   originalKey: string;
   /** If provided, the sheet opens at this key instead of originalKey (e.g. setlist performanceKey). */
   initialKey?: string;
+  /** Controlled target key from parent (e.g. SetlistViewerClient). */
+  targetKey?: string;
+  /** Controlled capo fret offset (0 = no capo, 1-7 = capo at fret N). */
+  capo?: number;
   /** Optional callback fired whenever the displayed (transposed) key changes. */
   onKeyChange?: (key: string) => void;
+  /** Optional callback fired whenever the capo fret changes. */
+  onCapoChange?: (fret: number) => void;
   /**
    * Optional callback fired when the user clicks a chord token in the sheet.
    * Receives the pre-transposition chord name from data-original-chord.
@@ -172,7 +178,10 @@ export default function ChordSheetClient({
   processedLines,
   originalKey,
   initialKey,
+  targetKey,
+  capo: capoProp,
   onKeyChange,
+  onCapoChange,
   onChordClick,
   externalKey,
   isFollowing = false,
@@ -255,9 +264,19 @@ export default function ChordSheetClient({
 
   // ── Capo and CAGED local state (BUG-020: literal defaults, not window guards) ──
   // capoOffset: 0 = no capo; 1–7 = capo at that fret (subtracts from semitoneOffset)
-  const [capoOffset, setCapoOffset] = useState(0);
+  const [internalCapoOffset, setInternalCapoOffset] = useState(0);
+  const capoOffset = capoProp !== undefined ? capoProp : internalCapoOffset;
   // cagedShape: null = no shape selected; 'C'|'A'|'G'|'E'|'D' = selected shape
   const [cagedShape, setCAGEDShape] = useState<CAGEDShape | null>(null);
+
+  const handleCapoChange = useCallback(
+    (fret: number) => {
+      setInternalCapoOffset(fret);
+      setCAGEDShape(null);
+      onCapoChange?.(fret);
+    },
+    [onCapoChange]
+  );
 
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -318,12 +337,33 @@ export default function ChordSheetClient({
     });
   }, [semitoneOffset, capoOffset, chordsHidden]);
 
+  // Stable refs for notification callbacks to prevent effect re-runs on parent render
+  const onKeyChangeRef = useRef(onKeyChange);
+  onKeyChangeRef.current = onKeyChange;
+  const onKeyChangeLiveRef = useRef(onKeyChangeLive);
+  onKeyChangeLiveRef.current = onKeyChangeLive;
+  const prevDisplayKeyRef = useRef<string>(displayKey);
+
   // Notify parent whenever the displayed key changes (e.g. for Sync button in SetlistSongSection).
   // Also fires onKeyChangeLive for Go Live auto-persist debounce (AC-18).
+  // Does NOT fire on initial mount since parent already has initialKey.
   useEffect(() => {
-    onKeyChange?.(displayKey);
-    onKeyChangeLive?.(displayKey);
-  }, [displayKey, onKeyChange, onKeyChangeLive]);
+    if (prevDisplayKeyRef.current !== displayKey) {
+      prevDisplayKeyRef.current = displayKey;
+      onKeyChangeRef.current?.(displayKey);
+      onKeyChangeLiveRef.current?.(displayKey);
+    }
+  }, [displayKey]);
+
+  // Controlled target key from parent (e.g. SetlistViewerClient popover in Page View mode)
+  useEffect(() => {
+    if (targetKey !== undefined && targetKey !== displayKey) {
+      if (isFollowing) {
+        setIsOverridingLeader(true);
+      }
+      baseSetTargetKey(targetKey);
+    }
+  }, [targetKey, displayKey, isFollowing, baseSetTargetKey]);
 
   // RF-2 guard: react to externally injected key changes from Follow Leader mode.
   // Must NOT fire on initial mount when externalKey === originalKey to avoid
@@ -642,10 +682,7 @@ export default function ChordSheetClient({
                       <button
                         key={fret}
                         type="button"
-                        onClick={() => {
-                          setCapoOffset(fret);
-                          setCAGEDShape(null);
-                        }}
+                        onClick={() => handleCapoChange(fret)}
                         aria-label={`Capo fret ${fret}${fret === 0 ? " (no capo)" : ""}${isSelected ? " (selected)" : ""}`}
                         aria-pressed={isSelected}
                         className={[
@@ -688,10 +725,10 @@ export default function ChordSheetClient({
                             : () => {
                                 if (isSelected) {
                                   setCAGEDShape(null);
-                                  setCapoOffset(0);
+                                  handleCapoChange(0);
                                 } else {
                                   setCAGEDShape(shape);
-                                  setCapoOffset(capoFret);
+                                  handleCapoChange(capoFret);
                                 }
                               }
                         }
