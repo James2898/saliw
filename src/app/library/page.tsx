@@ -9,6 +9,7 @@ import PageSizeSelect from "@/components/client/PageSizeSelect";
 import AlphabetFilter from "@/components/client/AlphabetFilter";
 import TagFilterBar from "@/components/SongTags/TagFilterBar";
 import SongTagBadge from "@/components/SongTags/SongTagBadge";
+import SongKeyBadge from "@/components/SongKey/SongKeyBadge";
 import {
   LibraryFilterTransitionProvider,
   LibrarySongListSlot,
@@ -292,9 +293,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                             {song.artist}
                           </p>
                         </div>
-                        <span className="ml-4 shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-cream bg-brand-cream dark:bg-brand-espresso rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
-                          {song.original_key}
-                        </span>
+                        <SongKeyBadge musicalKey={song.original_key} className="ml-4" />
                       </Link>
 
                       {/* Edit shortcut — music_director only */}
