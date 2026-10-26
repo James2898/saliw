@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import SongCard from "@/components/client/SongCard";
+import SongKeyBadge from "@/components/SongKey/SongKeyBadge";
 import SongTagBadge from "@/components/SongTags/SongTagBadge";
 import { STANDARD_SONG_TAGS } from "@/types/Song";
 import type { SongLibraryItem } from "./SetlistBuilderClient";
@@ -163,9 +164,7 @@ export default function LibraryPanel({
                 }
                 actionsSlot={
                   <>
-                    <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso dark:text-brand-cream text-xs font-medium px-2 py-0.5 rounded shrink-0">
-                      {song.original_key}
-                    </span>
+                    <SongKeyBadge musicalKey={song.original_key} />
                     <button
                       type="button"
                       onClick={() => !isAdded && !isAdding && onAdd(song)}
