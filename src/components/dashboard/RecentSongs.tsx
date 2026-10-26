@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
+import SongKeyBadge from "@/components/SongKey/SongKeyBadge";
 import type { SongSummary } from "@/types/Song";
 
 export type RecentSong = SongSummary;
@@ -42,9 +43,7 @@ export default function RecentSongs({ songs }: RecentSongsProps): ReactElement {
                     {song.artist}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs font-semibold text-brand-brown dark:text-brand-tan bg-brand-cream dark:bg-brand-darker rounded-lg px-2 py-0.5 border border-brand-brown/20 dark:border-brand-tan/20">
-                  {song.original_key}
-                </span>
+                <SongKeyBadge musicalKey={song.original_key} />
               </Link>
             </li>
           ))}
