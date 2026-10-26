@@ -4,7 +4,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import SongCard from "@/components/client/SongCard";
-import { NOTES } from "@/utils/musicLogic";
+import SongKeyBadge from "@/components/SongKey/SongKeyBadge";
+import SongKeySelect from "@/components/SongKey/SongKeySelect";
 import type { SortableSong } from "./SetlistBuilderClient";
 
 interface SortableSongRowProps {
@@ -59,21 +60,12 @@ export default function SortableSongRow({
       }
       actionsSlot={
         <>
-          <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso dark:text-brand-cream text-xs font-medium px-2 py-0.5 rounded shrink-0">
-            {song.originalKey}
-          </span>
-          <select
+          <SongKeyBadge musicalKey={song.originalKey} />
+          <SongKeySelect
             value={song.performanceKey}
-            onChange={(e) => onKeyChange(song.songId, e.target.value)}
-            aria-label={`Performance key for ${song.title}`}
-            className="text-xs font-medium px-2 py-0.5 rounded border border-brand-brown/20 dark:border-brand-tan/20 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream focus:outline-none focus:ring-1 focus:ring-brand-espresso dark:focus:ring-brand-tan shrink-0"
-          >
-            {NOTES.map((note) => (
-              <option key={note} value={note}>
-                {note}
-              </option>
-            ))}
-          </select>
+            onChange={(newKey) => onKeyChange(song.songId, newKey)}
+            songTitle={song.title}
+          />
           <button
             type="button"
             aria-label={`Remove ${song.title} from setlist`}
