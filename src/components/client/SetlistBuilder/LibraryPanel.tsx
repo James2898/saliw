@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SongCard from "@/components/client/SongCard";
 import SongTagBadge from "@/components/SongTags/SongTagBadge";
 import { STANDARD_SONG_TAGS } from "@/types/Song";
 import type { SongLibraryItem } from "./SetlistBuilderClient";
@@ -147,65 +148,57 @@ export default function LibraryPanel({
             const isAdding = addingId === song.id;
 
             return (
-              <div
+              <SongCard
                 key={song.id}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-cream dark:bg-brand-espresso border border-brand-brown/10 dark:border-brand-tan/15"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-brand-espresso dark:text-brand-cream font-medium text-sm truncate">
-                      {song.title}
-                    </p>
-                    {song.tags && song.tags.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        {song.tags.map((t) => (
-                          <SongTagBadge key={t} tag={t} size="sm" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {song.artist && (
-                    <p className="text-brand-brown/70 dark:text-brand-tan/70 text-xs truncate">
-                      {song.artist}
-                    </p>
-                  )}
-                </div>
-
-                <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso dark:text-brand-cream text-xs font-medium px-2 py-0.5 rounded shrink-0">
-                  {song.original_key}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => !isAdded && !isAdding && onAdd(song)}
-                  disabled={isAdded || isAdding}
-                  aria-disabled={isAdded || isAdding}
-                  aria-label={
-                    isAdded
-                      ? `${song.title} already added`
-                      : `Add ${song.title}`
-                  }
-                  className={[
-                    "shrink-0 text-sm font-medium px-3 py-1 rounded-lg border transition-colors duration-200",
-                    isAdded
-                      ? "border-brand-brown/20 dark:border-brand-tan/20 text-brand-brown/40 dark:text-brand-tan/40 cursor-not-allowed bg-transparent"
-                      : isAdding
-                        ? "border-brand-brown/20 dark:border-brand-tan/20 text-brand-brown/40 dark:text-brand-tan/40 cursor-not-allowed bg-transparent"
-                        : "border-brand-brown dark:border-brand-tan text-brand-brown dark:text-brand-tan hover:bg-[var(--brand-tan-alpha)]",
-                  ].join(" ")}
-                >
-                  {isAdding ? (
-                    <span
-                      className="inline-block w-3 h-3 border-2 border-brand-brown/40 dark:border-brand-tan/40 border-t-brand-brown dark:border-t-brand-tan rounded-full animate-spin"
-                      aria-hidden="true"
-                    />
-                  ) : isAdded ? (
-                    "Added"
-                  ) : (
-                    "Add"
-                  )}
-                </button>
-              </div>
+                title={song.title}
+                artist={song.artist}
+                badgeSlot={
+                  song.tags && song.tags.length > 0 ? (
+                    <div className="flex items-center gap-1">
+                      {song.tags.map((t) => (
+                        <SongTagBadge key={t} tag={t} size="sm" />
+                      ))}
+                    </div>
+                  ) : undefined
+                }
+                actionsSlot={
+                  <>
+                    <span className="bg-[var(--brand-tan-alpha)] text-brand-espresso dark:text-brand-cream text-xs font-medium px-2 py-0.5 rounded shrink-0">
+                      {song.original_key}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => !isAdded && !isAdding && onAdd(song)}
+                      disabled={isAdded || isAdding}
+                      aria-disabled={isAdded || isAdding}
+                      aria-label={
+                        isAdded
+                          ? `${song.title} already added`
+                          : `Add ${song.title}`
+                      }
+                      className={[
+                        "shrink-0 text-sm font-medium px-3 py-1 rounded-lg border transition-colors duration-200",
+                        isAdded
+                          ? "border-brand-brown/20 dark:border-brand-tan/20 text-brand-brown/40 dark:text-brand-tan/40 cursor-not-allowed bg-transparent"
+                          : isAdding
+                            ? "border-brand-brown/20 dark:border-brand-tan/20 text-brand-brown/40 dark:text-brand-tan/40 cursor-not-allowed bg-transparent"
+                            : "border-brand-brown dark:border-brand-tan text-brand-brown dark:text-brand-tan hover:bg-[var(--brand-tan-alpha)]",
+                      ].join(" ")}
+                    >
+                      {isAdding ? (
+                        <span
+                          className="inline-block w-3 h-3 border-2 border-brand-brown/40 dark:border-brand-tan/40 border-t-brand-brown dark:border-t-brand-tan rounded-full animate-spin"
+                          aria-hidden="true"
+                        />
+                      ) : isAdded ? (
+                        "Added"
+                      ) : (
+                        "Add"
+                      )}
+                    </button>
+                  </>
+                }
+              />
             );
           })}
         </div>
