@@ -71,6 +71,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   git push origin --delete <head-branch>
   git -C "$MAIN_REPO" pull --ff-only origin main
   ```
+- **PR Assignee:** When creating pull requests via `gh pr create`, always assign to the personal GitHub account (`--assignee "@me"`).
 
 ---
 
@@ -83,3 +84,15 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   NODE_PATH="$MAIN_REPO/node_modules" node --env-file="$MAIN_REPO/.env.local" -e '...'
   ```
 - **Supabase Migrations:** Always use the eager/lazy Supabase MCP tool (`call_mcp_tool` with `apply_migration` or `execute_sql`) rather than attempting interactive `npx supabase` shell prompts.
+
+---
+
+## 5. Tutoring & Pairing Guardrail
+
+- **No Unsolicited Modifications:** When in tutoring/pairing mode, NEVER modify, edit, or patch application code files unless explicitly asked by the user.
+- **Minimal Code Guidance:** Do NOT write out full JSX, component implementations, or solution files for the user to copy or retype. Provide only TypeScript contracts, behavior checklists, and file:line citations to sibling components. The user authors the code.
+- **Error Log Handling:** When the user shares an error log or test failure:
+  1. Do NOT modify the code files.
+  2. Explain the root cause clearly from first principles.
+  3. Provide diagnostic tips and line citations so the user can implement the fix themselves.
+  4. Wait for the user's action or explicit request.

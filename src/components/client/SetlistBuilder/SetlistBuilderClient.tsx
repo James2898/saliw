@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import {
   addSongToSetlist,
   removeSongFromSetlist,
@@ -22,6 +22,7 @@ import LibraryPanel from "./LibraryPanel";
 import SetlistPeopleLocalSection, {
   type PendingLineupEntry,
 } from "./SetlistPeopleLocalSection";
+import LiturgyAssistantDrawer from "./LiturgyAssistantDrawer";
 
 const CloneSetlistDialog = dynamic(() => import("./CloneSetlistDialog"), {
   ssr: false,
@@ -103,6 +104,7 @@ export default function SetlistBuilderClient({
   const [query, setQuery] = useState("");
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
 
   // CREATE mode — pending people assignment (flushed to DB in handleSave after createSetlist)
   const [pendingWorshipLeaderId, setPendingWorshipLeaderId] = useState<
@@ -478,10 +480,21 @@ export default function SetlistBuilderClient({
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_360px] md:gap-8 md:items-start">
         {/* Setlist Panel — left / top */}
         <div>
-          <p className="text-sm font-semibold text-brand-brown/60 uppercase tracking-widest mb-4">
-            Setlist ({localSongs.length}{" "}
-            {localSongs.length === 1 ? "song" : "songs"})
-          </p>
+          <div className="flex items-center justify-between mb-2 align-middle">
+            <p className="text-sm font-semibold text-brand-brown/60 uppercase tracking-widest mb-4">
+              Setlist ({localSongs.length}{" "}
+              {localSongs.length === 1 ? "song" : "songs"})
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAssistant(true)}
+              aria-label="Open liturgy assistant"
+            >
+              <Sparkles size={14} aria-hidden="true" className="mr-1.5" />
+              Liturgy Assistant
+            </Button>
+          </div>
           <SetlistPanel
             songs={localSongs}
             onReorder={handleReorder}
@@ -514,6 +527,16 @@ export default function SetlistBuilderClient({
         isCloning={isCloning}
         onConfirm={handleClone}
         onCancel={() => setShowCloneDialog(false)}
+      />
+
+      {/* Liturgy Assistant Drawer */}
+      <LiturgyAssistantDrawer
+        isOpen={showAssistant}
+        onClose={() => setShowAssistant(false)}
+        allMusicians={allMusicians}
+        currentWorshipLeaderId={pendingWorshipLeaderId}
+        onApplySetlist={() => {}}
+        hasExistingSongs={localSongs.length > 0}
       />
     </div>
   );
