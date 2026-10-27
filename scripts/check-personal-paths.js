@@ -2,10 +2,13 @@
 import { execSync } from "node:child_process";
 
 try {
-  const output = execSync('git grep -n -E "(/Users/[a-zA-Z0-9_-]+|[a-zA-Z]:\\\\Users\\\\[a-zA-Z0-9_-]+|/home/[a-zA-Z0-9_-]+)"', {
-    encoding: "utf8",
-    stdio: ["pipe", "pipe", "ignore"],
-  });
+  const output = execSync(
+    'git grep -n -E "(/Users/[a-zA-Z0-9_-]+|[a-zA-Z]:\\\\Users\\\\[a-zA-Z0-9_-]+|/home/[a-zA-Z0-9_-]+)" -- ":!scripts/check-personal-paths.js"',
+    {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "ignore"],
+    }
+  );
 
   const lines = output.trim().split(/\r?\n/).filter(Boolean);
   if (lines.length > 0) {
