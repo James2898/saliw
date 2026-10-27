@@ -181,6 +181,11 @@ export default async function EditSetlistPage({
             libraryError={libraryError}
             initialDate={setlist.date ? setlist.date.slice(0, 10) : ""}
             initialIsPublic={setlist.is_public}
+            allMusicians={(musiciansRaw ?? []).map((m) => ({
+              id: m.id,
+              name: m.name,
+            }))}
+            isMusicDirector={true}
           />
         </div>
       </main>
