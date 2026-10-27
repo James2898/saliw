@@ -21,6 +21,14 @@ tsconfig.tsbuildinfo
 # Supabase
 supabase/.temp
 
+# Environment & Secrets
+.env
+.env*.local
+
+# AI & Memory Discipline (Public Repo Rule)
+MEMORY.md
+scratch/
+
 # Playwright MCP artifacts
 .playwright-mcp/
 .qa/
