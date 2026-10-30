@@ -4,6 +4,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-31
+
+### Changed
+- Navbar Full-Width Header Expansion (`TASK-20261031-fer`)
+  - Replaced interior `<nav>` container constraint `max-w-5xl mx-auto` with `w-full px-4 sm:px-8` in `src/components/client/navbar.tsx`, expanding the navigation bar edge-to-edge on desktop and ultra-wide viewports while keeping page body containers centered (AC-1, AC-2, AC-3, AC-6)
+  - Retained existing link spacing, hover feedback, active indicator styles, and flush right-aligned mobile drawer trigger (AC-4, AC-5)
+  - Strictly deferred changelog navigation items and badges to Phase 2 / PR 2 (AC-7)
+  - Affected files: `src/components/client/navbar.tsx`
+
+---
+
 ## [Unreleased] — 2026-10-30
 
 ### Added

@@ -210,7 +210,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="sticky top-0 z-50 bg-[var(--brand-background)] border-b border-brand-brown/20 text-brand-espresso dark:text-brand-espresso">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 h-16 flex items-center gap-4">
+        <div className="w-full px-4 sm:px-8 h-16 flex items-center gap-4">
           {/* Brand */}
           <Link
             href="/"
