@@ -4,6 +4,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-31
+
+### Fixed
+- Navbar Auth State Synchronization After Login (`TASK-20261030-9zx`)
+  - Synchronized authentication session state on client route transitions (`usePathname()`) via `supabase.auth.getSession()` for 0ms local cookie verification, immediately updating desktop and mobile drawer views without requiring a page refresh (F5) (AC-1, AC-2, AC-3, AM-2)
+  - Added optimistic greeting rendering from `user.user_metadata?.full_name` while fetching authoritative `profiles` row asynchronously in the background, avoiding UI flash or delays (AC-4, AC-5, AC-6)
+  - Subscribed to `visibilitychange` to synchronize session state when returning to the tab from multi-tab login/logout events, with listener cleanup on component unmount (AC-7, AC-11)
+  - Maintained logout confirmation workflow, resetting state to guest view upon sign-out (AC-8)
+  - Declared all helper functions (`fetchProfile`, `applyUserSession`, `syncSession`) lexically before hooks to guarantee React Compiler compliance (AM-3)
+  - Preserved Server Action redirect contract in `src/app/actions/authActions.ts` and clean root layout in `src/app/layout.tsx` without introducing an `AuthProvider` wrapper (AC-9, AC-10)
+  - Affected files: `src/components/client/navbar.tsx`
+
+---
+
 ## [Unreleased] — 2026-10-30
 
 ### Added

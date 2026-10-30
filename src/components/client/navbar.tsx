@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -55,6 +55,88 @@ export default function Navbar() {
   // Track which trigger opened the modal so we can return focus on close
   const logoutTriggerRef = useRef<HTMLButtonElement | null>(null);
 
+  // Fetch authoritative full_name from the profiles table.
+  // RLS policy profiles_select_own ensures the user can only read their own row.
+  const fetchProfile = useCallback(async (currentUser: User) => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (error) {
+        console.error("Failed to fetch profile name:", error.message);
+        return;
+      }
+
+      if (data && typeof data.full_name === "string") {
+        setFullName((prevName) => {
+          if (prevName !== data.full_name) {
+            return data.full_name;
+          }
+          return prevName;
+        });
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching profile name:", err);
+    }
+  }, []);
+
+  // Synchronizes component state with the provided user session, applying
+  // optimistic user_metadata immediately while fetching authoritative profile data.
+  const applyUserSession = useCallback(
+    (currentUser: User | null) => {
+      if (!currentUser) {
+        setUser((prevUser) => {
+          if (prevUser !== null) {
+            setFullName(null);
+            return null;
+          }
+          return prevUser;
+        });
+        return;
+      }
+
+      const metaFullName =
+        typeof currentUser.user_metadata?.full_name === "string"
+          ? currentUser.user_metadata.full_name
+          : null;
+
+      setUser((prevUser) => {
+        if (prevUser?.id !== currentUser.id) {
+          setFullName(metaFullName);
+          return currentUser;
+        }
+        return prevUser;
+      });
+
+      fetchProfile(currentUser);
+    },
+    [fetchProfile]
+  );
+
+  // Re-evaluates session from local cookies via supabase.auth.getSession() (0ms read).
+  const syncSession = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("Failed to sync auth session:", error.message);
+        return;
+      }
+
+      applyUserSession(session?.user ?? null);
+    } catch (err) {
+      console.error("Unexpected error syncing auth session:", err);
+    }
+  }, [applyUserSession]);
+
   // Keep document.documentElement in sync with isDark state
   useEffect(() => {
     if (isDark) {
@@ -64,39 +146,55 @@ export default function Navbar() {
     }
   }, [isDark]);
 
-  // Subscribe to Supabase auth state changes; fetch full name from profiles table
+  // Re-evaluate auth session on route transitions (e.g. redirect from /login)
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    supabase.auth.getSession().then(
+      ({ data: { session }, error }) => {
+        if (!isMounted) return;
+        if (error) {
+          console.error("Failed to sync auth session:", error.message);
+          return;
+        }
+        applyUserSession(session?.user ?? null);
+      },
+      (err: unknown) => {
+        if (isMounted) {
+          console.error("Unexpected error syncing auth session:", err);
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname, applyUserSession]);
+
+  // Subscribe to Supabase auth state changes and tab visibility changes
   useEffect(() => {
     const supabase = createClient();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (currentUser) {
-        // Fetch full_name from the profiles table (authoritative source).
-        // RLS policy profiles_select_own ensures the user can only read their own row.
-        supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", currentUser.id)
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("Failed to fetch profile name:", error.message);
-            }
-            setFullName(data?.full_name ?? null);
-          });
-      } else {
-        setFullName(null);
-      }
+      applyUserSession(session?.user ?? null);
     });
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        syncSession();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [applyUserSession, syncSession]);
 
   function openSidebar() {
     setIsOpen(true);
@@ -170,6 +268,7 @@ export default function Navbar() {
         return;
       }
       // Success — close modal and refresh; clear error/loading state
+      applyUserSession(null);
       setIsSigningOut(false);
       setShowLogoutModal(false);
       logoutTriggerRef.current = null;
