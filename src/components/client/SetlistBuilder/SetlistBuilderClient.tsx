@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy } from "lucide-react";
 import {
@@ -22,12 +22,15 @@ import LibraryPanel from "./LibraryPanel";
 import SetlistPeopleLocalSection, {
   type PendingLineupEntry,
 } from "./SetlistPeopleLocalSection";
+import SetlistPeopleSection from "./SetlistPeopleSection";
+import WorshipLeaderHistoryModal from "./WorshipLeaderHistoryModal";
 
 const CloneSetlistDialog = dynamic(() => import("./CloneSetlistDialog"), {
   ssr: false,
 });
 
 import type { SongSummary } from "@/types/Song";
+import type { SetlistLineupEntry } from "@/types/Musician";
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
@@ -45,7 +48,7 @@ export type SongLibraryItem = SongSummary;
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
-// Minimal musician shape passed to create form — notes excluded (BUG-011)
+// Minimal musician shape passed to create/edit form — notes excluded (BUG-011)
 export interface MusicianOption {
   id: string;
   name: string;
@@ -59,9 +62,16 @@ export interface SetlistBuilderClientProps {
   libraryError?: string | null;
   initialDate?: string; // empty string in create mode
   initialIsPublic?: boolean;
-  allMusicians?: MusicianOption[]; // CREATE mode only — empty in edit mode
+  allMusicians?: MusicianOption[];
   isMusicDirector?: boolean; // derived server-side; false = hide people section
+  initialWorshipLeaderId?: string | null;
+  initialLineup?: SetlistLineupEntry[];
 }
+
+// ── Module-level constants (BUG-019) ───────────────────────────────────────────
+
+const EMPTY_MUSICIANS: MusicianOption[] = [];
+const EMPTY_LINEUP: SetlistLineupEntry[] = [];
 
 // ── Pure helper ────────────────────────────────────────────────────────────────
 
@@ -86,23 +96,25 @@ export default function SetlistBuilderClient({
   libraryError,
   initialDate,
   initialIsPublic = true,
-  allMusicians = [],
+  allMusicians = EMPTY_MUSICIANS,
   isMusicDirector = false,
+  initialWorshipLeaderId = null,
+  initialLineup = EMPTY_LINEUP,
 }: SetlistBuilderClientProps) {
   const router = useRouter();
 
-  // All lazy initialisers — never seeded inside useEffect (MEMORY.md warning)
+  // All lazy initialisers — never seeded inside useEffect (BUG-001)
   const [localSongs, setLocalSongs] = useState<SortableSong[]>(
     () => initialSongs
   );
   const [name, setName] = useState(() => setlistName);
   const [date, setDate] = useState(() => initialDate ?? "");
   const [isPublic, setIsPublic] = useState(() => initialIsPublic);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [showCloneDialog, setShowCloneDialog] = useState(false);
-  const [isCloning, setIsCloning] = useState(false);
+  const [isSaving, setIsSaving] = useState(() => false);
+  const [error, setError] = useState<string | null>(() => null);
+  const [query, setQuery] = useState(() => "");
+  const [showCloneDialog, setShowCloneDialog] = useState(() => false);
+  const [isCloning, setIsCloning] = useState(() => false);
 
   // CREATE mode — pending people assignment (flushed to DB in handleSave after createSetlist)
   const [pendingWorshipLeaderId, setPendingWorshipLeaderId] = useState<
@@ -111,6 +123,17 @@ export default function SetlistBuilderClient({
   const [pendingLineup, setPendingLineup] = useState<PendingLineupEntry[]>(
     () => []
   );
+
+  // EDIT mode — active worship leader ID (updated via SetlistPeopleSection callback)
+  const [editWorshipLeaderId, setEditWorshipLeaderId] = useState<string | null>(
+    () => initialWorshipLeaderId ?? null
+  );
+
+  // Song history modal state & trigger ref (AC-2)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(
+    () => false
+  );
+  const historyButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Dirty: compare local vs initial (name, date, isPublic, songs)
   const isDirty =
@@ -121,22 +144,32 @@ export default function SetlistBuilderClient({
 
   // Derived values — never stored as separate state
   const addedIds = new Set(localSongs.map((s) => s.songId));
+  const activeWorshipLeaderId =
+    setlistId === null ? pendingWorshipLeaderId : editWorshipLeaderId;
+  const activeWorshipLeaderName =
+    allMusicians.find((m) => m.id === activeWorshipLeaderId)?.name ?? null;
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Handlers — declared BEFORE any hooks that reference them (AM-3, BUG-007) ──
 
-  function handleAdd(song: SongLibraryItem) {
-    setLocalSongs((prev) => [
-      ...prev,
-      {
-        junctionId: null,
-        songId: song.id,
-        title: song.title,
-        artist: song.artist,
-        originalKey: song.original_key,
-        performanceKey: song.original_key,
-        orderIndex: prev.length,
-      },
-    ]);
+  function handleAdd(
+    song: SongLibraryItem,
+    performanceKey: string = song.original_key
+  ) {
+    setLocalSongs((prev) => {
+      if (prev.some((s) => s.songId === song.id)) return prev;
+      return [
+        ...prev,
+        {
+          junctionId: null,
+          songId: song.id,
+          title: song.title,
+          artist: song.artist,
+          originalKey: song.original_key,
+          performanceKey,
+          orderIndex: prev.length,
+        },
+      ];
+    });
   }
 
   function handleRemove(songId: string) {
@@ -157,14 +190,30 @@ export default function SetlistBuilderClient({
     setLocalSongs(newSongs);
   }
 
-  // ── Pending people handlers (CREATE mode) — declared before handleSave (BUG-007) ──
-
   function handlePendingWorshipLeaderChange(id: string | null) {
-    setPendingWorshipLeaderId(id);
+    setPendingWorshipLeaderId((prev) => (prev === id ? prev : id));
+    if (!id) {
+      setIsHistoryModalOpen(false);
+    }
   }
 
   function handlePendingLineupChange(lineup: PendingLineupEntry[]) {
     setPendingLineup(lineup);
+  }
+
+  function handleEditWorshipLeaderChange(id: string | null) {
+    setEditWorshipLeaderId((prev) => (prev === id ? prev : id));
+    if (!id) {
+      setIsHistoryModalOpen(false);
+    }
+  }
+
+  function handleOpenHistory() {
+    setIsHistoryModalOpen(true);
+  }
+
+  function handleCloseHistory() {
+    setIsHistoryModalOpen(false);
   }
 
   async function handleSave() {
@@ -325,7 +374,7 @@ export default function SetlistBuilderClient({
           if (orderErr) throw new Error(orderErr);
         }
 
-        // Execute key updates
+        // Execute key updates for existing songs
         for (const song of toUpdateKey) {
           const { error: keyErr } = await updatePerformanceDetails({
             id: song.junctionId!,
@@ -333,6 +382,18 @@ export default function SetlistBuilderClient({
             performance_key: song.performanceKey,
           });
           if (keyErr) throw new Error(keyErr);
+        }
+
+        // Execute key updates for newly added songs whose performanceKey differs from originalKey
+        for (const song of toAdd) {
+          if (song.performanceKey !== song.originalKey) {
+            const { error: keyErr } = await updatePerformanceDetails({
+              id: addedJunctionIds[song.songId]!,
+              setlist_id: setlistId,
+              performance_key: song.performanceKey,
+            });
+            if (keyErr) throw new Error(keyErr);
+          }
         }
 
         // Full navigation to re-mount with fresh server props (avoids stale name/date state)
@@ -379,7 +440,7 @@ export default function SetlistBuilderClient({
   ].join(" ");
 
   const labelClass =
-    "block text-xs font-semibold uppercase tracking-widest text-brand-brown mb-1.5";
+    "block text-xs font-semibold uppercase tracking-widest text-brand-brown dark:text-brand-tan mb-1.5";
 
   return (
     <div>
@@ -438,16 +499,36 @@ export default function SetlistBuilderClient({
         </div>
       </div>
 
-      {/* People section — CREATE mode only, MD only (AC-1, AC-2, AC-3, AC-4) */}
+      {/* People section — CREATE mode only, MD only */}
       {setlistId === null && isMusicDirector && (
-        <SetlistPeopleLocalSection
-          allMusicians={allMusicians}
-          worshipLeaderId={pendingWorshipLeaderId}
-          lineup={pendingLineup}
-          onWorshipLeaderChange={handlePendingWorshipLeaderChange}
-          onLineupChange={handlePendingLineupChange}
-          isMusicDirector={isMusicDirector}
-        />
+        <div className="mb-6">
+          <SetlistPeopleLocalSection
+            allMusicians={allMusicians}
+            worshipLeaderId={pendingWorshipLeaderId}
+            lineup={pendingLineup}
+            onWorshipLeaderChange={handlePendingWorshipLeaderChange}
+            onLineupChange={handlePendingLineupChange}
+            isMusicDirector={isMusicDirector}
+            onOpenHistory={handleOpenHistory}
+            historyButtonRef={historyButtonRef}
+          />
+        </div>
+      )}
+
+      {/* People section — EDIT mode, rendered inside SetlistBuilderClient (AC-10) */}
+      {setlistId !== null && isMusicDirector && (
+        <div className="mb-6 pt-6 border-t border-brand-brown/10 dark:border-brand-tan/10">
+          <SetlistPeopleSection
+            setlistId={setlistId}
+            initialWorshipLeaderId={initialWorshipLeaderId ?? null}
+            allMusicians={allMusicians}
+            initialLineup={initialLineup}
+            isMusicDirector={isMusicDirector}
+            onWorshipLeaderChange={handleEditWorshipLeaderChange}
+            onOpenHistory={handleOpenHistory}
+            historyButtonRef={historyButtonRef}
+          />
+        </div>
       )}
 
       {/* Error banner */}
@@ -478,7 +559,7 @@ export default function SetlistBuilderClient({
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_360px] md:gap-8 md:items-start">
         {/* Setlist Panel — left / top */}
         <div>
-          <p className="text-sm font-semibold text-brand-brown/60 uppercase tracking-widest mb-4">
+          <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest mb-4">
             Setlist ({localSongs.length}{" "}
             {localSongs.length === 1 ? "song" : "songs"})
           </p>
@@ -506,6 +587,19 @@ export default function SetlistBuilderClient({
           />
         </div>
       </div>
+
+      {/* Worship Leader Song History modal (AC-2, AC-4, AC-7) */}
+      <WorshipLeaderHistoryModal
+        isOpen={isHistoryModalOpen}
+        worshipLeaderId={activeWorshipLeaderId}
+        worshipLeaderName={activeWorshipLeaderName}
+        currentSetlistId={setlistId}
+        localSongs={localSongs}
+        onAddSongWithKey={handleAdd}
+        onUseKey={handleKeyChange}
+        onClose={handleCloseHistory}
+        triggerRef={historyButtonRef}
+      />
 
       {/* Clone confirmation dialog */}
       <CloneSetlistDialog

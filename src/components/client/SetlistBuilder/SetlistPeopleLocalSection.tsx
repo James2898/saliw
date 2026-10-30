@@ -26,6 +26,8 @@ interface SetlistPeopleLocalSectionProps {
   onWorshipLeaderChange: (id: string | null) => void;
   onLineupChange: (lineup: PendingLineupEntry[]) => void;
   isMusicDirector: boolean;
+  onOpenHistory?: () => void;
+  historyButtonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 // ── Class constants — mirror SetlistPeopleSection (BUG-004: dark: pairs kept) ─
@@ -57,6 +59,8 @@ export default function SetlistPeopleLocalSection({
   onWorshipLeaderChange,
   onLineupChange,
   isMusicDirector,
+  onOpenHistory,
+  historyButtonRef,
 }: SetlistPeopleLocalSectionProps) {
   // ── Add-row local state — lazy initializers (BUG-001) ────────────────────────
   // Handlers declared below; useState seeded before any JSX references them.
@@ -69,8 +73,9 @@ export default function SetlistPeopleLocalSection({
   function handleWorshipLeaderSelectChange(
     e: React.ChangeEvent<HTMLSelectElement>
   ) {
-    const val = e.target.value;
-    onWorshipLeaderChange(val || null);
+    const val = e.target.value || null;
+    if (val === worshipLeaderId) return;
+    onWorshipLeaderChange(val);
   }
 
   function handleAddMusicianSelectChange(
@@ -108,6 +113,8 @@ export default function SetlistPeopleLocalSection({
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
+  const worshipLeaderName =
+    allMusicians.find((m) => m.id === worshipLeaderId)?.name ?? null;
   const hasNoMusicians = allMusicians.length === 0;
   const addButtonDisabled =
     !addMusicianId || !addInstrument.trim() || hasNoMusicians;
@@ -123,25 +130,41 @@ export default function SetlistPeopleLocalSection({
         <p className={sectionHeadingClass}>Worship Leader</p>
         <div>
           <label className={labelClass}>Assign Worship Leader</label>
-          <select
-            value={worshipLeaderId ?? ""}
-            onChange={handleWorshipLeaderSelectChange}
-            className={selectClass}
-            aria-label="Select worship leader"
-          >
-            <option value="">— None —</option>
-            {hasNoMusicians ? (
-              <option value="" disabled>
-                No musicians in roster
-              </option>
-            ) : (
-              allMusicians.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={worshipLeaderId ?? ""}
+              onChange={handleWorshipLeaderSelectChange}
+              className={selectClass}
+              aria-label="Select worship leader"
+            >
+              <option value="">— None —</option>
+              {hasNoMusicians ? (
+                <option value="" disabled>
+                  No musicians in roster
                 </option>
-              ))
+              ) : (
+                allMusicians.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))
+              )}
+            </select>
+
+            {worshipLeaderId && onOpenHistory && (
+              <Button
+                ref={historyButtonRef}
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onOpenHistory}
+                aria-label={`View song history for ${worshipLeaderName ?? "worship leader"}`}
+                className="h-8 px-3 py-1.5 text-xs font-semibold rounded-lg"
+              >
+                History
+              </Button>
             )}
-          </select>
+          </div>
         </div>
       </div>
 
