@@ -6,6 +6,13 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-10-31
 
+### Changed
+- Navbar Full-Width Header Expansion (`TASK-20261031-fer`)
+  - Replaced interior `<nav>` container constraint `max-w-5xl mx-auto` with `w-full px-4 sm:px-8` in `src/components/client/navbar.tsx`, expanding the navigation bar edge-to-edge on desktop and ultra-wide viewports while keeping page body containers centered (AC-1, AC-2, AC-3, AC-6)
+  - Retained existing link spacing, hover feedback, active indicator styles, and flush right-aligned mobile drawer trigger (AC-4, AC-5)
+  - Strictly deferred changelog navigation items and badges to Phase 2 / PR 2 (AC-7)
+  - Affected files: `src/components/client/navbar.tsx`
+
 ### Fixed
 - Navbar Auth State Synchronization After Login (`TASK-20261030-9zx`)
   - Synchronized authentication session state on client route transitions (`usePathname()`) via `supabase.auth.getSession()` for 0ms local cookie verification, immediately updating desktop and mobile drawer views without requiring a page refresh (F5) (AC-1, AC-2, AC-3, AM-2)
