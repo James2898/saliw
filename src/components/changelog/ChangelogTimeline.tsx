@@ -11,13 +11,13 @@ import type { FilterCategory } from "./ChangelogFilterChips";
 
 const CATEGORY_BADGE_STYLES: Record<ChangelogCategory, string> = {
   Added:
-    "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-700/60",
+    "bg-brand-brown/15 text-brand-espresso border-brand-brown/30 dark:bg-brand-tan/20 dark:text-brand-cream dark:border-brand-tan/30",
   Changed:
-    "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-200 dark:border-sky-700/60",
+    "bg-brand-tan/30 text-brand-espresso border-brand-tan/40 dark:bg-brand-espresso/60 dark:text-brand-tan dark:border-brand-tan/25",
   Fixed:
-    "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700/60",
+    "bg-brand-cream text-brand-brown border-brand-brown/25 dark:bg-brand-darker dark:text-brand-tan dark:border-brand-tan/20",
   Security:
-    "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-700/60",
+    "bg-brand-espresso text-brand-cream border-brand-espresso dark:bg-brand-cream dark:text-brand-espresso dark:border-brand-cream",
 };
 
 interface ChangelogTimelineProps {
@@ -33,12 +33,12 @@ function FormattedInline({ text }: { text: string }) {
       {parts.map((part, index) => {
         if (part.startsWith("`") && part.endsWith("`") && part.length > 2) {
           return (
-            <code
+            <span
               key={index}
-              className="px-1.5 py-0.5 rounded text-[11px] sm:text-xs font-mono bg-brand-brown/10 dark:bg-brand-tan/15 text-brand-espresso dark:text-brand-cream border border-brand-brown/15 dark:border-brand-tan/15"
+              className="font-medium text-brand-espresso dark:text-brand-cream"
             >
               {part.slice(1, -1)}
-            </code>
+            </span>
           );
         }
         return <span key={index}>{part}</span>;
@@ -156,7 +156,7 @@ export default function ChangelogTimeline({
                   {isCopied ? (
                     <Check
                       size={16}
-                      className="text-emerald-600 dark:text-emerald-400"
+                      className="text-brand-brown dark:text-brand-tan"
                     />
                   ) : (
                     <Link2 size={16} />

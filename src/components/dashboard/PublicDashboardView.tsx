@@ -7,6 +7,8 @@ import RecentSongs, {
 import UpcomingSetlists, {
   type UpcomingSetlist,
 } from "@/components/dashboard/UpcomingSetlists";
+import RecentChangelog from "@/components/dashboard/RecentChangelog";
+import type { ChangelogRelease } from "@/utils/changelogParser";
 
 interface FeatureCardProps {
   icon: ReactElement;
@@ -40,11 +42,13 @@ function FeatureCard({
 interface PublicDashboardViewProps {
   upcomingSetlists: UpcomingSetlist[];
   recentSongs: RecentSong[];
+  recentReleases?: ChangelogRelease[];
 }
 
 export default function PublicDashboardView({
   upcomingSetlists,
   recentSongs,
+  recentReleases = [],
 }: PublicDashboardViewProps): ReactElement {
   return (
     <div className="flex flex-col gap-8">
@@ -104,6 +108,9 @@ export default function PublicDashboardView({
         <RecentSongs songs={recentSongs} />
         <UpcomingSetlists setlists={upcomingSetlists} />
       </div>
+
+      {/* Recent Changelog taking whole width */}
+      <RecentChangelog releases={recentReleases} />
     </div>
   );
 }

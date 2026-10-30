@@ -5,6 +5,8 @@ import {
   sanitizeBulletText,
   parseCategories,
   parseChangelog,
+  humanizeTitle,
+  humanizeDetail,
 } from "../changelogParser";
 
 describe("changelogParser", () => {
@@ -222,6 +224,41 @@ describe("changelogParser", () => {
       expect(releases).toHaveLength(1);
       expect(releases[0].anchorId).toBe("release-initial-release");
       expect(releases[0].displayDate).toBe("Initial Release");
+    });
+  });
+
+  describe("humanizeTitle & humanizeDetail", () => {
+    it("strips technical engineering prefixes from titles", () => {
+      expect(
+        humanizeTitle(
+          "P3 UI/UX Mobile Polish across navigation, song editor tabs, lineup disclosure, and landing hero CTAs"
+        )
+      ).toBe(
+        "Mobile improvements for navigation, song editor, and lineup"
+      );
+      expect(
+        humanizeTitle(
+          "Immediate P0 security hardening across auth, external video embedding, and profile role authorization"
+        )
+      ).toBe("Security hardening for logins and user profiles");
+    });
+
+    it("humanizeDetail filters out pure engineering plumbing lines", () => {
+      const plumbingLine =
+        "Supabase database generic definition: declared canonical `Database` interface in `src/types/supabase.ts`";
+      expect(humanizeDetail(plumbingLine)).toBe("");
+
+      const deadCodeLine =
+        "Dead code pruning: deleted obsolete unused type files `src/types/Singer.ts` with zero dangling imports";
+      expect(humanizeDetail(deadCodeLine)).toBe("");
+    });
+
+    it("humanizeDetail strips file paths and backticks from user-facing details", () => {
+      const input =
+        "Added YouTubeLinkModal in `src/components/YouTubeModal.tsx` with inline validation";
+      const cleaned = humanizeDetail(input);
+      expect(cleaned).not.toContain("src/components");
+      expect(cleaned).toContain("Added YouTubeLinkModal");
     });
   });
 });

@@ -16,7 +16,6 @@ import {
   X,
   UserRound,
   UsersRound,
-  History,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/services/supabase/client";
@@ -31,7 +30,6 @@ const navLinks = [
   { href: "/library", label: "Library", Icon: Library },
   { href: "/setlists", label: "Setlists", Icon: List },
   { href: "/musicians", label: "Musicians", Icon: UsersRound },
-  { href: "/changelog", label: "Changelog", Icon: History },
 ] as const;
 
 export default function Navbar() {
