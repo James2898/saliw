@@ -13,6 +13,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
     - `browser_click`: uses `{ target: string }` (CSS selector or element ref), **never** `{ selector }`.
     - `browser_evaluate`: uses `{ function: string }` (e.g. `"() => { ... }"`), **never** `{ script }`.
     - `browser_select_option`: uses `{ target: string, values: string[] }`.
+- **Function Execution in `playwright_evaluate` (IIFE Required):** Unlike Claude Code's `browser_evaluate` which accepts a bare function expression `() => { ... }`, Antigravity's `playwright_evaluate` executes raw JavaScript statements. To evaluate a multi-line block and return a value, **always wrap in an Immediately Invoked Function Expression (IIFE)**: `(() => { return document.title; })()`. A bare arrow function declares a function without calling it and returns `undefined`.
 - **Saliw Modal Dialog Selector:** The app layout mounts a mobile navigation drawer with `role="dialog"`. Never query `document.querySelector('[role="dialog"]')` alone when asserting modals; always scope by `aria-labelledby` (e.g. `[role="dialog"][aria-labelledby="worship-leader-history-modal-title"]`).
 - **Pure JavaScript Only:** Always write scripts passed to `playwright_evaluate` / `browser_evaluate` in standard ECMAScript / ES6.
 - **Never use TypeScript Syntax:** Do not use `as HTMLElement`, `as HTMLInputElement`, interface declarations, or type annotations in evaluated strings. The browser's native JavaScript engine will throw `SyntaxError: Unexpected identifier 'as'`.
@@ -51,6 +52,8 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 ---
 
 ## 3. Worktree & Git Discipline
+
+- **Worktree Branch Renaming After `@task-logger`:** When working in a pre-created git worktree whose branch does not yet reflect the formal task ID (e.g. `fix_navbar_auth_state`), rename the local branch immediately after `@task-logger` mints the task ID using `git branch -m <type>/<TASK-ID>-<slug>` before invoking `@fullstack-developer` or `@release-manager`.
 
 - **Worktree Awareness:** Antigravity often works in dedicated git worktrees (e.g. under `~/.gemini/antigravity/worktrees/`). Ensure commands and dev servers execute inside the active worktree root.
 - **Untracked Directories:** Keep test plans, verification traces, and Playwright screenshots in `.qa/` or `.playwright-mcp/` (both gitignored).
