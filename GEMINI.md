@@ -6,12 +6,15 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 
 ## 1. Tooling & MCP Guidelines
 
-### Playwright MCP (`browser_evaluate`, `browser_click`)
+### Playwright MCP (`playwright_*` vs `browser_*`)
 - **Tool Argument Schemas:**
-  - `browser_click`: uses `{ target: string }` (CSS selector or element ref), **never** `{ selector }`.
-  - `browser_evaluate`: uses `{ function: string }` (e.g. `"() => { ... }"`), **never** `{ script }`.
-  - `browser_select_option`: uses `{ target: string, values: string[] }`.
-- **Pure JavaScript Only:** Always write scripts passed to `browser_evaluate` in standard ECMAScript / ES6.
+  - **Antigravity `playwright` MCP (`playwright_*` tools):** `playwright_evaluate` uses `{ script: string }`; `playwright_click` uses `{ selector: string }`; `playwright_navigate` uses `{ url: string, timeout?: number }` (pass `timeout: 60000` on the first navigation to a freshly started `next dev` server so initial route compilation does not time out at 30s).
+  - **Claude Code `@playwright/mcp` (`browser_*` tools):**
+    - `browser_click`: uses `{ target: string }` (CSS selector or element ref), **never** `{ selector }`.
+    - `browser_evaluate`: uses `{ function: string }` (e.g. `"() => { ... }"`), **never** `{ script }`.
+    - `browser_select_option`: uses `{ target: string, values: string[] }`.
+- **Saliw Modal Dialog Selector:** The app layout mounts a mobile navigation drawer with `role="dialog"`. Never query `document.querySelector('[role="dialog"]')` alone when asserting modals; always scope by `aria-labelledby` (e.g. `[role="dialog"][aria-labelledby="worship-leader-history-modal-title"]`).
+- **Pure JavaScript Only:** Always write scripts passed to `playwright_evaluate` / `browser_evaluate` in standard ECMAScript / ES6.
 - **Never use TypeScript Syntax:** Do not use `as HTMLElement`, `as HTMLInputElement`, interface declarations, or type annotations in evaluated strings. The browser's native JavaScript engine will throw `SyntaxError: Unexpected identifier 'as'`.
 - **Safe Element Casts:** Use standard DOM existence checks or plain property lookups:
   ```javascript
@@ -27,7 +30,9 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 - **zsh globs:** quote glob arguments (`--include='*.ts'`). Unquoted, zsh aborts with `no matches found`.
 
 ### Windows & PowerShell Script Execution
-- **Inline Script Execution:** When executing multi-line or ad-hoc data calculation scripts in Windows shell, prefer `node -e "..."` over `powershell -Command "..."`. In PowerShell command strings, unescaped `$` variable identifiers are evaluated prematurely by string interpolation and will trigger syntax errors like `Missing expression after unary operator`.
+- **Inline Script Execution:** When executing simple one-liner scripts in Windows shell, prefer `node -e "..."` over `powershell -Command "..."`. In PowerShell command strings, unescaped `$` variable identifiers are evaluated prematurely by string interpolation and will trigger syntax errors like `Missing expression after unary operator`.
+- **Avoid Multi-line `node -e` with Quotes in PowerShell:** Windows PowerShell 5.1 strips `""` inside `node -e '...'` when passing arguments to native binaries (causing `SyntaxError: Invalid or unexpected token`). For any multi-line script or regex replacement, write a temporary `.mjs` script to the conversation's `scratch/` directory via `write_file` and run `node "<scratchDir>/script.mjs"`.
+- **CRLF Files & `edit_file`:** Existing tracked files checked out with CRLF (`\r\n`) on Windows can fail multi-line `edit_file` matches when tool arguments normalize newlines to LF (`\n`). Prefer single-line `Target` strings in `edit_file` on CRLF files, or perform multi-line replacements via a `scratch/*.mjs` script that matches `\r?\n`.
 
 ---
 
@@ -41,7 +46,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
      ```bash
      rm -rf .next
      ```
-  3. Start a fresh dev server (`npx next dev -p 3001`).
+  3. Start a fresh dev server (`node node_modules/next/dist/bin/next dev -p 3001` on Windows PowerShell where `npx.ps1` is blocked by ExecutionPolicy, or `npx.cmd next dev -p 3001`).
 
 ---
 
@@ -57,13 +62,20 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
     ln -sf "$MAIN_REPO/node_modules" node_modules
     ln -sf "$MAIN_REPO/.env.local" .env.local
     ```
-  - Windows (PowerShell):
+  - Windows (PowerShell — uses directory junction + file copy so elevation is not required, and invokes `node` binaries directly to avoid `npx.ps1` ExecutionPolicy blocks):
     ```powershell
     $mainRepo = Resolve-Path ((git rev-parse --git-common-dir) + "/..")
-    New-Item -ItemType SymbolicLink -Path node_modules -Target "$mainRepo/node_modules"
-    New-Item -ItemType SymbolicLink -Path .env.local -Target "$mainRepo/.env.local"
+    if (-not (Test-Path "node_modules")) { cmd /c mklink /J node_modules "$mainRepo\node_modules" }
+    if (-not (Test-Path ".env.local")) { Copy-Item "$mainRepo\.env.local" .env.local }
+    # Run checks without npx.ps1:
+    node node_modules/typescript/bin/tsc --noEmit
+    node node_modules/eslint/bin/eslint.js src/
+    node node_modules/vitest/vitest.mjs run src/
+    # Cleanup before git status / commit:
+    if (Test-Path "node_modules") { cmd /c rmdir node_modules }
+    if (Test-Path ".env.local") { Remove-Item .env.local -Force }
     ```
-  Start the dev server with `./node_modules/.bin/next dev -p <port>` (no `--turbopack`, see MEMORY.md) and use a port other than the main checkout's. Remove the temporary symlinks (`rm -f node_modules .env.local` or `Remove-Item node_modules, .env.local`) before `git status` / committing so untracked symlinks are never staged.
+  Start the dev server with `node node_modules/next/dist/bin/next dev -p <port>` on Windows (or `./node_modules/.bin/next dev -p <port>` on POSIX; no `--turbopack`, see MEMORY.md) and use a port other than the main checkout's. Remove the temporary links (`rm -f node_modules .env.local` on POSIX, or `cmd /c rmdir node_modules` and `Remove-Item .env.local -Force` on Windows) before `git status` / committing so untracked links are never staged.
 - **Merging PRs from a worktree:** Do not pass `--delete-branch` to `gh pr merge` when `main` is checked out in the primary worktree (`gh` attempts `git checkout main` locally and fails with `fatal: 'main' is already used by worktree`). Instead run:
   ```bash
   MAIN_REPO="$(git rev-parse --git-common-dir)/.."

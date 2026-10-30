@@ -8,6 +8,13 @@ import type {
   DbSetlistMusician,
 } from "@/types/supabase";
 import type { SetlistLineupEntry } from "@/types/Musician";
+import {
+  groupWorshipLeaderSongHistory,
+  type RawHistorySetlistRow,
+  type WorshipLeaderSongHistoryItem,
+} from "@/utils/worshipLeaderHistory";
+
+export type { WorshipLeaderSongHistoryItem };
 
 /**
  * Fetches the header fields of a single setlist by its ID.
@@ -934,6 +941,77 @@ export async function getSetlistLineup(input: {
     return {
       data: null,
       error: "An unexpected error occurred. Please try again.",
+    };
+  }
+}
+
+/**
+ * Fetches past song performance history for a given worship leader across setlists
+ * dated strictly before today (excluding the setlist currently being edited, if any).
+ * Groups by unique (song_id, performance_key) pair and sorts A–Z by title, then newest date first.
+ *
+ * @param worshipLeaderId - The musician UUID assigned as worship leader
+ * @param currentSetlistId - Optional setlist UUID currently being edited to exclude from results
+ * @returns Grouped and sorted WorshipLeaderSongHistoryItem rows, or an error message
+ */
+export async function getWorshipLeaderSongHistory(
+  worshipLeaderId: string,
+  currentSetlistId?: string | null
+): Promise<{
+  data: WorshipLeaderSongHistoryItem[] | null;
+  error: string | null;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: "Unauthorized" };
+    }
+
+    if (!worshipLeaderId || !worshipLeaderId.trim()) {
+      return { data: [], error: null };
+    }
+
+    // BUG-018: Format today as YYYY-MM-DD in UTC convention to compare against timestamptz
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // AM-1: Explicitly select songs(id, title, artist, original_key, tags) directly from DB join
+    let query = supabase
+      .from("setlists")
+      .select(
+        "id, date, setlist_songs(song_id, performance_key, songs(id, title, artist, original_key, tags))"
+      )
+      .eq("worship_leader_id", worshipLeaderId)
+      .lt("date", todayStr);
+
+    if (currentSetlistId) {
+      query = query.neq("id", currentSetlistId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return {
+        data: null,
+        error: "Unable to load song history",
+      };
+    }
+
+    // BUG-017: Cast PostgREST nested select array inference to runtime single-object join shape
+    const rows = (data ?? []) as unknown as RawHistorySetlistRow[];
+    const history = groupWorshipLeaderSongHistory(rows, {
+      today: todayStr,
+      excludeSetlistId: currentSetlistId,
+    });
+
+    return { data: history, error: null };
+  } catch {
+    return {
+      data: null,
+      error: "Unable to load song history",
     };
   }
 }

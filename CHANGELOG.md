@@ -4,6 +4,20 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-10-30
+
+### Added
+- Worship Leader Song History in Setlist Builder (`TASK-20261029-5cf`)
+  - Added "History" trigger button adjacent to "Assign Worship Leader" select dropdown in both create (`SetlistPeopleLocalSection`) and edit (`SetlistPeopleSection`) modes when a worship leader is assigned (AC-1)
+  - Created accessible full-screen mobile / centered desktop `WorshipLeaderHistoryModal` dialog displaying leader's past song performance history with tag filter chips (`All`, `Joyful`, `Solemn`, `Hymn`), backdrop blur, Escape dismissal, and Tab focus trap (AC-2, AC-6, AC-11, AM-2, AM-3)
+  - Implemented `getWorshipLeaderSongHistory` server action in `src/app/actions/setlistActions.ts` and pure grouping utility `groupWorshipLeaderSongHistory` in `src/utils/worshipLeaderHistory.ts`, querying past setlists (`date < today`, excluding current setlist in edit mode) and grouping rows by unique `(song_id, performance_key)` with `slice(0, 10)` date handling, repeat multiplier badge (`×N`), and A–Z / newest date sorting (AC-3, AC-4, AC-5, AM-1, BUG-017, BUG-018)
+  - Wired interactive row action button dynamics ("Add" to append song, "Use key" to adopt leader's performance key, "Current" when key matches), updating local builder state dynamically without closing the modal and confirming via `aria-live="polite"` screen-reader announcements (AC-7, AC-8)
+  - Integrated `SetlistPeopleSection` directly inside `SetlistBuilderClient` on edit page (`/setlists/[id]/edit`) with `onWorshipLeaderChange` callback guarded against no-op updates and held in `useRef` (AC-10, AM-4, BUG-027)
+  - Handled loading spinner, empty state ("No past setlists for <Leader Name>"), and error state with functional Retry control (AC-9)
+  - Affected files: `src/utils/worshipLeaderHistory.ts`, `src/app/actions/setlistActions.ts`, `src/components/client/SetlistBuilder/WorshipLeaderHistoryModal.tsx`, `src/components/client/SetlistBuilder/SetlistPeopleLocalSection.tsx`, `src/components/client/SetlistBuilder/SetlistPeopleSection.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/app/setlists/[id]/edit/page.tsx`, `src/app/actions/__tests__/setlistActions.test.ts`
+
+---
+
 ## [Unreleased] — 2026-10-23
 
 ### Added / Changed

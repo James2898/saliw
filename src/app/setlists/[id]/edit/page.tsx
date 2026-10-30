@@ -11,7 +11,6 @@ import { getAllSongs } from "@/app/actions/songActions";
 import { listMusicians } from "@/app/actions/musicianActions";
 import Card from "@/components/server/card";
 import SetlistBuilderClient from "@/components/client/SetlistBuilder/SetlistBuilderClient";
-import SetlistPeopleSection from "@/components/client/SetlistBuilder/SetlistPeopleSection";
 import type {
   SortableSong,
   SongLibraryItem,
@@ -147,6 +146,11 @@ export default async function EditSetlistPage({
     original_key: s.original_key,
   }));
 
+  const allMusicians = (musiciansRaw ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+  }));
+
   return (
     <div className="min-h-screen bg-brand-cream dark:bg-brand-darker font-sans">
       <main className="pt-4">
@@ -156,23 +160,6 @@ export default async function EditSetlistPage({
             Back to Setlist
           </Link>
 
-          {/* People section — worship leader + lineup */}
-          <div className="mb-6">
-            <Card>
-              <SetlistPeopleSection
-                setlistId={id}
-                initialWorshipLeaderId={setlist.worship_leader_id}
-                allMusicians={(musiciansRaw ?? []).map((m) => ({
-                  id: m.id,
-                  name: m.name,
-                  notes: m.notes,
-                }))}
-                initialLineup={initialLineupRaw ?? []}
-                isMusicDirector={true}
-              />
-            </Card>
-          </div>
-
           <SetlistBuilderClient
             setlistId={id}
             setlistName={setlist.name}
@@ -181,6 +168,10 @@ export default async function EditSetlistPage({
             libraryError={libraryError}
             initialDate={setlist.date ? setlist.date.slice(0, 10) : ""}
             initialIsPublic={setlist.is_public}
+            initialWorshipLeaderId={setlist.worship_leader_id}
+            allMusicians={allMusicians}
+            initialLineup={initialLineupRaw ?? []}
+            isMusicDirector={isMusicDirector}
           />
         </div>
       </main>
