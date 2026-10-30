@@ -8,7 +8,10 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 
 ### Playwright MCP (`playwright_*` vs `browser_*`)
 - **Tool Argument Schemas:**
-  - **Antigravity `playwright` MCP (`playwright_*` tools):** `playwright_evaluate` uses `{ script: string }`; `playwright_click` uses `{ selector: string }`; `playwright_navigate` uses `{ url: string, timeout?: number }` (pass `timeout: 60000` on the first navigation to a freshly started `next dev` server so initial route compilation does not time out at 30s).
+  - **Antigravity `playwright` MCP (`playwright_*` tools):**
+    - `playwright_evaluate` uses `{ script: string }`. **Always wrap multi-line logic in an IIFE `(() => { ... })()` or evaluate a direct expression.** A bare arrow function `() => { ... }` is only declared (not executed) and returns `undefined`, unlike Claude Code's `browser_evaluate` which automatically invokes passed function strings.
+    - `playwright_click` uses `{ selector: string }`.
+    - `playwright_navigate` uses `{ url: string, timeout?: number }` (pass `timeout: 60000` on the first navigation to a freshly started `next dev` server so initial route compilation does not time out at 30s).
   - **Claude Code `@playwright/mcp` (`browser_*` tools):**
     - `browser_click`: uses `{ target: string }` (CSS selector or element ref), **never** `{ selector }`.
     - `browser_evaluate`: uses `{ function: string }` (e.g. `"() => { ... }"`), **never** `{ script }`.
@@ -26,6 +29,15 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   const input = document.querySelector('input');
   if (input) { const val = input.value; }
   ```
+
+### React Compiler & Immutability Rules
+- **No Direct Window Mutation (`react-hooks/immutability`):** Never assign directly to global properties like `window.location.hash = '#...'` inside event callbacks or component renders. Direct mutation triggers a fatal React Compiler error. Use `window.history.pushState(null, "", `#${anchorId}`)` or `element.scrollIntoView({ behavior: "smooth" })` instead.
+
+### Saliw Artisan Design System Palette Rules
+- **No Generic Green/Blue Alert Colors:** Badges, category pills, and tag chips must never use generic Tailwind colors (`emerald`, `sky`, `blue`, `green`). All UI indicators must adhere strictly to Saliw's Artisan palette:
+  - High Emphasis / Primary: `brand-espresso` / `brand-cream`
+  - Medium / Subtle: `brand-brown` / `brand-tan`
+  - Neutral / Card backgrounds: `brand-cream` / `brand-darker`
 
 ### zsh Globs
 - **zsh globs:** quote glob arguments (`--include='*.ts'`). Unquoted, zsh aborts with `no matches found`.
@@ -68,6 +80,8 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   - Windows (PowerShell — uses directory junction + file copy so elevation is not required, and invokes `node` binaries directly to avoid `npx.ps1` ExecutionPolicy blocks):
     ```powershell
     $mainRepo = Resolve-Path ((git rev-parse --git-common-dir) + "/..")
+    # Clean non-junction stub directory if left behind by previous tools:
+    if (Test-Path "node_modules" -and -not (Get-Item "node_modules").LinkType) { Remove-Item -Recurse -Force "node_modules" }
     if (-not (Test-Path "node_modules")) { cmd /c mklink /J node_modules "$mainRepo\node_modules" }
     if (-not (Test-Path ".env.local")) { Copy-Item "$mainRepo\.env.local" .env.local }
     # Run checks without npx.ps1:
@@ -84,7 +98,13 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   MAIN_REPO="$(git rev-parse --git-common-dir)/.."
   gh pr merge <n> --merge
   git push origin --delete <head-branch>
-  git -C "$MAIN_REPO" pull --ff-only origin main
+  # If primary repo is on main, pull; otherwise fast-forward the local main ref without switching branches:
+  CURRENT_BRANCH=$(git -C "$MAIN_REPO" branch --show-current)
+  if [ "$CURRENT_BRANCH" = "main" ]; then
+      git -C "$MAIN_REPO" pull --ff-only origin main
+  else
+      git -C "$MAIN_REPO" fetch origin main:main
+  fi
   ```
 
 ---

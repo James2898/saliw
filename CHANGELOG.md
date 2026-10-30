@@ -6,6 +6,17 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-10-31
 
+### Added
+- Changelog Page & Navigation Item (`TASK-20261031-1ik`)
+  - Dedicated public `/changelog` route reading `CHANGELOG.md` directly on the server via Node `fs` with friendly date formatting and fallback handling (AC-1, AC-2, AC-3, AC-9)
+  - Color-coded semantic category badges (`Added`, `Changed`, `Fixed`, `Security`) with Artisan WCAG AA contrast styling (AC-5, AM-2)
+  - Client-side category filter chips styled consistently with `TagFilterBar` and module-scoped constant declarations (AC-6, AM-3)
+  - Desktop sticky release jump index with item counts and smooth scroll clearance (`scroll-mt-20`) (AC-7, AM-1)
+  - Pure sanitization pipeline stripping internal ticket references, audit markers, and `Affected files:` sub-bullets (AC-4)
+  - Timezone-safe UTC date formatting preventing calendar day rollback (AM-4)
+  - Appended Changelog link with `History` icon to primary navbar, rendering 4th for guests, 5th for members, and within the mobile drawer (AC-8)
+  - Affected files: `src/app/changelog/page.tsx`, `src/components/changelog/ChangelogClientView.tsx`, `src/components/changelog/ChangelogFilterChips.tsx`, `src/components/changelog/ChangelogJumpIndex.tsx`, `src/components/changelog/ChangelogTimeline.tsx`, `src/components/client/navbar.tsx`, `src/utils/changelogParser.ts`, `src/utils/__tests__/changelogParser.test.ts`
+
 ### Changed
 - Navbar Full-Width Header Expansion (`TASK-20261031-fer`)
   - Replaced interior `<nav>` container constraint `max-w-5xl mx-auto` with `w-full px-4 sm:px-8` in `src/components/client/navbar.tsx`, expanding the navigation bar edge-to-edge on desktop and ultra-wide viewports while keeping page body containers centered (AC-1, AC-2, AC-3, AC-6)
