@@ -8,7 +8,10 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 
 ### Playwright MCP (`playwright_*` vs `browser_*`)
 - **Tool Argument Schemas:**
-  - **Antigravity `playwright` MCP (`playwright_*` tools):** `playwright_evaluate` uses `{ script: string }`; `playwright_click` uses `{ selector: string }`; `playwright_navigate` uses `{ url: string, timeout?: number }` (pass `timeout: 60000` on the first navigation to a freshly started `next dev` server so initial route compilation does not time out at 30s).
+  - **Antigravity `playwright` MCP (`playwright_*` tools):**
+    - `playwright_evaluate` uses `{ script: string }`. **Always wrap multi-line logic in an IIFE `(() => { ... })()` or evaluate a direct expression.** A bare arrow function `() => { ... }` is only declared (not executed) and returns `undefined`, unlike Claude Code's `browser_evaluate` which automatically invokes passed function strings.
+    - `playwright_click` uses `{ selector: string }`.
+    - `playwright_navigate` uses `{ url: string, timeout?: number }` (pass `timeout: 60000` on the first navigation to a freshly started `next dev` server so initial route compilation does not time out at 30s).
   - **Claude Code `@playwright/mcp` (`browser_*` tools):**
     - `browser_click`: uses `{ target: string }` (CSS selector or element ref), **never** `{ selector }`.
     - `browser_evaluate`: uses `{ function: string }` (e.g. `"() => { ... }"`), **never** `{ script }`.
@@ -81,7 +84,13 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   MAIN_REPO="$(git rev-parse --git-common-dir)/.."
   gh pr merge <n> --merge
   git push origin --delete <head-branch>
-  git -C "$MAIN_REPO" pull --ff-only origin main
+  # If primary repo is on main, pull; otherwise fast-forward the local main ref without switching branches:
+  CURRENT_BRANCH=$(git -C "$MAIN_REPO" branch --show-current)
+  if [ "$CURRENT_BRANCH" = "main" ]; then
+      git -C "$MAIN_REPO" pull --ff-only origin main
+  else
+      git -C "$MAIN_REPO" fetch origin main:main
+  fi
   ```
 
 ---
