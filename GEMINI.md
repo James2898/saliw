@@ -29,6 +29,15 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   if (input) { const val = input.value; }
   ```
 
+### React Compiler & Immutability Rules
+- **No Direct Window Mutation (`react-hooks/immutability`):** Never assign directly to global properties like `window.location.hash = '#...'` inside event callbacks or component renders. Direct mutation triggers a fatal React Compiler error. Use `window.history.pushState(null, "", `#${anchorId}`)` or `element.scrollIntoView({ behavior: "smooth" })` instead.
+
+### Saliw Artisan Design System Palette Rules
+- **No Generic Green/Blue Alert Colors:** Badges, category pills, and tag chips must never use generic Tailwind colors (`emerald`, `sky`, `blue`, `green`). All UI indicators must adhere strictly to Saliw's Artisan palette:
+  - High Emphasis / Primary: `brand-espresso` / `brand-cream`
+  - Medium / Subtle: `brand-brown` / `brand-tan`
+  - Neutral / Card backgrounds: `brand-cream` / `brand-darker`
+
 ### zsh Globs
 - **zsh globs:** quote glob arguments (`--include='*.ts'`). Unquoted, zsh aborts with `no matches found`.
 
@@ -68,6 +77,8 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   - Windows (PowerShell — uses directory junction + file copy so elevation is not required, and invokes `node` binaries directly to avoid `npx.ps1` ExecutionPolicy blocks):
     ```powershell
     $mainRepo = Resolve-Path ((git rev-parse --git-common-dir) + "/..")
+    # Clean non-junction stub directory if left behind by previous tools:
+    if (Test-Path "node_modules" -and -not (Get-Item "node_modules").LinkType) { Remove-Item -Recurse -Force "node_modules" }
     if (-not (Test-Path "node_modules")) { cmd /c mklink /J node_modules "$mainRepo\node_modules" }
     if (-not (Test-Path ".env.local")) { Copy-Item "$mainRepo\.env.local" .env.local }
     # Run checks without npx.ps1:
