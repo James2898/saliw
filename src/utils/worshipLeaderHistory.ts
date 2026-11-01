@@ -97,3 +97,127 @@ export function groupWorshipLeaderSongHistory(
     return a.performanceKey.localeCompare(b.performanceKey);
   });
 }
+
+export interface SongPerformanceHistoryItem {
+  worshipLeaderId: string;
+  worshipLeaderName: string;
+  performanceKey: string;
+  count: number;
+  lastSungDate: string;
+  lastSetlistId: string;
+  lastSetlistName: string;
+}
+
+export interface RawSongPerformanceSetlistRow {
+  id: string;
+  name: string | null;
+  date: string | null;
+  worship_leader_id: string | null;
+  musicians: {
+    id: string;
+    name: string | null;
+  } | null;
+}
+
+export interface RawSongPerformanceRow {
+  song_id?: string;
+  performance_key: string | null;
+  setlists: RawSongPerformanceSetlistRow | null;
+}
+
+/**
+ * Groups raw setlist performance rows for a single song into unique
+ * (worship_leader_id, performance_key) history items, collapsing repeat
+ * performances in the same key with a repeat count, latest YYYY-MM-DD date,
+ * and most recent setlist reference (ID + name).
+ *
+ * Sorted deterministically:
+ * 1. lastSungDate descending (most recent first)
+ * 2. worshipLeaderName ascending (case-insensitive A–Z)
+ * 3. performanceKey ascending (A–Z)
+ */
+export function groupSongPerformanceHistory(
+  rows: RawSongPerformanceRow[],
+  options?: {
+    today?: string;
+  }
+): SongPerformanceHistoryItem[] {
+  const todayStr = (options?.today ?? new Date().toISOString()).slice(0, 10);
+
+  const grouped = new Map<string, SongPerformanceHistoryItem>();
+
+  for (const row of rows) {
+    if (!row || !row.setlists) continue;
+
+    const setlist = row.setlists;
+    if (
+      !setlist.id ||
+      !setlist.date ||
+      !setlist.worship_leader_id ||
+      !setlist.worship_leader_id.trim()
+    ) {
+      continue;
+    }
+
+    // BUG-018: setlists.date is timestamptz; always extract YYYY-MM-DD via slice(0, 10)
+    const dateStr = setlist.date.slice(0, 10);
+    if (!dateStr || dateStr >= todayStr) continue;
+
+    const rawKey =
+      typeof row.performance_key === "string" ? row.performance_key.trim() : "";
+    const performanceKey = rawKey || "—";
+
+    const leaderId = setlist.worship_leader_id;
+    const rawLeaderName = setlist.musicians?.name?.trim();
+    const leaderName = rawLeaderName ? rawLeaderName : "Unknown Leader";
+
+    const rawSetlistName = setlist.name?.trim();
+    const setlistName = rawSetlistName ? rawSetlistName : "Untitled Setlist";
+
+    const tupleKey = `${leaderId}::${performanceKey}`;
+    const existing = grouped.get(tupleKey);
+
+    if (!existing) {
+      grouped.set(tupleKey, {
+        worshipLeaderId: leaderId,
+        worshipLeaderName: leaderName,
+        performanceKey,
+        count: 1,
+        lastSungDate: dateStr,
+        lastSetlistId: setlist.id,
+        lastSetlistName: setlistName,
+      });
+    } else {
+      existing.count += 1;
+      const isNewerDate = dateStr > existing.lastSungDate;
+      const isSameDateHigherId =
+        dateStr === existing.lastSungDate &&
+        setlist.id > existing.lastSetlistId;
+
+      if (isNewerDate || isSameDateHigherId) {
+        existing.lastSungDate = dateStr;
+        existing.lastSetlistId = setlist.id;
+        existing.lastSetlistName = setlistName;
+        if (leaderName !== "Unknown Leader") {
+          existing.worshipLeaderName = leaderName;
+        }
+      }
+    }
+  }
+
+  return Array.from(grouped.values()).sort((a, b) => {
+    const dateCmp = b.lastSungDate.localeCompare(a.lastSungDate);
+    if (dateCmp !== 0) return dateCmp;
+
+    const nameCmp = a.worshipLeaderName
+      .toLowerCase()
+      .localeCompare(b.worshipLeaderName.toLowerCase());
+    if (nameCmp !== 0) return nameCmp;
+
+    if (a.worshipLeaderId !== b.worshipLeaderId) {
+      return a.worshipLeaderId.localeCompare(b.worshipLeaderId);
+    }
+
+    return a.performanceKey.localeCompare(b.performanceKey);
+  });
+}
