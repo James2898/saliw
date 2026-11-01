@@ -65,6 +65,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 
 ## 3. Worktree & Git Discipline
 
+- **No Short `schedule` Timers for Subagent Waiting:** When waiting for one or more spawned subagents (e.g. the second agent of a parallel pair) to complete, never call `schedule` with a short timer (e.g. < 60s) to poll or re-check. Simply end the turn with no tool calls — Antigravity's reactive wakeup automatically resumes execution the moment the subagent replies. If a safety watchdog timer is ever desired, use `TimerCondition: 'any'` with `DurationSeconds >= 180` to prevent premature token-expensive context re-read turns.
 - **Worktree Branch Renaming After `@task-logger`:** When working in a pre-created git worktree whose branch does not yet reflect the formal task ID (e.g. `fix_navbar_auth_state`), rename the local branch immediately after `@task-logger` mints the task ID using `git branch -m <type>/<TASK-ID>-<slug>` before invoking `@fullstack-developer` or `@release-manager`.
 
 - **Worktree Awareness:** Antigravity often works in dedicated git worktrees (e.g. under `~/.gemini/antigravity/worktrees/`). Ensure commands and dev servers execute inside the active worktree root.
