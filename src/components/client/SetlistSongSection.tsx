@@ -1,6 +1,14 @@
 "use client";
 
-import { memo, useState, useCallback, useTransition, useRef } from "react";
+import {
+  memo,
+  useState,
+  useCallback,
+  useTransition,
+  useRef,
+  type CSSProperties,
+  type RefObject,
+} from "react";
 import { RefreshCw, Check, Loader2 } from "lucide-react";
 import type { ProcessedLine } from "@/utils/musicLogic";
 import { getSemitoneOffset } from "@/utils/musicLogic";
@@ -84,6 +92,17 @@ interface SetlistSongSectionProps {
    * Used by SetlistViewerClient to keep songOffsets map in sync for uniqueChords.
    */
   onOffsetChange?: (junctionId: string, newOffset: number) => void;
+  /**
+   * Page View layout. When true, the header and YouTube section render normally
+   * (full width) and only the chord sheet is wrapped in the paginated
+   * multi-column viewport/content pair, so the video never flows into a column.
+   * The page* props below are only used in this mode.
+   */
+  pageLayout?: boolean;
+  pageViewportRef?: RefObject<HTMLDivElement | null>;
+  pageContentRef?: RefObject<HTMLDivElement | null>;
+  pageContentStyle?: CSSProperties;
+  pageContentClassName?: string;
 }
 
 // Wrap ChordSheetClient in React.memo to prevent re-renders triggered
@@ -133,6 +152,11 @@ function SetlistSongSection({
   hideChordToolbar = false,
   onChordClick,
   onOffsetChange,
+  pageLayout = false,
+  pageViewportRef,
+  pageContentRef,
+  pageContentStyle,
+  pageContentClassName,
 }: SetlistSongSectionProps) {
   // Track the current display key as reported by ChordSheetClient via onKeyChange
   const [currentKey, setCurrentKey] = useState<string>(performanceKey);
@@ -227,10 +251,83 @@ function SetlistSongSection({
   // Use whole autoScroll object in deps per BUG-002.
   const isAutoScrollActive = autoScroll?.isActive ?? false;
 
+  // Per-song Go Live sync status (D-4 / D-5 / D-6) — shared by both headers (AC-10, AM-1)
+  const liveSyncIndicator =
+    liveSyncState && liveSyncState.status !== "idle" ? (
+      <div
+        className="inline-flex items-center gap-1 text-xs"
+        aria-live="polite"
+      >
+        {liveSyncState.status === "saving" && (
+          <>
+            <Loader2
+              size={12}
+              className="animate-spin text-brand-brown dark:text-brand-tan"
+              aria-hidden="true"
+            />
+            <span className="text-brand-brown dark:text-brand-tan">
+              Saving…
+            </span>
+          </>
+        )}
+        {liveSyncState.status === "saved" && (
+          <>
+            <Check
+              size={12}
+              className="text-brand-brown dark:text-brand-tan"
+              aria-hidden="true"
+            />
+            <span className="text-brand-brown dark:text-brand-tan">Synced</span>
+          </>
+        )}
+        {liveSyncState.status === "error" && (
+          <span
+            role="alert"
+            className="text-xs text-red-500 max-w-[200px] text-right"
+          >
+            {liveSyncState.errorMessage}
+          </span>
+        )}
+      </div>
+    ) : null;
+
+  const chordSheet = (
+    <MemoChordSheetClient
+      processedLines={processedLines}
+      originalKey={originalKey}
+      initialKey={performanceKey}
+      targetKey={targetKey}
+      capo={capo}
+      onKeyChange={handleKeyChange}
+      onCapoChange={handleCapoChange}
+      onChordClick={onChordClick}
+      externalKey={overrideKey}
+      isFollowing={isFollowing}
+      onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
+      externalChordsHidden={externalChordsHidden}
+      injectedAutoScroll={autoScroll}
+      fontSize={fontSize}
+      onIncreaseFont={onIncreaseFont}
+      onDecreaseFont={onDecreaseFont}
+      onResetFont={onResetFont}
+      chordFontSize={chordFontSize}
+      chordBg={chordBg}
+      chordColor={chordColor}
+      lineHeight={lineHeight}
+      hideToolbar={hideChordToolbar}
+      sectionIdPrefix={junctionId}
+    />
+  );
+
   return (
     <section
       id={`song-${junctionId}`}
-      className="scroll-mt-16 lg:scroll-mt-0 rounded-xl px-4 py-5"
+      className={[
+        "scroll-mt-16 lg:scroll-mt-0 rounded-xl px-4 py-5",
+        pageLayout ? "flex flex-col flex-1 min-h-0" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       aria-label={title}
     >
       {/* ── Song header (Standard or Compact) (AC-15) ──────────────────────── */}
@@ -245,6 +342,15 @@ function SetlistSongSection({
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {isLeader && liveSyncIndicator}
+            {isLeader && syncError && (
+              <p
+                role="alert"
+                className="text-xs text-red-600 dark:text-red-400 max-w-[200px] text-right"
+              >
+                {syncError}
+              </p>
+            )}
             <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-brand-brown/10 dark:bg-brand-tan/10 text-brand-brown dark:text-brand-tan">
               Key: {currentKey}
             </span>
@@ -263,7 +369,7 @@ function SetlistSongSection({
                   isPending
                     ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
                     : syncSuccess
-                      ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
+                      ? "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream/80 dark:bg-brand-darker"
                       : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
                 ].join(" ")}
               >
@@ -297,45 +403,7 @@ function SetlistSongSection({
           {isLeader && (
             <div className="flex flex-col items-end gap-1 shrink-0">
               {/* ── Per-song Go Live sync status (D-4 / D-5 / D-6) ───────────── */}
-              {liveSyncState && liveSyncState.status !== "idle" && (
-                <div
-                  className="inline-flex items-center gap-1 text-xs"
-                  aria-live="polite"
-                >
-                  {liveSyncState.status === "saving" && (
-                    <>
-                      <Loader2
-                        size={12}
-                        className="animate-spin text-brand-brown dark:text-brand-tan"
-                        aria-hidden="true"
-                      />
-                      <span className="text-brand-brown dark:text-brand-tan">
-                        Saving…
-                      </span>
-                    </>
-                  )}
-                  {liveSyncState.status === "saved" && (
-                    <>
-                      <Check
-                        size={12}
-                        className="text-green-600 dark:text-green-400"
-                        aria-hidden="true"
-                      />
-                      <span className="text-green-600 dark:text-green-400">
-                        Synced
-                      </span>
-                    </>
-                  )}
-                  {liveSyncState.status === "error" && (
-                    <span
-                      role="alert"
-                      className="text-xs text-red-500 max-w-[200px] text-right"
-                    >
-                      {liveSyncState.errorMessage}
-                    </span>
-                  )}
-                </div>
-              )}
+              {liveSyncIndicator}
 
               <button
                 type="button"
@@ -353,7 +421,7 @@ function SetlistSongSection({
                   isPending
                     ? "text-brand-brown/50 dark:text-brand-tan/50 border-brand-brown/20 dark:border-brand-tan/20 cursor-not-allowed"
                     : syncSuccess
-                      ? "text-green-700 dark:text-green-400 border-green-500/30 bg-green-50 dark:bg-green-900/20"
+                      ? "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream/80 dark:bg-brand-darker"
                       : "text-brand-brown dark:text-brand-tan border-brand-brown/30 dark:border-brand-tan/30 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10",
                 ].join(" ")}
               >
@@ -468,7 +536,7 @@ function SetlistSongSection({
             {/* Transient save success indicator (AC-10) */}
             {saveSuccess && (
               <span
-                className="text-xs font-medium text-green-700 dark:text-green-400"
+                className="text-xs font-medium text-brand-brown dark:text-brand-tan"
                 aria-live="polite"
               >
                 Saved!
@@ -536,7 +604,7 @@ function SetlistSongSection({
             {/* Transient save success indicator (AC-10) */}
             {saveSuccess && (
               <span
-                className="ml-2 text-xs font-medium text-green-700 dark:text-green-400"
+                className="ml-2 text-xs font-medium text-brand-brown dark:text-brand-tan"
                 aria-live="polite"
               >
                 Saved!
@@ -566,31 +634,22 @@ function SetlistSongSection({
         (SetlistViewerClient) of the new offset via onOffsetChange for the
         global chord drawer's uniqueChords recomputation.
       */}
-      <MemoChordSheetClient
-        processedLines={processedLines}
-        originalKey={originalKey}
-        initialKey={performanceKey}
-        targetKey={targetKey}
-        capo={capo}
-        onKeyChange={handleKeyChange}
-        onCapoChange={handleCapoChange}
-        onChordClick={onChordClick}
-        externalKey={overrideKey}
-        isFollowing={isFollowing}
-        onKeyChangeLive={onKeyChangeLive ? handleKeyChangeLive : undefined}
-        externalChordsHidden={externalChordsHidden}
-        injectedAutoScroll={autoScroll}
-        fontSize={fontSize}
-        onIncreaseFont={onIncreaseFont}
-        onDecreaseFont={onDecreaseFont}
-        onResetFont={onResetFont}
-        chordFontSize={chordFontSize}
-        chordBg={chordBg}
-        chordColor={chordColor}
-        lineHeight={lineHeight}
-        hideToolbar={hideChordToolbar}
-        sectionIdPrefix={junctionId}
-      />
+      {pageLayout ? (
+        <div
+          ref={pageViewportRef}
+          className="flex-1 min-h-[200px] overflow-hidden relative select-text"
+        >
+          <div
+            ref={pageContentRef}
+            style={pageContentStyle}
+            className={pageContentClassName}
+          >
+            {chordSheet}
+          </div>
+        </div>
+      ) : (
+        chordSheet
+      )}
 
       {/* ── YouTube Link Modal — music_director only (AC-8/9/10/11) ─────────── */}
       {isMusicDirector && (

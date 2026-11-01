@@ -33,7 +33,13 @@ import { useChordFontSize } from "@/hooks/useChordFontSize";
 import { useChordColor } from "@/hooks/useChordColor";
 import { useSetlistLayout } from "@/hooks/useSetlistLayout";
 import type { ProcessedLine } from "@/utils/musicLogic";
-import { NOTES, getSemitoneOffset, shiftChord } from "@/utils/musicLogic";
+import {
+  NOTES,
+  CAGED_SHAPES,
+  CAGED_SHAPE_ROOTS,
+  getSemitoneOffset,
+  shiftChord,
+} from "@/utils/musicLogic";
 import type { SortableSong } from "@/components/client/SetlistBuilder/SetlistBuilderClient";
 
 const ChordDrawer = dynamic(() => import("@/components/client/ChordDrawer"), {
@@ -91,6 +97,22 @@ const ctrlBtnClass = [
 
 const CAPO_FRETS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
+/**
+ * True when a modal dialog is currently on screen (AC-3). The navbar's mobile
+ * sidebar is always mounted off-canvas with the same ARIA attributes, so a
+ * dialog only counts when it has a box inside the viewport.
+ */
+function hasOpenModalDialog(): boolean {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')
+  ).some((el) => {
+    const rect = el.getBoundingClientRect();
+    return (
+      rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.bottom > 0
+    );
+  });
+}
+
 export default function SetlistViewerClient({
   songs,
   navigatorSongs,
@@ -132,10 +154,62 @@ export default function SetlistViewerClient({
     [songs]
   );
 
+  // ── Page View navigation state (AC-7, AC-10, AC-12, AC-13) ────────────────
+  // Declared before useSetlistSync so the remote-song callback can reference
+  // the setters (BUG-007: no forward references).
+  const [activeSongIndex, setActiveSongIndex] = useState(0);
+  const [subPageIndex, setSubPageIndex] = useState(0);
+  // Popover state for song controls (transpose/capo) in compact header (AC-15)
+  const [isSongControlsPopoverOpen, setIsSongControlsPopoverOpen] =
+    useState(false);
+  // Songs whose key the follower manually overrode in Page View (AC-9)
+  const [localOverrideIds, setLocalOverrideIds] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
+
+  // Reconcile the active song when songs are added/removed/reordered (AC-4).
+  // Adjusts state during render (React-documented pattern) instead of an effect.
+  const [prevSongs, setPrevSongs] = useState(songs);
+  if (prevSongs !== songs) {
+    setPrevSongs(songs);
+    const activeId = prevSongs[activeSongIndex]?.junctionId;
+    const movedIndex = activeId
+      ? songs.findIndex((s) => s.junctionId === activeId)
+      : -1;
+    if (movedIndex !== -1) {
+      if (movedIndex !== activeSongIndex) setActiveSongIndex(movedIndex);
+    } else {
+      // Active song was deleted — clamp and restart its sub-pages
+      const clamped = Math.max(0, Math.min(songs.length - 1, activeSongIndex));
+      if (clamped !== activeSongIndex) setActiveSongIndex(clamped);
+      setSubPageIndex(0);
+    }
+  }
+
+  // Follower: leader navigated to another song/section (AC-6)
+  const handleRemoteSongChange = useCallback(
+    (junctionId: string) => {
+      const index = songs.findIndex((s) => s.junctionId === junctionId);
+      if (index === -1) return;
+      setActiveSongIndex((prev) => (prev === index ? prev : index));
+      setSubPageIndex((prev) => (prev === 0 ? prev : 0));
+      setIsSongControlsPopoverOpen(false);
+      // Re-lock this song to the leader
+      setLocalOverrideIds((prev) => {
+        if (!prev.has(junctionId)) return prev;
+        const next = new Set(prev);
+        next.delete(junctionId);
+        return next;
+      });
+    },
+    [songs]
+  );
+
   const sync = useSetlistSync({
     setlistId,
     isLeader,
     songs: syncSongs,
+    onRemoteSongChange: handleRemoteSongChange,
   });
 
   const [isSectionNavOpen, setIsSectionNavOpen] = useState(true);
@@ -184,32 +258,6 @@ export default function SetlistViewerClient({
     }
     return initial;
   });
-
-  // Unique chords calculation across all songs in the setlist
-  const uniqueChords = useMemo(() => {
-    const seen = new Set<string>();
-    for (const song of songs) {
-      const activeKey =
-        songKeys[song.junctionId] ?? song.performanceKey ?? song.originalKey;
-      const semitoneOffset = getSemitoneOffset(song.originalKey, activeKey);
-      const capoOffset = songCapos[song.junctionId] ?? 0;
-      const effectiveOffset = semitoneOffset - capoOffset;
-      for (const line of song.processedLines) {
-        if (line.type === "chord") {
-          for (const token of line.tokens) {
-            if (token.isChord && token.originalChord) {
-              const transposed =
-                effectiveOffset === 0
-                  ? token.originalChord
-                  : shiftChord(token.originalChord, effectiveOffset);
-              seen.add(transposed);
-            }
-          }
-        }
-      }
-    }
-    return Array.from(seen);
-  }, [songs, songKeys, songCapos]);
 
   const handleChordClick = useCallback((chordName: string) => {
     setFocusedChord(chordName);
@@ -281,16 +329,10 @@ export default function SetlistViewerClient({
   // When Page View mode is active, autoScroll toolbar and listeners are disabled (AC-9)
   const autoScroll = useAutoScroll({ enabled: !isPageMode });
 
-  // ── Page View Navigation State (AC-7, AC-10, AC-12, AC-13) ─────────────────
-  const [activeSongIndex, setActiveSongIndex] = useState(0);
-  const [subPageIndex, setSubPageIndex] = useState(0);
+  // ── Page View measurement state (AC-13, AC-14) ─────────────────────────────
   const [totalSubPages, setTotalSubPages] = useState(1);
   const [fitScale, setFitScale] = useState(1);
   const [containerHeight, setContainerHeight] = useState(0);
-
-  // Popover state for song controls (transpose/capo) in compact header (AC-15)
-  const [isSongControlsPopoverOpen, setIsSongControlsPopoverOpen] =
-    useState(false);
 
   // Current active song in Page View mode
   const currentSong = songs[activeSongIndex] ?? null;
@@ -305,42 +347,144 @@ export default function SetlistViewerClient({
       ? songCapos[currentJunctionId]
       : 0;
 
+  // CAGED shape matching the current capo fret in the current key (null if none).
+  // Derived rather than stored so it can never drift from key/capo (AC-8).
+  const activeCagedShape =
+    currentSongCapo > 0
+      ? (CAGED_SHAPES.find(
+          (shape) =>
+            getSemitoneOffset(
+              CAGED_SHAPE_ROOTS[shape],
+              currentSongActiveKey
+            ) === currentSongCapo
+        ) ?? null)
+      : null;
+
   const isLive = sync.isLive;
+  const isFollowing = sync.isFollowing;
   const notifyKeyChange = sync.notifyKeyChange;
+  const overrideKeys = sync.overrideKeys;
 
-  const handlePageTransposeDown = useCallback(() => {
-    if (!currentJunctionId) return;
-    const newKey = shiftChord(currentSongActiveKey, -1);
-    setSongKeys((prev) => ({ ...prev, [currentJunctionId]: newKey }));
-    if (isLeader && isLive) {
-      notifyKeyChange(currentJunctionId, newKey);
+  // Chords for the drawer: only the active song in Page View, else the whole
+  // setlist (AC-13).
+  const uniqueChords = useMemo(() => {
+    const seen = new Set<string>();
+    const drawerSongs = isPageMode ? (currentSong ? [currentSong] : []) : songs;
+    for (const song of drawerSongs) {
+      const activeKey =
+        songKeys[song.junctionId] ?? song.performanceKey ?? song.originalKey;
+      const semitoneOffset = getSemitoneOffset(song.originalKey, activeKey);
+      const capoOffset = songCapos[song.junctionId] ?? 0;
+      const effectiveOffset = semitoneOffset - capoOffset;
+      for (const line of song.processedLines) {
+        if (line.type === "chord") {
+          for (const token of line.tokens) {
+            if (token.isChord && token.originalChord) {
+              const transposed =
+                effectiveOffset === 0
+                  ? token.originalChord
+                  : shiftChord(token.originalChord, effectiveOffset);
+              seen.add(transposed);
+            }
+          }
+        }
+      }
     }
-  }, [currentJunctionId, currentSongActiveKey, isLeader, isLive, notifyKeyChange]);
+    return Array.from(seen);
+  }, [isPageMode, currentSong, songs, songKeys, songCapos]);
 
-  const handlePageTransposeUp = useCallback(() => {
-    if (!currentJunctionId) return;
-    const newKey = shiftChord(currentSongActiveKey, 1);
-    setSongKeys((prev) => ({ ...prev, [currentJunctionId]: newKey }));
-    if (isLeader && isLive) {
-      notifyKeyChange(currentJunctionId, newKey);
+  // Follower in Page View: leader keys apply to every song the follower has not
+  // overridden locally. Page View is the single source of truth for the key
+  // (ChordSheetClient gets no externalKey/isFollowing there), which also avoids
+  // a targetKey/externalKey ping-pong. Runs when leader keys or overrides change
+  // (AC-6, AC-9, AM-2 identity guards).
+  const [reconcileSnapshot, setReconcileSnapshot] = useState({
+    leaderKeys: overrideKeys,
+    overrides: localOverrideIds,
+  });
+  if (
+    reconcileSnapshot.leaderKeys !== overrideKeys ||
+    reconcileSnapshot.overrides !== localOverrideIds
+  ) {
+    setReconcileSnapshot({
+      leaderKeys: overrideKeys,
+      overrides: localOverrideIds,
+    });
+    if (isPageMode && isFollowing) {
+      let nextKeys = songKeys;
+      for (const [id, leaderKey] of overrideKeys) {
+        if (!localOverrideIds.has(id) && nextKeys[id] !== leaderKey) {
+          nextKeys = { ...nextKeys, [id]: leaderKey };
+        }
+      }
+      if (nextKeys !== songKeys) setSongKeys(nextKeys);
     }
-  }, [currentJunctionId, currentSongActiveKey, isLeader, isLive, notifyKeyChange]);
+  }
+  // Leaving follow mode drops every local override
+  if (!isFollowing && localOverrideIds.size > 0) {
+    setLocalOverrideIds(new Set());
+  }
 
-  const handlePageKeySelect = useCallback(
-    (targetKey: string) => {
+  // Marks the current song as locally overridden when a follower edits its key (AC-9)
+  const markKeyOverride = useCallback(() => {
+    if (!currentJunctionId || !isFollowing) return;
+    setLocalOverrideIds((prev) =>
+      prev.has(currentJunctionId) ? prev : new Set(prev).add(currentJunctionId)
+    );
+  }, [currentJunctionId, isFollowing]);
+
+  const applyPageKey = useCallback(
+    (newKey: string) => {
       if (!currentJunctionId) return;
-      setSongKeys((prev) => ({ ...prev, [currentJunctionId]: targetKey }));
+      markKeyOverride();
+      setSongKeys((prev) =>
+        prev[currentJunctionId] === newKey
+          ? prev
+          : { ...prev, [currentJunctionId]: newKey }
+      );
       if (isLeader && isLive) {
-        notifyKeyChange(currentJunctionId, targetKey);
+        notifyKeyChange(currentJunctionId, newKey);
       }
     },
-    [currentJunctionId, isLeader, isLive, notifyKeyChange]
+    [currentJunctionId, markKeyOverride, isLeader, isLive, notifyKeyChange]
   );
+
+  const handlePageTransposeDown = useCallback(
+    () => applyPageKey(shiftChord(currentSongActiveKey, -1)),
+    [applyPageKey, currentSongActiveKey]
+  );
+
+  const handlePageTransposeUp = useCallback(
+    () => applyPageKey(shiftChord(currentSongActiveKey, 1)),
+    [applyPageKey, currentSongActiveKey]
+  );
+
+  const handlePageKeySelect = applyPageKey;
+
+  const originalKeyOfCurrentSong = currentSong?.originalKey ?? "";
+  const handlePageKeyReset = useCallback(() => {
+    if (originalKeyOfCurrentSong) applyPageKey(originalKeyOfCurrentSong);
+  }, [applyPageKey, originalKeyOfCurrentSong]);
+
+  // Restore the leader's key for this song; the reconcile block above applies it (AC-9)
+  const handleResetToLeader = useCallback(() => {
+    if (!currentJunctionId) return;
+    setLocalOverrideIds((prev) => {
+      if (!prev.has(currentJunctionId)) return prev;
+      const next = new Set(prev);
+      next.delete(currentJunctionId);
+      return next;
+    });
+  }, [currentJunctionId]);
 
   const handlePageCapoSelect = useCallback(
     (fret: number) => {
       if (!currentJunctionId) return;
-      setSongCapos((prev) => ({ ...prev, [currentJunctionId]: fret }));
+      setSongCapos((prev) =>
+        prev[currentJunctionId] === fret
+          ? prev
+          : { ...prev, [currentJunctionId]: fret }
+      );
     },
     [currentJunctionId]
   );
@@ -423,6 +567,7 @@ export default function SetlistViewerClient({
   }, [
     isPageMode,
     activeSongIndex,
+    currentJunctionId,
     overflowBehavior,
     lineHeight,
     effectiveFontSize,
@@ -493,7 +638,8 @@ export default function SetlistViewerClient({
         return;
       }
 
-      if (settingsOpen || isDrawerOpen) {
+      // Any open modal/drawer owns the keyboard (AC-3)
+      if (settingsOpen || isDrawerOpen || hasOpenModalDialog()) {
         return;
       }
 
@@ -602,8 +748,8 @@ export default function SetlistViewerClient({
         />
       )}
 
-      {/* ── Edit Songs FAB — desktop-only, fixed bottom-left ───────────────── */}
-      {isLeader && !isPageMode && (
+      {/* ── Edit Songs FAB — fixed bottom-left, all view modes (AC-1, AC-2) ── */}
+      {isLeader && (
         <AppendSongsButton
           setlistId={setlistId}
           existingSongIds={existingSongIds}
@@ -731,6 +877,49 @@ export default function SetlistViewerClient({
             </div>
           )}
 
+          {/* ── Compact people summary — Page View only (AC-11) ─────────────── */}
+          {isPageMode && (worshipLeaderName || lineup.length > 0) && (
+            <p
+              className="mb-1 text-xs truncate"
+              title={[
+                worshipLeaderName ? `Worship Leader: ${worshipLeaderName}` : "",
+                lineup.length > 0
+                  ? `Lineup: ${lineup.map((e) => `${e.name} — ${e.instrument}`).join(", ")}`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            >
+              {worshipLeaderName && (
+                <>
+                  <span className="font-semibold text-brand-brown dark:text-brand-tan">
+                    Worship Leader:{" "}
+                  </span>
+                  <span className="font-bold text-brand-espresso dark:text-brand-cream">
+                    {worshipLeaderName}
+                  </span>
+                </>
+              )}
+              {worshipLeaderName && lineup.length > 0 && (
+                <span className="mx-2 text-brand-brown/60 dark:text-brand-tan/60">
+                  ·
+                </span>
+              )}
+              {lineup.length > 0 && (
+                <>
+                  <span className="font-semibold text-brand-brown dark:text-brand-tan">
+                    Lineup:{" "}
+                  </span>
+                  <span className="font-bold text-brand-espresso dark:text-brand-cream">
+                    {lineup
+                      .map((e) => `${e.name} — ${e.instrument}`)
+                      .join(", ")}
+                  </span>
+                </>
+              )}
+            </p>
+          )}
+
           {/* ── Service Navigator ────────────────────────────────────────────── */}
           <ServiceNavigator
             songs={navigatorSongs}
@@ -760,7 +949,16 @@ export default function SetlistViewerClient({
           />
 
           {/* ── Main song display: Continuous Scroll vs Page View ─────────────── */}
-          {isPageMode && currentSong ? (
+          {isPageMode && songs.length === 0 ? (
+            /* ── Page View empty state — FAB above stays available to leaders (AC-2) ── */
+            <div
+              role="status"
+              className="mt-6 rounded-xl border border-brand-brown/20 dark:border-brand-tan/20 bg-brand-cream/80 dark:bg-brand-darker px-4 py-8 text-center text-sm font-semibold text-brand-brown dark:text-brand-tan"
+            >
+              This setlist has no songs yet.
+              {isLeader && " Use the Edit Songs button to add some."}
+            </div>
+          ) : isPageMode && currentSong ? (
             /* ── Page View Mode: 1 Song per Screen with On-Screen Edge Nav (AC-7, AC-8, AC-12, AC-13, AC-14, AC-15) ── */
             <div className="relative mt-6 select-none">
               {/* Subtle edge navigation buttons (AC-12) */}
@@ -803,10 +1001,7 @@ export default function SetlistViewerClient({
               </button>
 
               {/* Single Song Container with multi-column styling & paging */}
-              <div
-                ref={songContainerRef}
-                className="h-[calc(100vh-210px)] min-h-[460px] overflow-hidden relative select-text"
-              >
+              <div className="h-[calc(100vh-210px)] min-h-[460px] flex flex-col overflow-y-auto overflow-x-hidden relative select-text">
                 {/* Popover Controls trigger in Page View mode (AC-15) */}
                 <div className="flex items-center justify-between mb-2 px-2 flex-wrap gap-2">
                   <div className="flex items-center gap-2 text-xs font-semibold text-brand-brown dark:text-brand-tan">
@@ -837,7 +1032,9 @@ export default function SetlistViewerClient({
                             type="button"
                             onClick={() => {
                               if (!currentSongKey) return;
-                              if (songColumnOverrides[currentSongKey] === cols) {
+                              if (
+                                songColumnOverrides[currentSongKey] === cols
+                              ) {
                                 resetSongColumns(currentSongKey);
                               } else {
                                 setSongColumns(currentSongKey, cols);
@@ -845,7 +1042,8 @@ export default function SetlistViewerClient({
                             }}
                             className={[
                               "px-2 py-0.5 text-xs font-bold rounded transition-colors duration-150",
-                              currentSongKey && songColumnOverrides[currentSongKey] === cols
+                              currentSongKey &&
+                              songColumnOverrides[currentSongKey] === cols
                                 ? "ring-2 ring-brand-brown dark:ring-brand-tan"
                                 : "",
                               isSelected
@@ -886,7 +1084,9 @@ export default function SetlistViewerClient({
                             </p>
                             <button
                               type="button"
-                              onClick={() => setIsSongControlsPopoverOpen(false)}
+                              onClick={() =>
+                                setIsSongControlsPopoverOpen(false)
+                              }
                               aria-label="Close controls popover"
                               className="text-xs text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream font-bold"
                             >
@@ -895,12 +1095,28 @@ export default function SetlistViewerClient({
                           </div>
                           {/* Transposition & Capo controls inside popover */}
                           <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan">
                                 Transposed Key
                               </span>
-                              <span className="font-mono font-bold text-sm text-brand-espresso dark:text-brand-cream">
-                                {currentSongActiveKey}
+                              <span className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-sm text-brand-espresso dark:text-brand-cream">
+                                  {currentSongActiveKey}
+                                </span>
+                                <span className="text-xs font-medium text-brand-brown dark:text-brand-tan">
+                                  (Orig: {currentSong.originalKey})
+                                </span>
+                                {currentSongActiveKey !==
+                                  currentSong.originalKey && (
+                                  <button
+                                    type="button"
+                                    onClick={handlePageKeyReset}
+                                    aria-label="Reset to original key"
+                                    className="px-2 py-0.5 rounded-lg text-xs font-semibold text-brand-brown dark:text-brand-tan hover:text-brand-espresso dark:hover:text-brand-cream hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan"
+                                  >
+                                    Reset
+                                  </button>
+                                )}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -914,7 +1130,9 @@ export default function SetlistViewerClient({
                               </button>
                               <select
                                 value={currentSongActiveKey}
-                                onChange={(e) => handlePageKeySelect(e.target.value)}
+                                onChange={(e) =>
+                                  handlePageKeySelect(e.target.value)
+                                }
                                 aria-label="Select song key"
                                 className="flex-1 font-mono font-bold text-xs px-2 py-1.5 rounded-lg border border-brand-brown/30 dark:border-brand-tan/30 bg-brand-cream dark:bg-brand-espresso text-brand-espresso dark:text-brand-cream"
                               >
@@ -933,6 +1151,20 @@ export default function SetlistViewerClient({
                                 +1
                               </button>
                             </div>
+                            {isFollowing &&
+                              localOverrideIds.has(currentJunctionId) && (
+                                <span className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full text-xs font-medium bg-brand-brown/10 dark:bg-brand-tan/10 text-brand-brown dark:text-brand-tan border border-brand-brown/30 dark:border-brand-tan/30">
+                                  <span>Overriding leader •</span>
+                                  <button
+                                    type="button"
+                                    onClick={handleResetToLeader}
+                                    aria-label="Reset to leader's key"
+                                    className="font-semibold underline hover:text-brand-espresso dark:hover:text-brand-cream focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-espresso dark:focus-visible:ring-brand-tan rounded"
+                                  >
+                                    [Reset to Leader]
+                                  </button>
+                                </span>
+                              )}
                             {/* Capo selector */}
                             <div>
                               <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan mb-1 block">
@@ -961,6 +1193,55 @@ export default function SetlistViewerClient({
                                 })}
                               </div>
                             </div>
+                            {/* CAGED shape picker (AC-8) */}
+                            <div>
+                              <span className="text-xs font-semibold text-brand-brown dark:text-brand-tan mb-1 block">
+                                CAGED
+                              </span>
+                              <div
+                                className="flex items-center gap-1 flex-wrap"
+                                role="group"
+                                aria-label="CAGED shape selector"
+                              >
+                                {CAGED_SHAPES.map((shape) => {
+                                  const capoFret = getSemitoneOffset(
+                                    CAGED_SHAPE_ROOTS[shape],
+                                    currentSongActiveKey
+                                  );
+                                  const isDisabled = capoFret > 7;
+                                  const isSelected = activeCagedShape === shape;
+                                  return (
+                                    <button
+                                      key={shape}
+                                      type="button"
+                                      disabled={isDisabled}
+                                      onClick={() =>
+                                        handlePageCapoSelect(
+                                          isSelected ? 0 : capoFret
+                                        )
+                                      }
+                                      aria-label={`CAGED shape ${shape}${isDisabled ? " (not available in current key)" : ""}${isSelected ? " (selected)" : ""}`}
+                                      aria-pressed={
+                                        isDisabled ? undefined : isSelected
+                                      }
+                                      aria-disabled={
+                                        isDisabled ? true : undefined
+                                      }
+                                      className={[
+                                        "w-7 h-7 rounded text-xs font-mono font-bold border transition-colors",
+                                        isDisabled
+                                          ? "opacity-40 cursor-not-allowed border-brand-brown/20 dark:border-brand-tan/20 text-brand-espresso dark:text-brand-cream"
+                                          : isSelected
+                                            ? "bg-brand-espresso text-brand-cream dark:bg-brand-tan dark:text-brand-espresso border-transparent shadow-sm"
+                                            : "border-brand-brown/20 dark:border-brand-tan/20 hover:bg-brand-brown/10 dark:hover:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream",
+                                      ].join(" ")}
+                                    >
+                                      {shape}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                             {/* Per-song columns inside popover */}
                             <div className="border-t border-brand-brown/15 dark:border-brand-tan/15 pt-3">
                               <div className="flex items-center justify-between mb-1.5">
@@ -981,7 +1262,10 @@ export default function SetlistViewerClient({
                                     type="button"
                                     onClick={() => {
                                       if (!currentSongKey) return;
-                                      if (songColumnOverrides[currentSongKey] === cols) {
+                                      if (
+                                        songColumnOverrides[currentSongKey] ===
+                                        cols
+                                      ) {
                                         resetSongColumns(currentSongKey);
                                       } else {
                                         setSongColumns(currentSongKey, cols);
@@ -989,7 +1273,9 @@ export default function SetlistViewerClient({
                                     }}
                                     className={[
                                       "py-1 text-xs font-bold rounded-lg border transition-colors",
-                                      currentSongKey && songColumnOverrides[currentSongKey] === cols
+                                      currentSongKey &&
+                                      songColumnOverrides[currentSongKey] ===
+                                        cols
                                         ? "ring-2 ring-brand-brown dark:ring-brand-tan"
                                         : "",
                                       effectiveColumns === cols
@@ -1009,15 +1295,58 @@ export default function SetlistViewerClient({
                   </div>
                 </div>
 
-                {/* Song Content with CSS Columns and transform for pagination */}
-                <div
-                  ref={songContentRef}
-                  style={{
+                {/*
+                  Header + YouTube render full width above the columns; only the
+                  chord sheet sits inside the paginated multi-column viewport
+                  (AC-12). Page View owns key state, so no externalKey/isFollowing
+                  is passed to the chord sheet here.
+                */}
+                <SetlistSongSection
+                  key={currentSong.junctionId}
+                  junctionId={currentSong.junctionId}
+                  songId={currentSong.songId}
+                  setlistId={currentSong.setlistId}
+                  title={currentSong.title}
+                  artist={currentSong.artist}
+                  originalKey={currentSong.originalKey}
+                  processedLines={currentSong.processedLines}
+                  performanceKey={currentSong.performanceKey}
+                  targetKey={songKeys[currentSong.junctionId]}
+                  capo={songCapos[currentSong.junctionId]}
+                  onKeyChange={handleSongKeyChange}
+                  onCapoChange={handleSongCapoChange}
+                  isLeader={isLeader}
+                  youtubeUrl={currentSong.youtubeUrl}
+                  isMusicDirector={isMusicDirector}
+                  onKeyChangeLive={
+                    isLeader && sync.isLive ? sync.notifyKeyChange : undefined
+                  }
+                  liveSyncState={sync.songSyncStates.get(
+                    currentSong.junctionId
+                  )}
+                  externalChordsHidden={globalChordsHidden}
+                  autoScroll={autoScroll}
+                  fontSize={effectiveFontSize}
+                  onIncreaseFont={fontSizeControls.increase}
+                  onDecreaseFont={fontSizeControls.decrease}
+                  onResetFont={fontSizeControls.reset}
+                  chordFontSize={chordFontSize}
+                  chordBg={chordColorControls.chordBg}
+                  chordColor={chordColorControls.chordColor}
+                  lineHeight={lineHeight}
+                  isCompactHeader={true}
+                  hideChordToolbar={true}
+                  onChordClick={handleChordClick}
+                  onOffsetChange={handleKeyChangeForDrawer}
+                  pageLayout
+                  pageViewportRef={songContainerRef}
+                  pageContentRef={songContentRef}
+                  pageContentStyle={{
                     height:
-                      isPageMode && containerHeight > 0
-                        ? `${Math.max(200, containerHeight - 44)}px`
+                      containerHeight > 0
+                        ? `${Math.max(200, containerHeight)}px`
                         : undefined,
-                    columnFill: isPageMode ? "auto" : undefined,
+                    columnFill: "auto",
                     transform: `translateX(-${subPageIndex * 100}%)`,
                     transformOrigin: "top left",
                     transition: "transform 0.25s ease-out",
@@ -1027,49 +1356,8 @@ export default function SetlistViewerClient({
                         ? "1px solid var(--brand-tan-alpha, rgba(139, 99, 71, 0.15))"
                         : "none",
                   }}
-                  className={`w-full ${responsiveColumnsClass}`}
-                >
-                  <SetlistSongSection
-                    key={currentSong.junctionId}
-                    junctionId={currentSong.junctionId}
-                    songId={currentSong.songId}
-                    setlistId={currentSong.setlistId}
-                    title={currentSong.title}
-                    artist={currentSong.artist}
-                    originalKey={currentSong.originalKey}
-                    processedLines={currentSong.processedLines}
-                    performanceKey={currentSong.performanceKey}
-                    targetKey={songKeys[currentSong.junctionId]}
-                    capo={songCapos[currentSong.junctionId]}
-                    onKeyChange={handleSongKeyChange}
-                    onCapoChange={handleSongCapoChange}
-                    isLeader={isLeader}
-                    youtubeUrl={currentSong.youtubeUrl}
-                    isMusicDirector={isMusicDirector}
-                    isFollowing={sync.isFollowing}
-                    overrideKey={sync.overrideKeys.get(currentSong.junctionId)}
-                    onKeyChangeLive={
-                      isLeader && sync.isLive ? sync.notifyKeyChange : undefined
-                    }
-                    liveSyncState={sync.songSyncStates.get(
-                      currentSong.junctionId
-                    )}
-                    externalChordsHidden={globalChordsHidden}
-                    autoScroll={autoScroll}
-                    fontSize={effectiveFontSize}
-                    onIncreaseFont={fontSizeControls.increase}
-                    onDecreaseFont={fontSizeControls.decrease}
-                    onResetFont={fontSizeControls.reset}
-                    chordFontSize={chordFontSize}
-                    chordBg={chordColorControls.chordBg}
-                    chordColor={chordColorControls.chordColor}
-                    lineHeight={lineHeight}
-                    isCompactHeader={true}
-                    hideChordToolbar={true}
-                    onChordClick={handleChordClick}
-                    onOffsetChange={handleKeyChangeForDrawer}
-                  />
-                </div>
+                  pageContentClassName={`w-full ${responsiveColumnsClass}`}
+                />
               </div>
             </div>
           ) : (
@@ -1134,6 +1422,7 @@ export default function SetlistViewerClient({
         instrumentMode={instrumentMode}
         onInstrumentChange={handleInstrumentChange}
         uniqueChords={uniqueChords}
+        capoOffset={isPageMode ? currentSongCapo : 0}
       />
 
       {/* ── Bottom spacer — prevents toolbar from obscuring last song content ── */}

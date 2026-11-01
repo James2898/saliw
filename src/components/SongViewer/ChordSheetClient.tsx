@@ -2,7 +2,14 @@
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import type { ProcessedLine } from "@/utils/musicLogic";
-import { NOTES, shiftChord, getSemitoneOffset } from "@/utils/musicLogic";
+import {
+  NOTES,
+  shiftChord,
+  getSemitoneOffset,
+  CAGED_SHAPES,
+  CAGED_SHAPE_ROOTS,
+  type CAGEDShape,
+} from "@/utils/musicLogic";
 import { useTranspose } from "@/hooks/useTranspose";
 import { useFontSize } from "@/hooks/useFontSize";
 import { useAutoScroll, type UseAutoScrollReturn } from "@/hooks/useAutoScroll";
@@ -39,24 +46,6 @@ const toggleInactiveClass =
 
 /** Capo fret values 0–7. Declared at module scope to preserve React.memo stability. */
 const CAPO_FRETS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
-
-/** CAGED shape labels in display order. Declared at module scope for React.memo stability. */
-const CAGED_SHAPES = ["C", "A", "G", "E", "D"] as const;
-
-/** TypeScript union type derived from the CAGED_SHAPES tuple. */
-type CAGEDShape = (typeof CAGED_SHAPES)[number];
-
-/**
- * Open-position root note for each CAGED shape.
- * Declared at module scope for React.memo stability (BUG-019).
- */
-const CAGED_SHAPE_ROOTS: Record<CAGEDShape, string> = {
-  C: "C",
-  A: "A",
-  G: "G",
-  E: "E",
-  D: "D",
-};
 
 // Capo swatch button — selected ring (BUG-004: every brand class paired with dark:)
 const capoSwatchSelectedClass =
