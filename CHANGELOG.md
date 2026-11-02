@@ -21,6 +21,16 @@ All notable changes to the Saliw Music Portal are documented here.
   - Exported shared CAGED constants in `src/utils/musicLogic.ts` for reuse across viewer components (AC-8, AC-15)
   - Affected files: `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/hooks/useSetlistSync.ts`, `src/utils/musicLogic.ts`
 
+- Song Performance History on Song Viewer (`TASK-20261101-bru`)
+  - Parallel SSR fetch in `src/app/library/[id]/page.tsx` querying past qualifying setlist performances (`worship_leader_id IS NOT NULL`, `date < today`, respecting Supabase RLS) alongside primary song query (AC-1, AC-2, AC-3, AC-5)
+  - Pure grouping utility `groupSongPerformanceHistory` in `src/utils/worshipLeaderHistory.ts` aggregating records by unique `(worship_leader_id, performance_key)` tuple with repeat multiplier (`×N`), deterministic date/ID tie-breaking, and multi-tier sorting (AC-6, AC-7, AC-8, AC-9, AM-1)
+  - Safe musician resolution selecting only `(id, name)` from `public.musicians` to protect restricted columns (AC-4)
+  - Collapsible history section in `SongDetailClient.tsx` positioned above chord sheet with `"Show history (N)"` / `"Hide history"` toggle (collapsed by default), `"No performance history"` empty state, and direct links to `/setlists/[lastSetlistId]` (AC-10, AC-11, AC-12, AC-13, AC-14)
+  - Bidirectional key transposition synchronization updating `ChordSheetClient` target key, active key state, row `"Current"` / `"Use key"` button states, and `ChordDrawer` diagram sync without persisting to database (AC-15, AC-16, AC-17, AM-2)
+  - Full accessibility compliance with `aria-expanded`, `aria-controls`, `aria-disabled`, and screen-reader announcements via `aria-live="polite"` (AC-18)
+  - Complete Artisan design system palette pairing with explicit `dark:` counterparts, 32px button baselines, and zero generic Tailwind colors (AC-19, AM-3)
+  - Affected files: `src/utils/worshipLeaderHistory.ts`, `src/utils/__tests__/worshipLeaderHistory.test.ts`, `src/app/library/[id]/page.tsx`, `src/app/library/[id]/SongDetailClient.tsx`
+
 ---
 ## [Unreleased] — 2026-10-31
 
