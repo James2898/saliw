@@ -46,6 +46,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 - **Inline Script Execution:** When executing simple one-liner scripts in Windows shell, prefer `node -e "..."` over `powershell -Command "..."`. In PowerShell command strings, unescaped `$` variable identifiers are evaluated prematurely by string interpolation and will trigger syntax errors like `Missing expression after unary operator`.
 - **Avoid Multi-line `node -e` with Quotes in PowerShell:** Windows PowerShell 5.1 strips `""` inside `node -e '...'` when passing arguments to native binaries (causing `SyntaxError: Invalid or unexpected token`). For any multi-line script or regex replacement, write a temporary `.mjs` script to the conversation's `scratch/` directory via `write_file` and run `node "<scratchDir>/script.mjs"`.
 - **CRLF Files & `edit_file`:** Existing tracked files checked out with CRLF (`\r\n`) on Windows can fail multi-line `edit_file` matches when tool arguments normalize newlines to LF (`\n`). Prefer single-line `Target` strings in `edit_file` on CRLF files, or perform multi-line replacements via a `scratch/*.mjs` script that matches `\r?\n`.
+  - **Proactive Scripting for Tooling Code:** In repository build scripts (`tools/*.py`) or files with mixed line endings, do not attempt trial-and-error multiline `edit_file` calls — write a small replacement script in `scratch/` immediately.
 
 ---
 
@@ -65,6 +66,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 
 ## 3. Worktree & Git Discipline
 
+- **Subagent Session Snapshotting:** Antigravity snapshots all discovered subagent specifications (tools, prompts, models) from installed plugins when a conversation starts. Editing an agent's `.md` file in `~/.gemini/config/plugins/` takes effect only in *new* conversations. To test or hot-patch subagent changes within an active conversation, use `define_subagent` to register the updated configuration under a new or overriding name.
 - **No Short `schedule` Timers for Subagent Waiting:** When waiting for one or more spawned subagents (e.g. the second agent of a parallel pair) to complete, never call `schedule` with a short timer (e.g. < 60s) to poll or re-check. Simply end the turn with no tool calls — Antigravity's reactive wakeup automatically resumes execution the moment the subagent replies. If a safety watchdog timer is ever desired, use `TimerCondition: 'any'` with `DurationSeconds >= 180` to prevent premature token-expensive context re-read turns.
 - **Worktree Branch Renaming After `@task-logger`:** When working in a pre-created git worktree whose branch does not yet reflect the formal task ID (e.g. `fix_navbar_auth_state`), rename the local branch immediately after `@task-logger` mints the task ID using `git branch -m <type>/<TASK-ID>-<slug>` before invoking `@fullstack-developer` or `@release-manager`.
 
