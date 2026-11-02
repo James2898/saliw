@@ -6,7 +6,21 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ## [Unreleased] — 2026-11-01
 
-### Added
+### Added / Changed
+- Setlist Page View Feature Parity & Edit Songs FAB (`TASK-20261101-5gw`)
+  - Rendered "Edit Songs" FAB (`<AppendSongsButton />`) across all view modes and empty setlist states for leaders (AC-1, AC-2)
+  - Added modal and drawer keyboard shortcut guard in Page View preventing navigation when dialogs or drawers are open (AC-3)
+  - Implemented resilient `activeSongIndex` and `subPageIndex` reconciliation during song add/remove/reorder operations (AC-4)
+  - Wired follower realtime stage sync (`SONG_CHANGE` and `SECTION_CHANGE`) via `onRemoteSongChange` in `useSetlistSync` to navigate active songs and reset sub-pages (AC-5, AC-6)
+  - Enriched Page View controls popover with Original Key display, Reset button, CAGED shape selector (C, A, G, E, D), and follower leader-override controls (AC-7, AC-8, AC-9, AM-2)
+  - Added live sync status indicators (`"Saving…"`, `"Synced"`) and `syncError` alerts to compact song header (AC-10)
+  - Displayed compact Worship Leader and Lineup summary in Page View header region (AC-11)
+  - Hoisted compact song header and YouTube player section outside the multi-column layout to prevent layout distortion and sub-page translation clipping (AC-12)
+  - Scoped chord drawer chords to the active song in Page View and passed `capoOffset` (AC-13)
+  - Replaced legacy green status classes with Artisan palette across headers and indicators (AM-1, AC-14)
+  - Exported shared CAGED constants in `src/utils/musicLogic.ts` for reuse across viewer components (AC-8, AC-15)
+  - Affected files: `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/hooks/useSetlistSync.ts`, `src/utils/musicLogic.ts`
+
 - Song Performance History on Song Viewer (`TASK-20261101-bru`)
   - Parallel SSR fetch in `src/app/library/[id]/page.tsx` querying past qualifying setlist performances (`worship_leader_id IS NOT NULL`, `date < today`, respecting Supabase RLS) alongside primary song query (AC-1, AC-2, AC-3, AC-5)
   - Pure grouping utility `groupSongPerformanceHistory` in `src/utils/worshipLeaderHistory.ts` aggregating records by unique `(worship_leader_id, performance_key)` tuple with repeat multiplier (`×N`), deterministic date/ID tie-breaking, and multi-tier sorting (AC-6, AC-7, AC-8, AC-9, AM-1)
@@ -18,7 +32,6 @@ All notable changes to the Saliw Music Portal are documented here.
   - Affected files: `src/utils/worshipLeaderHistory.ts`, `src/utils/__tests__/worshipLeaderHistory.test.ts`, `src/app/library/[id]/page.tsx`, `src/app/library/[id]/SongDetailClient.tsx`
 
 ---
-
 ## [Unreleased] — 2026-10-31
 
 ### Added
