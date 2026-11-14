@@ -13,7 +13,11 @@ export interface LiturgyAgentRequest {
 
 export type SongVibeTag = "joyful" | "solemn";
 
-export type KeySource = "leader_history" | "harmonic_modulation" | "original_key";
+export type KeySource =
+  | "leader_history"
+  | "harmonic_modulation"
+  | "original_key"
+  | "manual";
 
 export interface ProposedSong {
   songId: string;
@@ -37,4 +41,18 @@ export interface LiturgyAgentResponse {
   error?: string;
   stepsExecuted: LiturgyStepProgress[];
   proposedSongs: ProposedSong[];
+}
+
+export interface RefreshSingleSongRequest {
+  slotIndex: number;
+  currentSong: ProposedSong;
+  liturgyContext: LiturgyAgentRequest;
+  excludedSongIds?: string[];
+  prevSongKey?: string | null;
+}
+
+export interface RefreshSingleSongResponse {
+  success: boolean;
+  error?: string;
+  song?: ProposedSong;
 }

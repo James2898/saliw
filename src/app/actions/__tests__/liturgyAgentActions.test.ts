@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { generateSetlistProposalAction } from "../liturgyAgentActions";
+import {
+  generateSetlistProposalAction,
+  refreshSingleSongRecommendationAction,
+} from "../liturgyAgentActions";
 import * as supabaseServer from "@/services/supabase/server";
 
 vi.mock("@/services/supabase/server", () => ({
   createClient: vi.fn(),
 }));
 
-describe("liturgyAgentActions - generateSetlistProposalAction", () => {
+describe("liturgyAgentActions", () => {
   const mockSongs = [
     {
       id: "song-j1",
       title: "House of the Lord",
       artist: "Phil Wickham",
-      original_key: "BB",
+      original_key: "Bb",
       tags: ["joyful"],
     },
     {
@@ -33,7 +36,7 @@ describe("liturgyAgentActions - generateSetlistProposalAction", () => {
       id: "song-s2",
       title: "Goodness of God",
       artist: "Bethel Music",
-      original_key: "AB",
+      original_key: "Ab",
       tags: ["solemn"],
     },
     {
@@ -81,6 +84,33 @@ describe("liturgyAgentActions - generateSetlistProposalAction", () => {
 
       expect(res.success).toBe(false);
       expect(res.error).toBeDefined();
+    });
+  });
+
+  describe("Auth verification (AM-5)", () => {
+    it("returns Unauthorized when user is not authenticated", async () => {
+      const mockSupabase = {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user: null },
+            error: null,
+          }),
+        },
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await generateSetlistProposalAction({
+        joyfulCount: 1,
+        solemnCount: 1,
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toBe("Unauthorized");
     });
   });
 
@@ -136,18 +166,6 @@ describe("liturgyAgentActions - generateSetlistProposalAction", () => {
               }),
             };
           }
-          if (table === "musicians") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: { id: "leader-farah", name: "Farah" },
-                    error: null,
-                  }),
-                }),
-              }),
-            };
-          }
           if (table === "setlists") {
             return {
               select: vi.fn().mockReturnValue({
@@ -155,6 +173,7 @@ describe("liturgyAgentActions - generateSetlistProposalAction", () => {
                   data: [
                     {
                       id: "setlist-1",
+                      date: "2026-01-01",
                       setlist_songs: [
                         { song_id: "song-s1", performance_key: "D" },
                       ],
@@ -228,6 +247,232 @@ describe("liturgyAgentActions - generateSetlistProposalAction", () => {
       const chosenIds = res.proposedSongs.map((s) => s.songId);
       expect(chosenIds).not.toContain("song-j1");
       expect(chosenIds).not.toContain("song-s1");
+    });
+  });
+
+  describe("Worship leader key history & harmonic modulation (AC-11, AC-12, AC-13)", () => {
+    it("prioritizes worship leader most recently used performance_key for a song", async () => {
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: "song-j1",
+                      title: "House of the Lord",
+                      artist: "Phil Wickham",
+                      original_key: "Bb",
+                      tags: ["joyful"],
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === "setlists") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  lt: vi.fn().mockResolvedValue({
+                    data: [
+                      {
+                        id: "setlist-old",
+                        date: "2026-01-01",
+                        setlist_songs: [
+                          { song_id: "song-j1", performance_key: "C" },
+                        ],
+                      },
+                      {
+                        id: "setlist-new",
+                        date: "2026-02-15",
+                        setlist_songs: [
+                          { song_id: "song-j1", performance_key: "D" },
+                        ],
+                      },
+                    ],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await generateSetlistProposalAction({
+        worshipLeaderId: "leader-1",
+        joyfulCount: 1,
+        solemnCount: 0,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.proposedSongs).toHaveLength(1);
+      expect(res.proposedSongs[0].recommendedKey).toBe("D");
+      expect(res.proposedSongs[0].keySource).toBe("leader_history");
+    });
+
+    it("falls back to harmonic modulation when worship leader has no performance history", async () => {
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: "song-1",
+                      title: "First Song",
+                      artist: "Artist A",
+                      original_key: "C",
+                      tags: ["joyful"],
+                    },
+                    {
+                      id: "song-2",
+                      title: "Second Song",
+                      artist: "Artist B",
+                      original_key: "G", // circle of fifths (offset 7)
+                      tags: ["solemn"],
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await generateSetlistProposalAction({
+        joyfulCount: 1,
+        solemnCount: 1,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.proposedSongs[0].recommendedKey).toBe("C");
+      expect(res.proposedSongs[1].recommendedKey).toBe("G");
+      expect(res.proposedSongs[1].keySource).toBe("harmonic_modulation");
+      expect(res.proposedSongs[1].transitionNote).toMatch(/dominant/i);
+    });
+  });
+
+  describe("Single-song refresh action (AC-6, AC-7, AC-8, AC-9, AC-10)", () => {
+    it("successfully returns a replacement song excluding current and existing song IDs", async () => {
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: mockSongs,
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await refreshSingleSongRecommendationAction({
+        slotIndex: 0,
+        currentSong: {
+          songId: "song-j1",
+          title: "House of the Lord",
+          artist: "Phil Wickham",
+          originalKey: "Bb",
+          recommendedKey: "Bb",
+          tag: "joyful",
+          transitionNote: "Starting set",
+          keySource: "original_key",
+        },
+        liturgyContext: {
+          joyfulCount: 1,
+          solemnCount: 1,
+        },
+        excludedSongIds: ["song-s1"],
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.song).toBeDefined();
+      expect(res.song?.songId).toBe("song-j2"); // The only other joyful song
+      expect(res.song?.tag).toBe("joyful");
+    });
+
+    it("returns error message when no alternative candidate song exists", async () => {
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: "song-j1",
+                      title: "Only Joyful Song",
+                      artist: "Artist",
+                      original_key: "C",
+                      tags: ["joyful"],
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await refreshSingleSongRecommendationAction({
+        slotIndex: 0,
+        currentSong: {
+          songId: "song-j1",
+          title: "Only Joyful Song",
+          artist: "Artist",
+          originalKey: "C",
+          recommendedKey: "C",
+          tag: "joyful",
+          transitionNote: "Starting set",
+          keySource: "original_key",
+        },
+        liturgyContext: {
+          joyfulCount: 1,
+          solemnCount: 0,
+        },
+        excludedSongIds: [],
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toMatch(/Unable to find an alternative song/i);
     });
   });
 });
