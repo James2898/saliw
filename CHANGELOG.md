@@ -4,6 +4,80 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-11-01
+
+### Added / Changed
+- Setlist Page View Feature Parity & Edit Songs FAB (`TASK-20261101-5gw`)
+  - Rendered "Edit Songs" FAB (`<AppendSongsButton />`) across all view modes and empty setlist states for leaders (AC-1, AC-2)
+  - Added modal and drawer keyboard shortcut guard in Page View preventing navigation when dialogs or drawers are open (AC-3)
+  - Implemented resilient `activeSongIndex` and `subPageIndex` reconciliation during song add/remove/reorder operations (AC-4)
+  - Wired follower realtime stage sync (`SONG_CHANGE` and `SECTION_CHANGE`) via `onRemoteSongChange` in `useSetlistSync` to navigate active songs and reset sub-pages (AC-5, AC-6)
+  - Enriched Page View controls popover with Original Key display, Reset button, CAGED shape selector (C, A, G, E, D), and follower leader-override controls (AC-7, AC-8, AC-9, AM-2)
+  - Added live sync status indicators (`"Saving…"`, `"Synced"`) and `syncError` alerts to compact song header (AC-10)
+  - Displayed compact Worship Leader and Lineup summary in Page View header region (AC-11)
+  - Hoisted compact song header and YouTube player section outside the multi-column layout to prevent layout distortion and sub-page translation clipping (AC-12)
+  - Scoped chord drawer chords to the active song in Page View and passed `capoOffset` (AC-13)
+  - Replaced legacy green status classes with Artisan palette across headers and indicators (AM-1, AC-14)
+  - Exported shared CAGED constants in `src/utils/musicLogic.ts` for reuse across viewer components (AC-8, AC-15)
+  - Affected files: `src/app/setlists/[id]/SetlistViewerClient.tsx`, `src/components/SongViewer/ChordSheetClient.tsx`, `src/components/client/SetlistSongSection.tsx`, `src/hooks/useSetlistSync.ts`, `src/utils/musicLogic.ts`
+
+- Song Performance History on Song Viewer (`TASK-20261101-bru`)
+  - Parallel SSR fetch in `src/app/library/[id]/page.tsx` querying past qualifying setlist performances (`worship_leader_id IS NOT NULL`, `date < today`, respecting Supabase RLS) alongside primary song query (AC-1, AC-2, AC-3, AC-5)
+  - Pure grouping utility `groupSongPerformanceHistory` in `src/utils/worshipLeaderHistory.ts` aggregating records by unique `(worship_leader_id, performance_key)` tuple with repeat multiplier (`×N`), deterministic date/ID tie-breaking, and multi-tier sorting (AC-6, AC-7, AC-8, AC-9, AM-1)
+  - Safe musician resolution selecting only `(id, name)` from `public.musicians` to protect restricted columns (AC-4)
+  - Collapsible history section in `SongDetailClient.tsx` positioned above chord sheet with `"Show history (N)"` / `"Hide history"` toggle (collapsed by default), `"No performance history"` empty state, and direct links to `/setlists/[lastSetlistId]` (AC-10, AC-11, AC-12, AC-13, AC-14)
+  - Bidirectional key transposition synchronization updating `ChordSheetClient` target key, active key state, row `"Current"` / `"Use key"` button states, and `ChordDrawer` diagram sync without persisting to database (AC-15, AC-16, AC-17, AM-2)
+  - Full accessibility compliance with `aria-expanded`, `aria-controls`, `aria-disabled`, and screen-reader announcements via `aria-live="polite"` (AC-18)
+  - Complete Artisan design system palette pairing with explicit `dark:` counterparts, 32px button baselines, and zero generic Tailwind colors (AC-19, AM-3)
+  - Affected files: `src/utils/worshipLeaderHistory.ts`, `src/utils/__tests__/worshipLeaderHistory.test.ts`, `src/app/library/[id]/page.tsx`, `src/app/library/[id]/SongDetailClient.tsx`
+
+---
+## [Unreleased] — 2026-10-31
+
+### Added
+- Changelog Page & Navigation Item (`TASK-20261031-1ik`)
+  - Dedicated public `/changelog` route reading `CHANGELOG.md` directly on the server via Node `fs` with friendly date formatting and fallback handling (AC-1, AC-2, AC-3, AC-9)
+  - Color-coded semantic category badges (`Added`, `Changed`, `Fixed`, `Security`) with Artisan WCAG AA contrast styling (AC-5, AM-2)
+  - Client-side category filter chips styled consistently with `TagFilterBar` and module-scoped constant declarations (AC-6, AM-3)
+  - Desktop sticky release jump index with item counts and smooth scroll clearance (`scroll-mt-20`) (AC-7, AM-1)
+  - Pure sanitization pipeline stripping internal ticket references, audit markers, and `Affected files:` sub-bullets (AC-4)
+  - Timezone-safe UTC date formatting preventing calendar day rollback (AM-4)
+  - Appended Changelog link with `History` icon to primary navbar, rendering 4th for guests, 5th for members, and within the mobile drawer (AC-8)
+  - Affected files: `src/app/changelog/page.tsx`, `src/components/changelog/ChangelogClientView.tsx`, `src/components/changelog/ChangelogFilterChips.tsx`, `src/components/changelog/ChangelogJumpIndex.tsx`, `src/components/changelog/ChangelogTimeline.tsx`, `src/components/client/navbar.tsx`, `src/utils/changelogParser.ts`, `src/utils/__tests__/changelogParser.test.ts`
+
+### Changed
+- Navbar Full-Width Header Expansion (`TASK-20261031-fer`)
+  - Replaced interior `<nav>` container constraint `max-w-5xl mx-auto` with `w-full px-4 sm:px-8` in `src/components/client/navbar.tsx`, expanding the navigation bar edge-to-edge on desktop and ultra-wide viewports while keeping page body containers centered (AC-1, AC-2, AC-3, AC-6)
+  - Retained existing link spacing, hover feedback, active indicator styles, and flush right-aligned mobile drawer trigger (AC-4, AC-5)
+  - Strictly deferred changelog navigation items and badges to Phase 2 / PR 2 (AC-7)
+  - Affected files: `src/components/client/navbar.tsx`
+
+### Fixed
+- Navbar Auth State Synchronization After Login (`TASK-20261030-9zx`)
+  - Synchronized authentication session state on client route transitions (`usePathname()`) via `supabase.auth.getSession()` for 0ms local cookie verification, immediately updating desktop and mobile drawer views without requiring a page refresh (F5) (AC-1, AC-2, AC-3, AM-2)
+  - Added optimistic greeting rendering from `user.user_metadata?.full_name` while fetching authoritative `profiles` row asynchronously in the background, avoiding UI flash or delays (AC-4, AC-5, AC-6)
+  - Subscribed to `visibilitychange` to synchronize session state when returning to the tab from multi-tab login/logout events, with listener cleanup on component unmount (AC-7, AC-11)
+  - Maintained logout confirmation workflow, resetting state to guest view upon sign-out (AC-8)
+  - Declared all helper functions (`fetchProfile`, `applyUserSession`, `syncSession`) lexically before hooks to guarantee React Compiler compliance (AM-3)
+  - Preserved Server Action redirect contract in `src/app/actions/authActions.ts` and clean root layout in `src/app/layout.tsx` without introducing an `AuthProvider` wrapper (AC-9, AC-10)
+  - Affected files: `src/components/client/navbar.tsx`
+
+---
+
+## [Unreleased] — 2026-10-30
+
+### Added
+- Worship Leader Song History in Setlist Builder (`TASK-20261029-5cf`)
+  - Added "History" trigger button adjacent to "Assign Worship Leader" select dropdown in both create (`SetlistPeopleLocalSection`) and edit (`SetlistPeopleSection`) modes when a worship leader is assigned (AC-1)
+  - Created accessible full-screen mobile / centered desktop `WorshipLeaderHistoryModal` dialog displaying leader's past song performance history with tag filter chips (`All`, `Joyful`, `Solemn`, `Hymn`), backdrop blur, Escape dismissal, and Tab focus trap (AC-2, AC-6, AC-11, AM-2, AM-3)
+  - Implemented `getWorshipLeaderSongHistory` server action in `src/app/actions/setlistActions.ts` and pure grouping utility `groupWorshipLeaderSongHistory` in `src/utils/worshipLeaderHistory.ts`, querying past setlists (`date < today`, excluding current setlist in edit mode) and grouping rows by unique `(song_id, performance_key)` with `slice(0, 10)` date handling, repeat multiplier badge (`×N`), and A–Z / newest date sorting (AC-3, AC-4, AC-5, AM-1, BUG-017, BUG-018)
+  - Wired interactive row action button dynamics ("Add" to append song, "Use key" to adopt leader's performance key, "Current" when key matches), updating local builder state dynamically without closing the modal and confirming via `aria-live="polite"` screen-reader announcements (AC-7, AC-8)
+  - Integrated `SetlistPeopleSection` directly inside `SetlistBuilderClient` on edit page (`/setlists/[id]/edit`) with `onWorshipLeaderChange` callback guarded against no-op updates and held in `useRef` (AC-10, AM-4, BUG-027)
+  - Handled loading spinner, empty state ("No past setlists for <Leader Name>"), and error state with functional Retry control (AC-9)
+  - Affected files: `src/utils/worshipLeaderHistory.ts`, `src/app/actions/setlistActions.ts`, `src/components/client/SetlistBuilder/WorshipLeaderHistoryModal.tsx`, `src/components/client/SetlistBuilder/SetlistPeopleLocalSection.tsx`, `src/components/client/SetlistBuilder/SetlistPeopleSection.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/app/setlists/[id]/edit/page.tsx`, `src/app/actions/__tests__/setlistActions.test.ts`
+
+---
+
 ## [Unreleased] — 2026-10-23
 
 ### Added / Changed

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { createClient } from "@/services/supabase/server";
 import Card from "@/components/server/card";
 import GreetingStrip from "@/components/dashboard/GreetingStrip";
@@ -11,7 +13,9 @@ import RecentSongs, {
 import UpcomingSetlists, {
   type UpcomingSetlist,
 } from "@/components/dashboard/UpcomingSetlists";
+import RecentChangelog from "@/components/dashboard/RecentChangelog";
 import PublicDashboardView from "@/components/dashboard/PublicDashboardView";
+import { parseChangelog, type ChangelogRelease } from "@/utils/changelogParser";
 
 type UpcomingRow = {
   id: string;
@@ -22,6 +26,16 @@ type UpcomingRow = {
 
 export default async function HomePage() {
   const supabase = await createClient();
+
+  // Read latest changelog releases via Node fs (zero DB overhead)
+  let recentReleases: ChangelogRelease[] = [];
+  try {
+    const changelogPath = path.join(process.cwd(), "CHANGELOG.md");
+    const changelogContent = fs.readFileSync(changelogPath, "utf-8");
+    recentReleases = parseChangelog(changelogContent).slice(0, 3);
+  } catch (err) {
+    console.error("Failed to read CHANGELOG.md for dashboard:", err);
+  }
 
   // ── Auth check — unauthenticated visitors see the public marketing view ────
   const {
@@ -79,6 +93,7 @@ export default async function HomePage() {
           <PublicDashboardView
             upcomingSetlists={guestUpcoming}
             recentSongs={guestRecentSongs}
+            recentReleases={recentReleases}
           />
         </div>
       </div>
@@ -200,6 +215,9 @@ export default async function HomePage() {
               <RecentSongs songs={recentSongs} />
               <UpcomingSetlists setlists={upcomingSetlists} />
             </div>
+
+            {/* Recent Changelog taking whole width */}
+            <RecentChangelog releases={recentReleases} />
           </div>
         </Card>
       </div>

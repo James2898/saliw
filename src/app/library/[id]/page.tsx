@@ -2,6 +2,11 @@ import Link from "next/link";
 import { ChevronLeft, Pencil } from "lucide-react";
 import { createClient } from "@/services/supabase/server";
 import { preProcessChords } from "@/utils/musicLogic";
+import {
+  groupSongPerformanceHistory,
+  type RawSongPerformanceRow,
+  type SongPerformanceHistoryItem,
+} from "@/utils/worshipLeaderHistory";
 import Card from "@/components/server/card";
 import SongDetailClient from "./SongDetailClient";
 import SongYouTubeSection from "@/components/client/SongYouTubeSection";
@@ -61,12 +66,31 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
     }
   }
 
-  // ── Fetch song ──────────────────────────────────────────────────────────────
-  let songResult = await supabase
-    .from("songs")
-    .select("id, title, artist, original_key, content, youtube_url, tags")
-    .eq("id", id)
-    .single();
+  // ── Parallel SSR Fetch: song + performance history (AC-1..AC-4) ───────────
+  // BUG-018: Format today as YYYY-MM-DD in UTC convention to compare against timestamptz
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const [initialSongResult, historyQueryResult] = await Promise.all([
+    supabase
+      .from("songs")
+      .select("id, title, artist, original_key, content, youtube_url, tags")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("setlist_songs")
+      .select(
+        "song_id, performance_key, setlists!inner(id, name, date, worship_leader_id, is_public, musicians:worship_leader_id(id, name))"
+      )
+      .eq("song_id", id)
+      .not("setlists.worship_leader_id", "is", null)
+      .lt("setlists.date", todayStr)
+      .then(
+        (res) => res,
+        () => ({ data: null, error: { message: "History query failed" } })
+      ),
+  ]);
+
+  let songResult = initialSongResult;
 
   if (songResult.error && songResult.error.code === "42703") {
     songResult = (await supabase
@@ -111,6 +135,16 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
         </div>
       </main>
     );
+  }
+
+  // ── Aggregate song performance history safely (AM-1 / BUG-017) ─────────────
+  let historyItems: SongPerformanceHistoryItem[] = [];
+  if (!historyQueryResult.error && historyQueryResult.data) {
+    const rawHistoryRows =
+      historyQueryResult.data as unknown as RawSongPerformanceRow[];
+    historyItems = groupSongPerformanceHistory(rawHistoryRows, {
+      today: todayStr,
+    });
   }
 
   // ── Pre-process chord sheet (SSR) ───────────────────────────────────────────
@@ -187,6 +221,7 @@ export default async function SongViewerPage({ params }: SongViewerPageProps) {
           <SongDetailClient
             processedLines={processedLines}
             originalKey={song.original_key}
+            historyItems={historyItems}
           />
         </Card>
       </div>

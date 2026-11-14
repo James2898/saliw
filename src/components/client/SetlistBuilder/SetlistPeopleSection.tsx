@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Button from "@/components/client/button";
 import {
@@ -15,9 +15,12 @@ import type { Musician, SetlistLineupEntry } from "@/types/Musician";
 interface SetlistPeopleSectionProps {
   setlistId: string;
   initialWorshipLeaderId: string | null;
-  allMusicians: Musician[];
+  allMusicians: Pick<Musician, "id" | "name">[];
   initialLineup: SetlistLineupEntry[];
   isMusicDirector: boolean;
+  onWorshipLeaderChange?: (leaderId: string | null) => void;
+  onOpenHistory?: () => void;
+  historyButtonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 // ── Class constants ───────────────────────────────────────────────────────────
@@ -48,6 +51,9 @@ export default function SetlistPeopleSection({
   allMusicians,
   initialLineup,
   isMusicDirector,
+  onWorshipLeaderChange,
+  onOpenHistory,
+  historyButtonRef,
 }: SetlistPeopleSectionProps) {
   // ── State — all lazy initializers (BUG-001) ──────────────────────────────────
   const [worshipLeaderId, setWorshipLeaderId] = useState<string | null>(
@@ -74,18 +80,23 @@ export default function SetlistPeopleSection({
   const [addLoading, setAddLoading] = useState(() => false);
   const [addError, setAddError] = useState<string | null>(() => null);
 
-  // ── Handlers — declared before any useEffect/useCallback (BUG-007) ──────────
+  // Ref for onWorshipLeaderChange callback (AM-4, BUG-027)
+  const onWorshipLeaderChangeRef = useRef(onWorshipLeaderChange);
+
+  // ── Handlers — declared before any useEffect/useCallback (BUG-007, AM-3) ────
 
   async function handleWorshipLeaderChange(
     e: React.ChangeEvent<HTMLSelectElement>
   ) {
-    const selectedId = e.target.value;
+    const selectedId = e.target.value || null;
+    if (selectedId === worshipLeaderId) return;
+
     setWlLoading(true);
     setWlError(null);
 
     const result = await setSetlistWorshipLeader({
       setlist_id: setlistId,
-      worship_leader_id: selectedId || null,
+      worship_leader_id: selectedId,
     });
 
     // Split error check and data check (BUG-008)
@@ -96,8 +107,9 @@ export default function SetlistPeopleSection({
     }
 
     // Server confirm — update local state only after success
-    setWorshipLeaderId(selectedId || null);
+    setWorshipLeaderId(selectedId);
     setWlLoading(false);
+    onWorshipLeaderChangeRef.current?.(selectedId);
   }
 
   async function handleRemove(entry: SetlistLineupEntry) {
@@ -197,6 +209,12 @@ export default function SetlistPeopleSection({
     if (addError) setAddError(null);
   }
 
+  // ── Effects ──────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    onWorshipLeaderChangeRef.current = onWorshipLeaderChange;
+  }, [onWorshipLeaderChange]);
+
   // ── Derived ──────────────────────────────────────────────────────────────────
 
   const worshipLeaderName =
@@ -217,7 +235,7 @@ export default function SetlistPeopleSection({
         {isMusicDirector ? (
           <div>
             <label className={labelClass}>Assign Worship Leader</label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={worshipLeaderId ?? ""}
                 onChange={handleWorshipLeaderChange}
@@ -246,6 +264,20 @@ export default function SetlistPeopleSection({
                   className="animate-spin text-brand-brown dark:text-brand-tan"
                   aria-hidden="true"
                 />
+              )}
+              {worshipLeaderId && onOpenHistory && (
+                <Button
+                  ref={historyButtonRef}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onOpenHistory}
+                  disabled={wlLoading}
+                  aria-label={`View song history for ${worshipLeaderName ?? "worship leader"}`}
+                  className="h-8 px-3 py-1.5 text-xs font-semibold rounded-lg"
+                >
+                  History
+                </Button>
               )}
             </div>
 

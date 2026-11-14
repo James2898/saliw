@@ -380,3 +380,18 @@ export function isChordLine(line: string): boolean {
 
   return chordCount / tokens.length > 0.5;
 }
+
+/** CAGED shape labels in display order (module scope for React.memo stability). */
+export const CAGED_SHAPES = ["C", "A", "G", "E", "D"] as const;
+
+/** TypeScript union type derived from the CAGED_SHAPES tuple. */
+export type CAGEDShape = (typeof CAGED_SHAPES)[number];
+
+/** Open-position root note for each CAGED shape. */
+export const CAGED_SHAPE_ROOTS: Record<CAGEDShape, string> = {
+  C: "C",
+  A: "A",
+  G: "G",
+  E: "E",
+  D: "D",
+};

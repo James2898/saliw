@@ -31,6 +31,11 @@ interface UseSetlistSyncParams {
   deviceId?: string;
   displayName?: string;
   userId?: string | null;
+  /**
+   * Fired on a follower when a valid SONG_CHANGE or SECTION_CHANGE broadcast
+   * arrives. Held in a ref so a new callback identity never re-subscribes the channel.
+   */
+  onRemoteSongChange?: (junctionId: string) => void;
 }
 
 export interface UseSetlistSyncReturn {
@@ -123,6 +128,7 @@ export function useSetlistSync({
   deviceId: initialDeviceId,
   displayName: initialDisplayName,
   userId = null,
+  onRemoteSongChange,
 }: UseSetlistSyncParams): UseSetlistSyncFullReturn {
   // Supabase browser client — module-level singleton via getRealtimeClient().
   // Survives React Strict Mode remounts (double-mount in dev) because the instance
@@ -191,6 +197,10 @@ export function useSetlistSync({
 
   // ── RF-3: Ref mirror of validJunctionIds — prevents stale closure in channel handlers ──
   const validJunctionIdsRef = useRef<Set<string>>(new Set());
+
+  // Stable ref for the optional remote-song callback (BUG-021) — updated in an
+  // effect below so channel handlers always call the latest callback.
+  const onRemoteSongChangeRef = useRef(onRemoteSongChange);
 
   // ── Director state ────────────────────────────────────────────────────────
   const [isLive, setIsLive] = useState(false);
@@ -706,6 +716,7 @@ export function useSetlistSync({
 
               // Silent skip if junctionId not in rendered set (AC-31)
               if (!validJunctionIdsRef.current.has(junctionId)) return;
+              onRemoteSongChangeRef.current?.(junctionId);
               document
                 .getElementById(`song-${junctionId}`)
                 ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -742,6 +753,7 @@ export function useSetlistSync({
               if (timestamp) lastProcessedTimestampRef.current = timestamp;
 
               if (!validJunctionIdsRef.current.has(junctionId)) return;
+              onRemoteSongChangeRef.current?.(junctionId);
               const sectionEl =
                 document.getElementById(sectionId) ??
                 document.getElementById(`song-${junctionId}`);
@@ -844,6 +856,11 @@ export function useSetlistSync({
   useEffect(() => {
     validJunctionIdsRef.current = validJunctionIds;
   }, [validJunctionIds]);
+
+  // ── Keep onRemoteSongChangeRef current without re-subscribing the channel ──
+  useEffect(() => {
+    onRemoteSongChangeRef.current = onRemoteSongChange;
+  }, [onRemoteSongChange]);
 
   // ── Unmount cleanup — remove any active channel and clear all pending timers (AC-6, AC-7, BUG-019) ──
   useEffect(() => {
