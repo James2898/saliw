@@ -33,6 +33,9 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 ### React Compiler & Immutability Rules
 - **No Direct Window Mutation (`react-hooks/immutability`):** Never assign directly to global properties like `window.location.hash = '#...'` inside event callbacks or component renders. Direct mutation triggers a fatal React Compiler error. Use `window.history.pushState(null, "", `#${anchorId}`)` or `element.scrollIntoView({ behavior: "smooth" })` instead.
 
+### Next.js Server Actions & Type Exports (BUG-030)
+- **No Type Exports from `"use server"` Files:** Never export or re-export TypeScript types (`export type { ... }`) from modules marked with `"use server"`. Next.js's Server Actions compiler creates RPC action endpoint bindings for all exports; because types are erased in JS runtime, this causes `Export <TypeName> doesn't exist in target module` runtime crashes when imported by client components. Always import types directly from `@/types/...` or `@/utils/...`.
+
 ### Saliw Artisan Design System Palette Rules
 - **No Generic Green/Blue Alert Colors:** Badges, category pills, and tag chips must never use generic Tailwind colors (`emerald`, `sky`, `blue`, `green`). All UI indicators must adhere strictly to Saliw's Artisan palette:
   - High Emphasis / Primary: `brand-espresso` / `brand-cream`
