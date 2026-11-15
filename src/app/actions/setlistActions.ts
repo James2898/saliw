@@ -14,8 +14,6 @@ import {
   type WorshipLeaderSongHistoryItem,
 } from "@/utils/worshipLeaderHistory";
 
-export type { WorshipLeaderSongHistoryItem };
-
 /**
  * Fetches the header fields of a single setlist by its ID.
  * Any authenticated user may read setlists (setlists_select_authenticated RLS policy).
