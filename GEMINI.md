@@ -33,6 +33,9 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
 ### React Compiler & Immutability Rules
 - **No Direct Window Mutation (`react-hooks/immutability`):** Never assign directly to global properties like `window.location.hash = '#...'` inside event callbacks or component renders. Direct mutation triggers a fatal React Compiler error. Use `window.history.pushState(null, "", `#${anchorId}`)` or `element.scrollIntoView({ behavior: "smooth" })` instead.
 
+### Next.js Server Actions & Type Exports (BUG-030)
+- **No Type Exports from `"use server"` Files:** Never export or re-export TypeScript types (`export type { ... }`) from modules marked with `"use server"`. Next.js's Server Actions compiler creates RPC action endpoint bindings for all exports; because types are erased in JS runtime, this causes `Export <TypeName> doesn't exist in target module` runtime crashes when imported by client components. Always import types directly from `@/types/...` or `@/utils/...`.
+
 ### Saliw Artisan Design System Palette Rules
 - **No Generic Green/Blue Alert Colors:** Badges, category pills, and tag chips must never use generic Tailwind colors (`emerald`, `sky`, `blue`, `green`). All UI indicators must adhere strictly to Saliw's Artisan palette:
   - High Emphasis / Primary: `brand-espresso` / `brand-cream`
@@ -109,6 +112,7 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
       git -C "$MAIN_REPO" fetch origin main:main
   fi
   ```
+- **PR Assignee:** When creating pull requests via `gh pr create`, always assign to the personal GitHub account (`--assignee "@me"`).
 
 ---
 
@@ -121,3 +125,15 @@ This file is automatically loaded for **Google Antigravity** sessions. It define
   NODE_PATH="$MAIN_REPO/node_modules" node --env-file="$MAIN_REPO/.env.local" -e '...'
   ```
 - **Supabase Migrations:** Always use the eager/lazy Supabase MCP tool (`call_mcp_tool` with `apply_migration` or `execute_sql`) rather than attempting interactive `npx supabase` shell prompts.
+
+---
+
+## 5. Tutoring & Pairing Guardrail
+
+- **No Unsolicited Modifications:** When in tutoring/pairing mode, NEVER modify, edit, or patch application code files unless explicitly asked by the user.
+- **Minimal Code Guidance:** Do NOT write out full JSX, component implementations, or solution files for the user to copy or retype. Provide only TypeScript contracts, behavior checklists, and file:line citations to sibling components. The user authors the code.
+- **Error Log Handling:** When the user shares an error log or test failure:
+  1. Do NOT modify the code files.
+  2. Explain the root cause clearly from first principles.
+  3. Provide diagnostic tips and line citations so the user can implement the fix themselves.
+  4. Wait for the user's action or explicit request.

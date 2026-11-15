@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import {
   addSongToSetlist,
   removeSongFromSetlist,
@@ -22,6 +22,7 @@ import LibraryPanel from "./LibraryPanel";
 import SetlistPeopleLocalSection, {
   type PendingLineupEntry,
 } from "./SetlistPeopleLocalSection";
+import LiturgyAssistantDrawer from "./LiturgyAssistantDrawer";
 import SetlistPeopleSection from "./SetlistPeopleSection";
 import WorshipLeaderHistoryModal from "./WorshipLeaderHistoryModal";
 
@@ -31,6 +32,7 @@ const CloneSetlistDialog = dynamic(() => import("./CloneSetlistDialog"), {
 
 import type { SongSummary } from "@/types/Song";
 import type { SetlistLineupEntry } from "@/types/Musician";
+import type { ProposedSong } from "@/types/liturgyAgent";
 
 // ── Shared types (exported so page.tsx can import them) ────────────────────────
 
@@ -115,6 +117,7 @@ export default function SetlistBuilderClient({
   const [query, setQuery] = useState(() => "");
   const [showCloneDialog, setShowCloneDialog] = useState(() => false);
   const [isCloning, setIsCloning] = useState(() => false);
+  const [showAssistant, setShowAssistant] = useState(() => false);
 
   // CREATE mode — pending people assignment (flushed to DB in handleSave after createSetlist)
   const [pendingWorshipLeaderId, setPendingWorshipLeaderId] = useState<
@@ -134,6 +137,16 @@ export default function SetlistBuilderClient({
     () => false
   );
   const historyButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Liturgy recommendation notification & apply dialog state (AC-1..4)
+  const [notification, setNotification] = useState<{
+    type: "success" | "info";
+    message: string;
+  } | null>(() => null);
+  const [pendingApplySongs, setPendingApplySongs] = useState<{
+    songs: ProposedSong[];
+    mode?: "replace" | "append";
+  } | null>(() => null);
 
   // Dirty: compare local vs initial (name, date, isPublic, songs)
   const isDirty =
@@ -199,6 +212,88 @@ export default function SetlistBuilderClient({
 
   function handlePendingLineupChange(lineup: PendingLineupEntry[]) {
     setPendingLineup(lineup);
+  }
+
+  function executeApply(proposed: ProposedSong[], mode: "replace" | "append") {
+    if (mode === "replace" || localSongs.length === 0) {
+      const newSongs: SortableSong[] = proposed.map((p, idx) => ({
+        junctionId: null,
+        songId: p.songId,
+        title: p.title,
+        artist: p.artist,
+        originalKey: p.originalKey,
+        performanceKey: p.recommendedKey || p.originalKey,
+        orderIndex: idx,
+      }));
+      setLocalSongs(newSongs);
+      setShowAssistant(false);
+      setPendingApplySongs(null);
+      setNotification({
+        type: "success",
+        message: "Applied proposed songs to setlist.",
+      });
+      return;
+    }
+
+    // mode === "append"
+    const existingIds = new Set(localSongs.map((s) => s.songId));
+    const toAppend = proposed.filter((p) => !existingIds.has(p.songId));
+    const skippedCount = proposed.length - toAppend.length;
+
+    if (toAppend.length === 0) {
+      setShowAssistant(false);
+      setPendingApplySongs(null);
+      setNotification({
+        type: "info",
+        message: "All proposed songs are already in the setlist.",
+      });
+      return;
+    }
+
+    setLocalSongs((prev) => [
+      ...prev,
+      ...toAppend.map((p, idx) => ({
+        junctionId: null,
+        songId: p.songId,
+        title: p.title,
+        artist: p.artist,
+        originalKey: p.originalKey,
+        performanceKey: p.recommendedKey || p.originalKey,
+        orderIndex: prev.length + idx,
+      })),
+    ]);
+
+    setShowAssistant(false);
+    setPendingApplySongs(null);
+
+    if (skippedCount > 0) {
+      setNotification({
+        type: "info",
+        message: `Appended ${toAppend.length} song(s). ${skippedCount} duplicate song(s) were skipped.`,
+      });
+    } else {
+      setNotification({
+        type: "success",
+        message: `Appended ${toAppend.length} song(s) to setlist.`,
+      });
+    }
+  }
+
+  function handleApplySetlist(
+    proposed: ProposedSong[],
+    mode: "replace" | "append"
+  ) {
+    if (localSongs.length === 0) {
+      executeApply(proposed, "replace");
+      return;
+    }
+
+    if (mode === "replace") {
+      setPendingApplySongs({ songs: proposed, mode: "replace" });
+      return;
+    }
+
+    executeApply(proposed, "append");
   }
 
   function handleEditWorshipLeaderChange(id: string | null) {
@@ -538,6 +633,28 @@ export default function SetlistBuilderClient({
         </div>
       )}
 
+      {/* Notification banner (AC-2, AC-4, AC-14) */}
+      {notification && (
+        <div className="mb-6">
+          <div
+            role="status"
+            className="bg-brand-cream dark:bg-brand-espresso border border-brand-brown/30 dark:border-brand-tan/30 rounded-lg px-4 py-3 flex items-start gap-2"
+          >
+            <p className="text-sm font-medium text-brand-espresso dark:text-brand-cream flex-1">
+              {notification.message}
+            </p>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              onClick={() => setNotification(null)}
+              className="text-brand-brown/60 dark:text-brand-tan/60 hover:text-brand-brown dark:hover:text-brand-tan transition-colors duration-200 shrink-0 leading-none"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Clone button — edit mode only */}
       {setlistId !== null && (
         <div className="flex justify-end mb-6">
@@ -559,10 +676,21 @@ export default function SetlistBuilderClient({
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_360px] md:gap-8 md:items-start">
         {/* Setlist Panel — left / top */}
         <div>
-          <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest mb-4">
-            Setlist ({localSongs.length}{" "}
-            {localSongs.length === 1 ? "song" : "songs"})
-          </p>
+          <div className="flex items-center justify-between mb-2 align-middle">
+            <p className="text-sm font-semibold text-brand-brown/60 dark:text-brand-tan/60 uppercase tracking-widest mb-4">
+              Setlist ({localSongs.length}{" "}
+              {localSongs.length === 1 ? "song" : "songs"})
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAssistant(true)}
+              aria-label="Open liturgy assistant"
+            >
+              <Sparkles size={14} aria-hidden="true" className="mr-1.5" />
+              Liturgy Assistant
+            </Button>
+          </div>
           <SetlistPanel
             songs={localSongs}
             onReorder={handleReorder}
@@ -608,6 +736,72 @@ export default function SetlistBuilderClient({
         isCloning={isCloning}
         onConfirm={handleClone}
         onCancel={() => setShowCloneDialog(false)}
+      />
+
+      {/* Replace vs Append confirmation dialog when applying to existing setlist (AC-2, AM-6) */}
+      {pendingApplySongs && (
+        <>
+          <div
+            className="fixed inset-0 z-[80] bg-brand-espresso/40"
+            aria-hidden="true"
+            onClick={() => setPendingApplySongs(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="apply-mode-dialog-title"
+            className="fixed z-[90] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,26rem)] bg-brand-cream dark:bg-brand-espresso border border-brand-brown/20 rounded-2xl p-6 flex flex-col gap-4 shadow-lg"
+          >
+            <h2
+              id="apply-mode-dialog-title"
+              className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream"
+            >
+              Apply Proposed Setlist
+            </h2>
+            <p className="font-sans text-sm text-brand-brown dark:text-brand-tan">
+              Your setlist already contains {localSongs.length} song(s). Would
+              you like to replace all existing songs or append the{" "}
+              {pendingApplySongs.songs.length} proposed song(s) to the end?
+            </p>
+            <div className="flex items-center justify-end gap-3 mt-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPendingApplySongs(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => executeApply(pendingApplySongs.songs, "append")}
+              >
+                Append to Setlist
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => executeApply(pendingApplySongs.songs, "replace")}
+              >
+                Replace All
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Liturgy Assistant Drawer (AM-4, AC-1..5) */}
+      <LiturgyAssistantDrawer
+        isOpen={showAssistant}
+        onClose={() => setShowAssistant(false)}
+        allMusicians={allMusicians}
+        currentWorshipLeaderId={activeWorshipLeaderId}
+        onApplySetlist={handleApplySetlist}
+        hasExistingSongs={localSongs.length > 0}
+        existingSongIds={Array.from(addedIds)}
       />
     </div>
   );

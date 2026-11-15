@@ -4,6 +4,22 @@ All notable changes to the Saliw Music Portal are documented here.
 
 ---
 
+## [Unreleased] — 2026-11-15
+
+### Added / Changed
+- Liturgy Assistant Setlist Integration & Key Recommendations (`TASK-20261115-va8`)
+  - Integrated `LiturgyAssistantDrawer` with `SetlistBuilderClient` supporting empty-state population, replace all, and append to setlist with deduplication notification (AC-1, AC-2, AC-3, AC-4, AC-5, AM-6, AM-7)
+  - Implemented isolated single-song re-roll in `LiturgyAssistantDrawer` passing excluded song IDs, slot replacement, and per-card spinning loading state with failure recovery (AC-6, AC-7, AC-8, AC-9, AC-10)
+  - Redesigned `LiturgyAssistantDrawer` UI/UX with structured parameters card, generation pipeline timeline stepper, sticky action footer, and sequential slot numbers with harmonic flow connectors
+  - Added past performance history indicators (`previouslySungKey`, `lastSungDate`) on proposed song cards displaying whether and in what key the leader previously sang each song
+  - Enhanced key recommendation heuristics in `liturgyAgentActions.ts` prioritizing worship leader past performance history with harmonic modulation fallback (AC-11, AC-12, AC-13)
+  - Added session auth verification and robust error handling in liturgy server actions (AM-5)
+  - Replaced invalid Tailwind classes, synchronized worship leader selection props, and wired interactive key changes with manual source tracking in drawer (AM-1, AM-2, AM-3, AM-4)
+  - Ensured full Artisan design system compliance and accessible dialog labeling across drawer and builder modals (AC-14, AM-6)
+  - Affected files: `src/app/actions/liturgyAgentActions.ts`, `src/app/actions/__tests__/liturgyAgentActions.test.ts`, `src/components/client/SetlistBuilder/LiturgyAssistantDrawer.tsx`, `src/components/client/SetlistBuilder/SetlistBuilderClient.tsx`, `src/types/liturgyAgent.ts`
+
+---
+
 ## [Unreleased] — 2026-11-01
 
 ### Added / Changed

@@ -2,10 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import {
-  getWorshipLeaderSongHistory,
-  type WorshipLeaderSongHistoryItem,
-} from "@/app/actions/setlistActions";
+import { getWorshipLeaderSongHistory } from "@/app/actions/setlistActions";
+import type { WorshipLeaderSongHistoryItem } from "@/utils/worshipLeaderHistory";
 import Button from "@/components/client/button";
 import SongCard from "@/components/client/SongCard";
 import SongKeyBadge from "@/components/SongKey/SongKeyBadge";
