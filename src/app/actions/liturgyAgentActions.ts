@@ -302,6 +302,8 @@ export async function generateSetlistProposalAction(
         leaderKeyMap
       );
 
+      const leaderEntry = leaderKeyMap.get(song.id);
+
       proposedSongs.push({
         songId: song.id,
         title: song.title,
@@ -311,6 +313,8 @@ export async function generateSetlistProposalAction(
         tag: song.tag,
         transitionNote: recommendation.transitionNote,
         keySource: recommendation.keySource,
+        previouslySungKey: leaderEntry?.performanceKey ?? null,
+        lastSungDate: leaderEntry?.lastSungDate ?? null,
       });
     }
 
@@ -448,6 +452,8 @@ export async function refreshSingleSongRecommendationAction(
       leaderKeyMap
     );
 
+    const leaderEntry = leaderKeyMap.get(candidate.id);
+
     return {
       success: true,
       song: {
@@ -459,6 +465,8 @@ export async function refreshSingleSongRecommendationAction(
         tag: currentSong.tag,
         transitionNote: recommendation.transitionNote,
         keySource: recommendation.keySource,
+        previouslySungKey: leaderEntry?.performanceKey ?? null,
+        lastSungDate: leaderEntry?.lastSungDate ?? null,
       },
     };
   } catch (err) {

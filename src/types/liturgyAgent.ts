@@ -28,6 +28,8 @@ export interface ProposedSong {
   tag: SongVibeTag;
   transitionNote: string;
   keySource: KeySource;
+  previouslySungKey?: string | null;
+  lastSungDate?: string | null;
 }
 
 export interface LiturgyStepProgress {

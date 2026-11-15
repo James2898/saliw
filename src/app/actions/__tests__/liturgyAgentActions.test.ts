@@ -319,6 +319,8 @@ describe("liturgyAgentActions", () => {
       expect(res.proposedSongs).toHaveLength(1);
       expect(res.proposedSongs[0].recommendedKey).toBe("D");
       expect(res.proposedSongs[0].keySource).toBe("leader_history");
+      expect(res.proposedSongs[0].previouslySungKey).toBe("D");
+      expect(res.proposedSongs[0].lastSungDate).toBe("2026-02-15");
     });
 
     it("falls back to harmonic modulation when worship leader has no performance history", async () => {
@@ -366,9 +368,11 @@ describe("liturgyAgentActions", () => {
 
       expect(res.success).toBe(true);
       expect(res.proposedSongs[0].recommendedKey).toBe("C");
+      expect(res.proposedSongs[0].previouslySungKey).toBeNull();
       expect(res.proposedSongs[1].recommendedKey).toBe("G");
       expect(res.proposedSongs[1].keySource).toBe("harmonic_modulation");
       expect(res.proposedSongs[1].transitionNote).toMatch(/dominant/i);
+      expect(res.proposedSongs[1].previouslySungKey).toBeNull();
     });
   });
 
