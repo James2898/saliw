@@ -67,4 +67,8 @@ export interface RefreshSingleSongResponse {
   success: boolean;
   error?: string;
   song?: ProposedSong;
+  aiQuota?: {
+    used: number;
+    total: number;
+  };
 }

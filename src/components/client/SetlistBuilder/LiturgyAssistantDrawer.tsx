@@ -235,10 +235,8 @@ export default function LiturgyAssistantDrawer({
       setProposedSongs((prev) =>
         prev.map((s, i) => (i === index ? replacement : s))
       );
-      if ((response as unknown as { aiQuota?: { used: number; total: number } }).aiQuota) {
-        setAiQuota(
-          (response as unknown as { aiQuota: { used: number; total: number } }).aiQuota
-        );
+      if (response.aiQuota) {
+        setAiQuota(response.aiQuota);
       }
     } catch (err) {
       setRefreshError(

@@ -4,9 +4,15 @@ import {
   refreshSingleSongRecommendationAction,
 } from "../liturgyAgentActions";
 import * as supabaseServer from "@/services/supabase/server";
+import * as liturgyAiService from "@/services/ai/liturgyAiService";
 
 vi.mock("@/services/supabase/server", () => ({
   createClient: vi.fn(),
+}));
+
+vi.mock("@/services/ai/liturgyAiService", () => ({
+  curateSetlistWithAi: vi.fn(),
+  recommendAlternativeSongWithAi: vi.fn(),
 }));
 
 describe("liturgyAgentActions", () => {
@@ -50,6 +56,15 @@ describe("liturgyAgentActions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.GEMINI_API_KEY;
+    vi.mocked(liturgyAiService.curateSetlistWithAi).mockResolvedValue({
+      success: false,
+      reason: "missing_api_key",
+    });
+    vi.mocked(liturgyAiService.recommendAlternativeSongWithAi).mockResolvedValue({
+      success: false,
+      reason: "missing_api_key",
+    });
   });
 
   describe("Validation boundaries", () => {
@@ -477,6 +492,239 @@ describe("liturgyAgentActions", () => {
 
       expect(res.success).toBe(false);
       expect(res.error).toMatch(/Unable to find an alternative song/i);
+    });
+  });
+
+  describe("AI Curation and Daily Quota Integration", () => {
+    it("curates setlist with AI when quota is available and API key is present", async () => {
+      process.env.GEMINI_API_KEY = "test-key";
+      vi.mocked(liturgyAiService.curateSetlistWithAi).mockResolvedValueOnce({
+        success: true,
+        selectedSongs: [
+          {
+            songId: "song-j2",
+            slot: 0,
+            rationale: "Celebratory anthem for opening gathering.",
+          },
+          {
+            songId: "song-s2",
+            slot: 1,
+            rationale: "Heartfelt gratitude and communion response.",
+          },
+        ],
+      });
+
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: mockSongs,
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+        rpc: vi.fn((fn: string) => {
+          if (fn === "get_ai_daily_quota") {
+            return Promise.resolve({ data: 2, error: null });
+          }
+          if (fn === "increment_ai_daily_quota") {
+            return Promise.resolve({ data: 3, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await generateSetlistProposalAction({
+        joyfulCount: 1,
+        solemnCount: 1,
+        additionalInstructions: "Theme: Praise for God's goodness.",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.isAiCurated).toBe(true);
+      expect(res.aiQuota).toEqual({ used: 3, total: 10 });
+      expect(res.proposedSongs).toHaveLength(2);
+      expect(res.proposedSongs[0].songId).toBe("song-j2");
+      expect(res.proposedSongs[1].songId).toBe("song-s2");
+      expect(res.proposedSongs[0].transitionNote).toContain(
+        "Celebratory anthem for opening gathering."
+      );
+      expect(
+        res.stepsExecuted.some((s) => s.step === "ai_semantic_curation")
+      ).toBe(true);
+    });
+
+    it("falls back to library tag search when daily AI quota is exhausted (>= 10)", async () => {
+      process.env.GEMINI_API_KEY = "test-key";
+
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: mockSongs,
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+        rpc: vi.fn((fn: string) => {
+          if (fn === "get_ai_daily_quota") {
+            return Promise.resolve({ data: 10, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await generateSetlistProposalAction({
+        joyfulCount: 1,
+        solemnCount: 1,
+        additionalInstructions: "Focus on grace.",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.isAiCurated).toBe(false);
+      expect(res.aiQuota).toEqual({ used: 10, total: 10 });
+      expect(res.fallbackNotice).toContain("used all 10 AI picks for today");
+      expect(liturgyAiService.curateSetlistWithAi).not.toHaveBeenCalled();
+    });
+
+    it("falls back to tag search without consuming quota when AI returns a timeout", async () => {
+      process.env.GEMINI_API_KEY = "test-key";
+      vi.mocked(liturgyAiService.curateSetlistWithAi).mockResolvedValueOnce({
+        success: false,
+        reason: "timeout",
+      });
+
+      const rpcSpy = vi.fn((fn: string) => {
+        if (fn === "get_ai_daily_quota") {
+          return Promise.resolve({ data: 4, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      });
+
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: mockSongs,
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+        rpc: rpcSpy,
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await generateSetlistProposalAction({
+        joyfulCount: 1,
+        solemnCount: 1,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.isAiCurated).toBe(false);
+      expect(res.aiQuota).toEqual({ used: 4, total: 10 });
+      expect(res.fallbackNotice).toContain("took longer than expected");
+      expect(rpcSpy).not.toHaveBeenCalledWith("increment_ai_daily_quota");
+    });
+
+    it("uses AI for single song refresh when instructions provided and quota available", async () => {
+      process.env.GEMINI_API_KEY = "test-key";
+      vi.mocked(
+        liturgyAiService.recommendAlternativeSongWithAi
+      ).mockResolvedValueOnce({
+        success: true,
+        songId: "song-j2",
+        rationale: "Selected for energy and praise.",
+      });
+
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === "songs") {
+            return {
+              select: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: mockSongs,
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+        rpc: vi.fn((fn: string) => {
+          if (fn === "get_ai_daily_quota") {
+            return Promise.resolve({ data: 1, error: null });
+          }
+          if (fn === "increment_ai_daily_quota") {
+            return Promise.resolve({ data: 2, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+      };
+
+      vi.mocked(supabaseServer.createClient).mockResolvedValue(
+        mockSupabase as unknown as Awaited<
+          ReturnType<typeof supabaseServer.createClient>
+        >
+      );
+
+      const res = await refreshSingleSongRecommendationAction({
+        slotIndex: 0,
+        currentSong: {
+          songId: "song-j1",
+          title: "House of the Lord",
+          artist: "Phil Wickham",
+          originalKey: "Bb",
+          recommendedKey: "Bb",
+          tag: "joyful",
+          transitionNote: "Starting set",
+          keySource: "original_key",
+        },
+        liturgyContext: {
+          joyfulCount: 1,
+          solemnCount: 1,
+          additionalInstructions: "More upbeat praise song",
+        },
+        excludedSongIds: [],
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.song?.songId).toBe("song-j2");
+      expect(res.song?.transitionNote).toContain(
+        "Selected for energy and praise."
+      );
+      expect(res.aiQuota).toEqual({ used: 2, total: 10 });
     });
   });
 });
