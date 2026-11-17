@@ -2,6 +2,10 @@
 
 import { createClient } from "@/services/supabase/server";
 import {
+  curateSetlistWithAi,
+  recommendAlternativeSongWithAi,
+} from "@/services/ai/liturgyAiService";
+import {
   LiturgyAgentRequest,
   LiturgyStepProgress,
   LiturgyAgentResponse,
@@ -131,7 +135,7 @@ export async function generateSetlistProposalAction(
       worshipLeaderId,
       joyfulCount,
       solemnCount,
-      // additionalInstructions,
+      additionalInstructions,
       excludedSongIds = [],
     } = request;
     const totalCount = joyfulCount + solemnCount;
@@ -261,6 +265,24 @@ export async function generateSetlistProposalAction(
       },
     ];
 
+    // Fetch daily AI quota from Supabase
+    let currentUsedQuota = 0;
+    const DAILY_AI_QUOTA_LIMIT = 10;
+    if (typeof (supabase as unknown as { rpc?: unknown }).rpc === "function") {
+      try {
+        const { data: quotaCount } = await (
+          supabase as unknown as {
+            rpc: (fn: string) => Promise<{ data: number | null }>;
+          }
+        ).rpc("get_ai_daily_quota");
+        if (typeof quotaCount === "number") {
+          currentUsedQuota = quotaCount;
+        }
+      } catch {
+        // Fallback gracefully if RPC is not available in mock/offline
+      }
+    }
+
     const { data: allSongs, error } = await supabase
       .from("songs")
       .select("id, title, artist, original_key, tags")
@@ -283,13 +305,97 @@ export async function generateSetlistProposalAction(
       (song) => song.tags.includes("solemn") && !excludedSet.has(song.id)
     );
 
-    const selectedJoyfulSongs = joyfulSongs.slice(0, joyfulCount);
-    const selectedSolemnSongs = solemnSongs.slice(0, solemnCount);
+    const hasApiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
+    const quotaExhausted = currentUsedQuota >= DAILY_AI_QUOTA_LIMIT;
 
-    const selectedSongsWithTags = [
-      ...selectedJoyfulSongs.map((s) => ({ ...s, tag: "joyful" as const })),
-      ...selectedSolemnSongs.map((s) => ({ ...s, tag: "solemn" as const })),
-    ];
+    let isAiCurated = false;
+    let fallbackNotice: string | undefined = undefined;
+    let updatedQuotaCount = currentUsedQuota;
+
+    let selectedSongsWithTags: Array<
+      (typeof allSongs)[number] & {
+        tag: "joyful" | "solemn";
+        aiRationale?: string;
+      }
+    > = [];
+
+    // Attempt AI Curation if API key is present and quota is not exhausted
+    if (hasApiKey && !quotaExhausted) {
+      const eligibleCandidates = allSongs.filter((s) => !excludedSet.has(s.id));
+      const aiResult = await curateSetlistWithAi({
+        candidateSongs: eligibleCandidates,
+        joyfulCount,
+        solemnCount,
+        additionalInstructions,
+      });
+
+      if (aiResult.success) {
+        const songsById = new Map(allSongs.map((s) => [s.id, s]));
+        selectedSongsWithTags = aiResult.selectedSongs.map((item, index) => {
+          const song = songsById.get(item.songId)!;
+          const tag =
+            index < joyfulCount ? ("joyful" as const) : ("solemn" as const);
+          return {
+            ...song,
+            tag,
+            aiRationale: item.rationale,
+          };
+        });
+
+        isAiCurated = true;
+
+        // Atomically increment daily quota in database
+        if (typeof (supabase as unknown as { rpc?: unknown }).rpc === "function") {
+          try {
+            const { data: newCount } = await (
+              supabase as unknown as {
+                rpc: (fn: string) => Promise<{ data: number | null }>;
+              }
+            ).rpc("increment_ai_daily_quota");
+            if (typeof newCount === "number") {
+              updatedQuotaCount = newCount;
+            } else {
+              updatedQuotaCount = currentUsedQuota + 1;
+            }
+          } catch {
+            updatedQuotaCount = currentUsedQuota + 1;
+          }
+        } else {
+          updatedQuotaCount = currentUsedQuota + 1;
+        }
+
+        stepsExecuted.push({
+          step: "ai_semantic_curation",
+          status: "completed",
+          detail: `AI curated ${selectedSongsWithTags.length} songs based on your sermon focus and themes.`,
+        });
+      } else {
+        // AI call failed or timed out -> Fall back to tag search without consuming quota
+        if (aiResult.reason === "rate_limit") {
+          fallbackNotice =
+            "AI service is busy right now. These songs were selected using your church library tags instead.";
+        } else if (aiResult.reason === "timeout") {
+          fallbackNotice =
+            "AI curation took longer than expected. These songs were selected using your church library tags instead.";
+        } else {
+          fallbackNotice =
+            "Standard church library tag search was used for this setlist.";
+        }
+      }
+    } else if (quotaExhausted) {
+      fallbackNotice =
+        "You've used all 10 AI picks for today. These songs were selected using your church library tags instead.";
+    }
+
+    if (!isAiCurated) {
+      const selectedJoyfulSongs = joyfulSongs.slice(0, joyfulCount);
+      const selectedSolemnSongs = solemnSongs.slice(0, solemnCount);
+
+      selectedSongsWithTags = [
+        ...selectedJoyfulSongs.map((s) => ({ ...s, tag: "joyful" as const })),
+        ...selectedSolemnSongs.map((s) => ({ ...s, tag: "solemn" as const })),
+      ];
+    }
 
     const proposedSongs: ProposedSong[] = [];
     for (let i = 0; i < selectedSongsWithTags.length; i++) {
@@ -311,7 +417,9 @@ export async function generateSetlistProposalAction(
         originalKey: song.original_key,
         recommendedKey: recommendation.recommendedKey,
         tag: song.tag,
-        transitionNote: recommendation.transitionNote,
+        transitionNote: song.aiRationale
+          ? `${song.aiRationale} (${recommendation.transitionNote})`
+          : recommendation.transitionNote,
         keySource: recommendation.keySource,
         previouslySungKey: leaderEntry?.performanceKey ?? null,
         lastSungDate: leaderEntry?.lastSungDate ?? null,
@@ -322,6 +430,12 @@ export async function generateSetlistProposalAction(
       success: true,
       stepsExecuted,
       proposedSongs,
+      aiQuota: {
+        used: updatedQuotaCount,
+        total: DAILY_AI_QUOTA_LIMIT,
+      },
+      isAiCurated,
+      fallbackNotice,
     };
   } catch (err) {
     return {
@@ -443,8 +557,73 @@ export async function refreshSingleSongRecommendationAction(
       };
     }
 
-    // Pick first candidate matching criteria
-    const candidate = candidates[0];
+    // Check daily AI quota from Supabase
+    let currentUsedQuota = 0;
+    const DAILY_AI_QUOTA_LIMIT = 10;
+    if (typeof (supabase as unknown as { rpc?: unknown }).rpc === "function") {
+      try {
+        const { data: quotaCount } = await (
+          supabase as unknown as {
+            rpc: (fn: string) => Promise<{ data: number | null }>;
+          }
+        ).rpc("get_ai_daily_quota");
+        if (typeof quotaCount === "number") {
+          currentUsedQuota = quotaCount;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const hasApiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
+    const quotaExhausted = currentUsedQuota >= DAILY_AI_QUOTA_LIMIT;
+
+    let candidate = candidates[0];
+    let aiRationale: string | undefined = undefined;
+    let updatedQuotaCount = currentUsedQuota;
+
+    if (
+      hasApiKey &&
+      !quotaExhausted &&
+      liturgyContext.additionalInstructions?.trim()
+    ) {
+      const aiResult = await recommendAlternativeSongWithAi({
+        candidates,
+        slotIndex,
+        requiredTag: currentSong.tag,
+        additionalInstructions: liturgyContext.additionalInstructions,
+      });
+
+      if (aiResult.success) {
+        const matched = candidates.find((c) => c.id === aiResult.songId);
+        if (matched) {
+          candidate = matched;
+          aiRationale = aiResult.rationale;
+
+          if (
+            typeof (supabase as unknown as { rpc?: unknown }).rpc === "function"
+          ) {
+            try {
+              const { data: incCount } = await (
+                supabase as unknown as {
+                  rpc: (fn: string) => Promise<{ data: number | null }>;
+                }
+              ).rpc("increment_ai_daily_quota");
+              if (typeof incCount === "number") {
+                updatedQuotaCount = incCount;
+              } else {
+                updatedQuotaCount = currentUsedQuota + 1;
+              }
+            } catch {
+              updatedQuotaCount = currentUsedQuota + 1;
+            }
+          } else {
+            updatedQuotaCount = currentUsedQuota + 1;
+          }
+        }
+      }
+    }
+
     const recommendation = recommendKeyForSong(
       candidate,
       slotIndex,
@@ -463,10 +642,16 @@ export async function refreshSingleSongRecommendationAction(
         originalKey: candidate.original_key,
         recommendedKey: recommendation.recommendedKey,
         tag: currentSong.tag,
-        transitionNote: recommendation.transitionNote,
+        transitionNote: aiRationale
+          ? `${aiRationale} (${recommendation.transitionNote})`
+          : recommendation.transitionNote,
         keySource: recommendation.keySource,
         previouslySungKey: leaderEntry?.performanceKey ?? null,
         lastSungDate: leaderEntry?.lastSungDate ?? null,
+      },
+      aiQuota: {
+        used: updatedQuotaCount,
+        total: DAILY_AI_QUOTA_LIMIT,
       },
     };
   } catch (err) {

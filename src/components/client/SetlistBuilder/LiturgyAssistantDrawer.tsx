@@ -40,6 +40,7 @@ interface LiturgyAssistantDrawerProps {
   onApplySetlist: (songs: ProposedSong[], mode: "replace" | "append") => void;
   hasExistingSongs: boolean;
   existingSongIds?: string[];
+  initialAiQuota?: { used: number; total: number };
 }
 
 const PROMPT_SUGGESTIONS = [
@@ -57,6 +58,7 @@ export default function LiturgyAssistantDrawer({
   onApplySetlist,
   hasExistingSongs,
   existingSongIds = [],
+  initialAiQuota,
 }: LiturgyAssistantDrawerProps) {
   // Synchronize worshipLeaderId with currentWorshipLeaderId prop (AM-3, BUG-001)
   const [worshipLeaderId, setWorshipLeaderId] = React.useState<string>(
@@ -82,6 +84,22 @@ export default function LiturgyAssistantDrawer({
   >(() => []);
   const [isStepsOpen, setIsStepsOpen] = React.useState<boolean>(() => true);
   const [isConfigOpen, setIsConfigOpen] = React.useState<boolean>(() => true);
+
+  // Daily AI quota & curation indicators
+  const [aiQuota, setAiQuota] = React.useState<{
+    used: number;
+    total: number;
+  }>(() => initialAiQuota || { used: 0, total: 10 });
+  const [isAiCurated, setIsAiCurated] = React.useState<boolean>(() => false);
+  const [fallbackNotice, setFallbackNotice] = React.useState<string | null>(
+    () => null
+  );
+
+  React.useEffect(() => {
+    if (initialAiQuota) {
+      setAiQuota(initialAiQuota);
+    }
+  }, [initialAiQuota]);
 
   // Single-song refresh state (AC-8, AC-10)
   const [refreshingIndex, setRefreshingIndex] = React.useState<number | null>(
@@ -120,6 +138,7 @@ export default function LiturgyAssistantDrawer({
   const handleGenerateProposal = async () => {
     setProposedSongs([]);
     setStepsExecuted([]);
+    setFallbackNotice(null);
     setIsLoading(true);
     setError(null);
     setRefreshError(null);
@@ -141,6 +160,11 @@ export default function LiturgyAssistantDrawer({
 
       setProposedSongs(response.proposedSongs);
       setStepsExecuted(response.stepsExecuted);
+      setIsAiCurated(Boolean(response.isAiCurated));
+      if (response.aiQuota) {
+        setAiQuota(response.aiQuota);
+      }
+      setFallbackNotice(response.fallbackNotice || null);
       setIsStepsOpen(true);
     } catch (err) {
       setError(
@@ -211,6 +235,9 @@ export default function LiturgyAssistantDrawer({
       setProposedSongs((prev) =>
         prev.map((s, i) => (i === index ? replacement : s))
       );
+      if (response.aiQuota) {
+        setAiQuota(response.aiQuota);
+      }
     } catch (err) {
       setRefreshError(
         err instanceof Error
@@ -245,9 +272,30 @@ export default function LiturgyAssistantDrawer({
               <Sparkles size={18} />
             </div>
             <div>
-              <h2 className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream leading-tight">
-                Liturgy Assistant
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream leading-tight">
+                  Liturgy Assistant
+                </h2>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                    aiQuota.used >= aiQuota.total
+                      ? "bg-brand-brown/15 dark:bg-brand-tan/15 text-brand-espresso dark:text-brand-cream border-brand-brown/30"
+                      : "bg-brand-brown/10 dark:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream border-brand-brown/20"
+                  }`}
+                  title={
+                    aiQuota.used >= aiQuota.total
+                      ? "You've used all 10 AI picks today. Standard tag search active."
+                      : `${aiQuota.total - aiQuota.used} AI picks remaining today.`
+                  }
+                >
+                  <Sparkles size={11} className="text-brand-brown dark:text-brand-tan" />
+                  <span>
+                    {aiQuota.used >= aiQuota.total
+                      ? "10/10 AI picks used"
+                      : `AI: ${aiQuota.used}/${aiQuota.total} picks`}
+                  </span>
+                </span>
+              </div>
               <p className="text-xs text-brand-brown/70 dark:text-brand-tan/70">
                 Curate service setlists with key transitions
               </p>
@@ -406,14 +454,31 @@ export default function LiturgyAssistantDrawer({
 
                 {/* Additional Instructions & Suggestion Chips */}
                 <div className="space-y-2">
-                  <label
-                    htmlFor="liturgy-instructions"
-                    className="text-xs font-semibold text-brand-espresso dark:text-brand-cream"
-                  >
-                    Themes or Focus (Optional)
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <label
+                        htmlFor="liturgy-instructions"
+                        className="text-xs font-semibold text-brand-espresso dark:text-brand-cream"
+                      >
+                        Themes or Focus (Optional)
+                      </label>
+                      <span className="text-[10px] text-brand-brown/70 dark:text-brand-tan/70 font-medium">
+                        ({aiQuota.total - aiQuota.used} AI picks left)
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[11px] tabular-nums font-medium ${
+                        additionalInstructions.length >= 280
+                          ? "text-brand-espresso dark:text-brand-cream font-bold"
+                          : "text-brand-brown/50 dark:text-brand-tan/50"
+                      }`}
+                    >
+                      {additionalInstructions.length}/300
+                    </span>
+                  </div>
                   <textarea
                     id="liturgy-instructions"
+                    maxLength={300}
                     value={additionalInstructions}
                     onChange={(e) => setAdditionalInstructions(e.target.value)}
                     className="w-full bg-brand-cream dark:bg-brand-espresso border border-brand-brown/30 rounded-xl p-2.5 text-xs text-brand-espresso dark:text-brand-cream placeholder:text-brand-brown/50 focus:outline-none focus:ring-1 focus:ring-brand-brown h-20 resize-none"
@@ -497,6 +562,27 @@ export default function LiturgyAssistantDrawer({
             </div>
           )}
 
+          {/* Simple Fallback Notice (Plain everyday words) */}
+          {fallbackNotice && (
+            <div
+              role="status"
+              className="bg-brand-brown/5 dark:bg-brand-tan/5 border border-brand-brown/20 rounded-xl p-3 text-xs text-brand-espresso dark:text-brand-cream flex items-start gap-2.5"
+            >
+              <Sparkles
+                size={15}
+                className="text-brand-brown dark:text-brand-tan shrink-0 mt-0.5"
+              />
+              <div className="leading-relaxed">
+                <span className="font-semibold block text-brand-espresso dark:text-brand-cream">
+                  Standard Tag Search Used
+                </span>
+                <span className="text-brand-brown/90 dark:text-brand-tan/90">
+                  {fallbackNotice}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Assistant Generation Pipeline Trace (Replacing raw unaligned text) */}
           {stepsExecuted.length > 0 && (
             <div className="bg-brand-brown/5 dark:bg-brand-tan/5 border border-brand-brown/15 rounded-2xl p-4 transition-all">
@@ -557,6 +643,16 @@ export default function LiturgyAssistantDrawer({
                   <h3 className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream">
                     Proposed Setlist
                   </h3>
+                  {isAiCurated ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-brown/10 dark:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream border border-brand-brown/20 dark:border-brand-tan/20">
+                      <Sparkles size={11} className="text-brand-brown dark:text-brand-tan" />
+                      AI Curated
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-brand-brown/5 dark:bg-brand-tan/5 text-brand-brown/70 dark:text-brand-tan/70 border border-dashed border-brand-brown/20 dark:border-brand-tan/20">
+                      Tag Match
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-brown/10 dark:bg-brand-tan/10 text-brand-espresso dark:text-brand-cream">
                   {proposedSongs.length} {proposedSongs.length === 1 ? "song" : "songs"}
