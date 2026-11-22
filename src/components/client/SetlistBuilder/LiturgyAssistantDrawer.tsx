@@ -21,6 +21,7 @@ import {
   ChevronUp,
   User,
   History,
+  Loader2,
 } from "lucide-react";
 import Button from "../button";
 import {
@@ -48,6 +49,95 @@ const PROMPT_SUGGESTIONS = [
   "Tagalog & English mix",
   "Hillsong & Bethel",
   "Communion prayer flow",
+];
+
+const MOCK_JOYFUL_SONGS: ProposedSong[] = [
+  {
+    songId: "mock-j1",
+    title: "House of the Lord",
+    artist: "Phil Wickham",
+    originalKey: "Bb",
+    recommendedKey: "Bb",
+    tag: "joyful",
+    transitionNote: "High energy celebratory opener in original key Bb.",
+    keySource: "original_key",
+  },
+  {
+    songId: "mock-j2",
+    title: "Praise",
+    artist: "Elevation Worship",
+    originalKey: "C",
+    recommendedKey: "C",
+    tag: "joyful",
+    transitionNote: "Harmonic whole-step lift (+2 semitones) from Bb to C for rising congregational energy.",
+    keySource: "harmonic_modulation",
+  },
+  {
+    songId: "mock-j3",
+    title: "This Is Amazing Grace",
+    artist: "Phil Wickham",
+    originalKey: "G",
+    recommendedKey: "G",
+    tag: "joyful",
+    transitionNote: "Joyful celebration of Christ's triumph and grace.",
+    keySource: "original_key",
+  },
+];
+
+const MOCK_SOLEMN_SONGS: ProposedSong[] = [
+  {
+    songId: "mock-s1",
+    title: "Build My Life",
+    artist: "Housefires",
+    originalKey: "G",
+    recommendedKey: "G",
+    tag: "solemn",
+    transitionNote: "Subdominant harmonic flow into deep surrender and consecration.",
+    keySource: "harmonic_modulation",
+  },
+  {
+    songId: "mock-s2",
+    title: "Goodness of God",
+    artist: "Bethel Music",
+    originalKey: "Ab",
+    recommendedKey: "G",
+    tag: "solemn",
+    transitionNote: "Same-key intimate worship flow in G reflecting on God's faithfulness.",
+    keySource: "harmonic_modulation",
+  },
+  {
+    songId: "mock-s3",
+    title: "Gratitude",
+    artist: "Brandon Lake",
+    originalKey: "B",
+    recommendedKey: "G",
+    tag: "solemn",
+    transitionNote: "Reverent prayerful modulation into heartfelt thanksgiving.",
+    keySource: "harmonic_modulation",
+  },
+];
+
+const MOCK_ALTERNATIVE_SONGS: ProposedSong[] = [
+  {
+    songId: "mock-alt1",
+    title: "Way Maker",
+    artist: "Sinach",
+    originalKey: "E",
+    recommendedKey: "E",
+    tag: "joyful",
+    transitionNote: "Triumphant declaration of God as miracle worker.",
+    keySource: "original_key",
+  },
+  {
+    songId: "mock-alt2",
+    title: "King of Kings",
+    artist: "Hillsong Worship",
+    originalKey: "D",
+    recommendedKey: "D",
+    tag: "solemn",
+    transitionNote: "Modulated for reverent reflection on the gospel narrative.",
+    keySource: "harmonic_modulation",
+  },
 ];
 
 export default function LiturgyAssistantDrawer({
@@ -95,6 +185,9 @@ export default function LiturgyAssistantDrawer({
     () => null
   );
 
+  // Simulation / Mock mode toggle (Defaults to true as instructed: "do not use the api use mock to simulate loading")
+  const [useMockSimulation, setUseMockSimulation] = React.useState<boolean>(() => true);
+
   React.useEffect(() => {
     if (initialAiQuota) {
       setAiQuota(initialAiQuota);
@@ -137,20 +230,171 @@ export default function LiturgyAssistantDrawer({
 
   const handleGenerateProposal = async () => {
     setProposedSongs([]);
-    setStepsExecuted([]);
     setFallbackNotice(null);
     setIsLoading(true);
     setError(null);
     setRefreshError(null);
+    setIsStepsOpen(true);
+
+    const initialSteps: LiturgyStepProgress[] = [
+      {
+        step: "leader_history",
+        status: "in_progress",
+        detail: worshipLeaderId
+          ? "Reviewing worship leader history and preferred vocal keys..."
+          : "Checking worship leader range settings...",
+      },
+      {
+        step: "library_tag_search",
+        status: "pending",
+        detail: `Searching library for ${joyfulCount} joyful and ${solemnCount} solemn songs...`,
+      },
+      {
+        step: "ai_semantic_curation",
+        status: "pending",
+        detail: additionalInstructions.trim()
+          ? `Curating setlist based on "${additionalInstructions.trim().slice(0, 32)}..."`
+          : "Curating cohesive thematic worship flow...",
+      },
+      {
+        step: "harmonic_optimization",
+        status: "pending",
+        detail: "Optimizing song keys for seamless harmonic transitions...",
+      },
+    ];
+
+    setStepsExecuted(initialSteps);
+
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    if (useMockSimulation) {
+      try {
+        // Step 1: leader history
+        await sleep(650);
+        setStepsExecuted((prev) => [
+          {
+            ...prev[0],
+            status: "completed",
+            detail: worshipLeaderId
+              ? `Checked worship leader history (${selectedLeaderName ?? "Leader"} past keys found).`
+              : "Checked worship leader range settings.",
+          },
+          { ...prev[1], status: "in_progress" },
+          prev[2],
+          prev[3],
+        ]);
+
+        // Step 2: library tag search
+        await sleep(750);
+        setStepsExecuted((prev) => [
+          prev[0],
+          {
+            ...prev[1],
+            status: "completed",
+            detail: `Found matching songs in library for ${joyfulCount} joyful and ${solemnCount} solemn slots.`,
+          },
+          { ...prev[2], status: "in_progress" },
+          prev[3],
+        ]);
+
+        // Step 3: AI semantic curation
+        await sleep(950);
+        setStepsExecuted((prev) => [
+          prev[0],
+          prev[1],
+          {
+            ...prev[2],
+            status: "completed",
+            detail: additionalInstructions.trim()
+              ? `AI curated songs matching "${additionalInstructions.trim().slice(0, 28)}...".`
+              : "AI curated songs matching liturgical worship themes.",
+          },
+          { ...prev[3], status: "in_progress" },
+        ]);
+
+        // Step 4: Harmonic optimization
+        await sleep(650);
+        setStepsExecuted((prev) => [
+          prev[0],
+          prev[1],
+          prev[2],
+          {
+            ...prev[3],
+            status: "completed",
+            detail: "Optimized song keys for smooth pastoral and musical transitions.",
+          },
+        ]);
+
+        // Populate mock songs according to chosen counts
+        const selectedJoyful = MOCK_JOYFUL_SONGS.slice(0, joyfulCount);
+        const selectedSolemn = MOCK_SOLEMN_SONGS.slice(0, solemnCount);
+        const combined = [...selectedJoyful, ...selectedSolemn];
+
+        if (worshipLeaderId && combined.length > 0) {
+          combined[0] = {
+            ...combined[0],
+            previouslySungKey: combined[0].originalKey,
+            lastSungDate: "2026-10-18",
+          };
+        }
+
+        setProposedSongs(combined);
+        setIsAiCurated(true);
+        setAiQuota((prev) => ({
+          ...prev,
+          used: Math.min(prev.total, prev.used + 1),
+        }));
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     try {
-      const response: LiturgyAgentResponse =
-        await generateSetlistProposalAction({
-          worshipLeaderId: worshipLeaderId || null,
-          joyfulCount,
-          solemnCount,
-          additionalInstructions,
-        });
+      const serverActionPromise = generateSetlistProposalAction({
+        worshipLeaderId: worshipLeaderId || null,
+        joyfulCount,
+        solemnCount,
+        additionalInstructions,
+      });
+
+      await sleep(600);
+      setStepsExecuted((prev) => [
+        { ...prev[0], status: "completed" },
+        { ...prev[1], status: "in_progress" },
+        prev[2],
+        prev[3],
+      ]);
+
+      await sleep(700);
+      setStepsExecuted((prev) => [
+        prev[0],
+        { ...prev[1], status: "completed" },
+        { ...prev[2], status: "in_progress" },
+        prev[3],
+      ]);
+
+      await sleep(800);
+      setStepsExecuted((prev) => [
+        prev[0],
+        prev[1],
+        { ...prev[2], status: "completed" },
+        { ...prev[3], status: "in_progress" },
+      ]);
+
+      const response: LiturgyAgentResponse = await serverActionPromise;
+
+      setStepsExecuted((prev) => [
+        prev[0],
+        prev[1],
+        prev[2],
+        { ...prev[3], status: "completed" },
+      ]);
 
       if (!response.success) {
         setError(response.error || "An unknown error occurred.");
@@ -165,7 +409,6 @@ export default function LiturgyAssistantDrawer({
         setAiQuota(response.aiQuota);
       }
       setFallbackNotice(response.fallbackNotice || null);
-      setIsStepsOpen(true);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred."
@@ -198,6 +441,34 @@ export default function LiturgyAssistantDrawer({
 
     setRefreshingIndex(index);
     setRefreshError(null);
+
+    if (useMockSimulation) {
+      await new Promise((r) => setTimeout(r, 700));
+
+      const alt =
+        MOCK_ALTERNATIVE_SONGS[index % MOCK_ALTERNATIVE_SONGS.length] ||
+        MOCK_JOYFUL_SONGS[2];
+
+      setProposedSongs((prev) =>
+        prev.map((s, i) =>
+          i === index
+            ? {
+                ...alt,
+                tag: s.tag,
+                transitionNote: `Re-rolled for slot ${index + 1}: ${alt.transitionNote}`,
+              }
+            : s
+        )
+      );
+
+      setAiQuota((prev) => ({
+        ...prev,
+        used: Math.min(prev.total, prev.used + 1),
+      }));
+
+      setRefreshingIndex(null);
+      return;
+    }
 
     try {
       const excludedSongIds = Array.from(
@@ -272,7 +543,7 @@ export default function LiturgyAssistantDrawer({
               <Sparkles size={18} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-sans font-bold text-base text-brand-espresso dark:text-brand-cream leading-tight">
                   Liturgy Assistant
                 </h2>
@@ -295,6 +566,29 @@ export default function LiturgyAssistantDrawer({
                       : `AI: ${aiQuota.used}/${aiQuota.total} picks`}
                   </span>
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setUseMockSimulation((prev) => !prev)}
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors cursor-pointer ${
+                    useMockSimulation
+                      ? "bg-brand-brown/15 dark:bg-brand-tan/15 text-brand-espresso dark:text-brand-cream border-brand-brown/30"
+                      : "bg-brand-brown/5 dark:bg-brand-tan/5 text-brand-brown/70 dark:text-brand-tan/70 border-brand-brown/20"
+                  }`}
+                  title={
+                    useMockSimulation
+                      ? "Mock Simulation Mode Active (No API calls or quota used). Click to switch to Live API."
+                      : "Live Gemini API Active. Click to switch to Mock Simulation Mode."
+                  }
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      useMockSimulation
+                        ? "bg-brand-espresso dark:bg-brand-cream"
+                        : "bg-brand-brown/40 dark:bg-brand-tan/40"
+                    }`}
+                  />
+                  <span>{useMockSimulation ? "Mock Mode" : "Live API"}</span>
+                </button>
               </div>
               <p className="text-xs text-brand-brown/70 dark:text-brand-tan/70">
                 Curate service setlists with key transitions
@@ -508,7 +802,11 @@ export default function LiturgyAssistantDrawer({
                   disabled={isLoading || totalCount < 1 || totalCount > 6}
                   onClick={handleGenerateProposal}
                 >
-                  <Sparkles size={16} className="mr-2 text-brand-espresso" />
+                  {isLoading ? (
+                    <Loader2 size={16} className="mr-2 animate-spin text-brand-espresso" />
+                  ) : (
+                    <Sparkles size={16} className="mr-2 text-brand-espresso" />
+                  )}
                   {isLoading ? "Generating Proposal..." : "Generate Setlist Proposal"}
                 </Button>
               </div>
@@ -525,9 +823,9 @@ export default function LiturgyAssistantDrawer({
                   type="button"
                   onClick={handleGenerateProposal}
                   disabled={isLoading}
-                  className="text-xs font-semibold text-brand-espresso dark:text-brand-cream underline cursor-pointer"
+                  className="text-xs font-semibold text-brand-espresso dark:text-brand-cream underline cursor-pointer disabled:opacity-50"
                 >
-                  Re-generate
+                  {isLoading ? "Generating..." : "Re-generate"}
                 </button>
               </div>
             )}
@@ -584,7 +882,7 @@ export default function LiturgyAssistantDrawer({
           )}
 
           {/* Assistant Generation Pipeline Trace (Replacing raw unaligned text) */}
-          {stepsExecuted.length > 0 && (
+          {(stepsExecuted.length > 0 || isLoading) && (
             <div className="bg-brand-brown/5 dark:bg-brand-tan/5 border border-brand-brown/15 rounded-2xl p-4 transition-all">
               <button
                 type="button"
@@ -593,7 +891,13 @@ export default function LiturgyAssistantDrawer({
                 aria-expanded={isStepsOpen}
               >
                 <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-brand-espresso dark:bg-brand-cream" />
+                  <span
+                    className={`flex h-2 w-2 rounded-full ${
+                      isLoading
+                        ? "bg-brand-espresso dark:bg-brand-cream animate-ping"
+                        : "bg-brand-espresso dark:bg-brand-cream"
+                    }`}
+                  />
                   <span className="text-xs font-semibold uppercase tracking-wider text-brand-espresso dark:text-brand-cream">
                     Generation Pipeline
                   </span>
@@ -617,6 +921,11 @@ export default function LiturgyAssistantDrawer({
                             size={15}
                             className="text-brand-espresso dark:text-brand-cream"
                           />
+                        ) : step.status === "in_progress" ? (
+                          <Loader2
+                            size={15}
+                            className="animate-spin text-brand-espresso dark:text-brand-cream"
+                          />
                         ) : (
                           <Circle
                             size={15}
@@ -625,7 +934,17 @@ export default function LiturgyAssistantDrawer({
                         )}
                       </div>
                       <div className="text-xs text-brand-espresso dark:text-brand-cream leading-tight pt-0.5">
-                        <span className="font-medium">{step.detail}</span>
+                        <span
+                          className={
+                            step.status === "in_progress"
+                              ? "font-semibold text-brand-espresso dark:text-brand-cream animate-pulse"
+                              : step.status === "completed"
+                              ? "font-medium text-brand-espresso dark:text-brand-cream"
+                              : "text-brand-brown/60 dark:text-brand-tan/60"
+                          }
+                        >
+                          {step.detail}
+                        </span>
                       </div>
                     </div>
                   ))}

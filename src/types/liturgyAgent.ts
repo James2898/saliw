@@ -38,7 +38,7 @@ export interface LiturgyStepProgress {
     | "library_tag_search"
     | "harmonic_optimization"
     | "ai_semantic_curation";
-  status: "completed" | "skipped";
+  status: "completed" | "skipped" | "in_progress" | "pending";
   detail: string;
 }
 

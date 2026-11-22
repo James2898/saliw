@@ -60,8 +60,8 @@ export type AiAlternativeResult =
       errorDetail?: string;
     };
 
-const AI_TIMEOUT_MS = 6000;
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const AI_TIMEOUT_MS = 10000;
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 
 /**
  * Curates a cohesive worship setlist from library candidates using Gemini.
@@ -209,7 +209,12 @@ ${JSON.stringify(candidateSummary, null, 2)}`;
       }
 
       const expectedTag = i < joyfulCount ? "joyful" : "solemn";
-      if (!song.tags.includes(expectedTag)) {
+      const isTagMatch =
+        expectedTag === "joyful"
+          ? song.tags.includes("joyful")
+          : song.tags.includes("solemn") || song.tags.includes("hymn");
+
+      if (!isTagMatch) {
         return {
           success: false,
           reason: "invalid_response",
@@ -235,6 +240,7 @@ ${JSON.stringify(candidateSummary, null, 2)}`;
     };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
+    console.error("[LiturgyAiService error message]:", message);
     if (message.includes("timed out")) {
       return { success: false, reason: "timeout", errorDetail: message };
     }
@@ -348,6 +354,7 @@ ${JSON.stringify(candidateSummary, null, 2)}`;
     };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
+    console.error("[LiturgyAiService error message]:", message);
     if (message.includes("timed out")) {
       return { success: false, reason: "timeout", errorDetail: message };
     }
