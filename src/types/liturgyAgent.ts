@@ -33,8 +33,12 @@ export interface ProposedSong {
 }
 
 export interface LiturgyStepProgress {
-  step: "leader_history" | "library_tag_search" | "harmonic_optimization";
-  status: "completed" | "skipped";
+  step:
+    | "leader_history"
+    | "library_tag_search"
+    | "harmonic_optimization"
+    | "ai_semantic_curation";
+  status: "completed" | "skipped" | "in_progress" | "pending";
   detail: string;
 }
 
@@ -43,6 +47,12 @@ export interface LiturgyAgentResponse {
   error?: string;
   stepsExecuted: LiturgyStepProgress[];
   proposedSongs: ProposedSong[];
+  aiQuota?: {
+    used: number;
+    total: number;
+  };
+  isAiCurated?: boolean;
+  fallbackNotice?: string;
 }
 
 export interface RefreshSingleSongRequest {
@@ -57,4 +67,8 @@ export interface RefreshSingleSongResponse {
   success: boolean;
   error?: string;
   song?: ProposedSong;
+  aiQuota?: {
+    used: number;
+    total: number;
+  };
 }

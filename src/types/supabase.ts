@@ -92,6 +92,18 @@ export type DbProfile = {
 };
 
 /**
+ * Mirrors the public.ai_daily_quotas table.
+ */
+export type DbAiDailyQuota = {
+  id: string;
+  user_id: string;
+  usage_date: string;
+  requests_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
  * Canonical Supabase Database interface for client parameterization.
  * Compatible with @supabase/supabase-js GenericSchema / GenericTable layout.
  */
@@ -180,6 +192,19 @@ export interface Database {
         Update: Partial<DbProfile>;
         Relationships: [];
       };
+      ai_daily_quotas: {
+        Row: DbAiDailyQuota;
+        Insert: {
+          id?: string;
+          user_id: string;
+          usage_date?: string;
+          requests_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<DbAiDailyQuota>;
+        Relationships: [];
+      };
     };
     Views: {
       public_musicians: {
@@ -201,6 +226,14 @@ export interface Database {
       is_music_director: {
         Args: Record<string, never>;
         Returns: boolean;
+      };
+      get_ai_daily_quota: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      increment_ai_daily_quota: {
+        Args: Record<string, never>;
+        Returns: number;
       };
     };
   };
